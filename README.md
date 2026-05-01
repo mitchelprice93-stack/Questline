@@ -78,7 +78,7 @@ Tracking against the spec's phase plan. Phase 1.4 lands before 1.2/1.3 per the s
 - [x] **1.1** Project initialization
 - [x] **1.4** XP engine (pure TS + Jest)
 - [~] **1.2** Supabase setup — schema migration + client scaffolded; awaiting project link
-- [ ] 1.3 Authentication
+- [~] **1.3** Authentication — email/password + session-gated routing done; Apple/Google Sign In deferred (need Apple Developer + Google Cloud OAuth setup)
 - [ ] 1.5 Quest CRUD
 - [ ] 1.6 Character sheet (basic)
 
