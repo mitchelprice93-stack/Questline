@@ -8,7 +8,7 @@
 
 import { xpForTier } from './engine/xp';
 import { supabase } from './supabase';
-import type { Quest, QuestClassification, QuestStatus } from './types/models';
+import type { Quest, QuestClassification, QuestObjective, QuestStatus } from './types/models';
 import type { QuestTier } from './engine/xp';
 
 export interface CreateQuestInput {
@@ -17,6 +17,8 @@ export interface CreateQuestInput {
   tier: QuestTier;
   classification: QuestClassification;
   deadline: string | null; // ISO timestamp; pass null to skip
+  /** Optional checklist. Pass empty / omit for no objectives. */
+  objectives?: QuestObjective[];
 }
 
 export async function listQuests(status: QuestStatus = 'active'): Promise<Quest[]> {
@@ -55,6 +57,7 @@ export async function createQuest(input: CreateQuestInput): Promise<Quest> {
       classification: input.classification,
       xp_reward,
       deadline: input.deadline,
+      objectives: input.objectives ?? [],
     })
     .select()
     .single();
