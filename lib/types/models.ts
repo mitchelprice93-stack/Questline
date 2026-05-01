@@ -42,3 +42,11 @@ export interface Profile {
   difficulty: Difficulty;
   created_at: string;
 }
+
+export interface Faction {
+  id: string;
+  user_id: string;
+  name: string;
+  real_world_domain: string;
+  created_at: string;
+}

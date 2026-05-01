@@ -58,8 +58,13 @@ app/
   index.tsx                # session-aware entry redirect
   (auth)/                  # login, signup
   (onboarding)/            # cinematic, character-creation
-  (main)/
-    quest-board/           # index (list), new (create), [id] (detail)
+  (main)/                  # bottom tabs: Quests / Character / Settings
+    _layout.tsx            # Tabs layout
+    quest-board/
+      _layout.tsx          # Stack (so /new and /[id] push within the tab)
+      index.tsx            # active quest list
+      new.tsx              # create form
+      [id].tsx             # detail (complete / abandon)
     character-sheet.tsx
     settings.tsx
 lib/
@@ -67,6 +72,7 @@ lib/
     xp.ts                  # pure-TS XP engine: levels, tiers, modifiers
     xp.test.ts             # Jest tests — must stay green
   auth.tsx                 # AuthProvider + useAuth + useProtectedRoute
+  profile.ts               # profile + faction + active-quest-count fetchers
   quests.ts                # quest data layer (list, create, complete, abandon)
   supabase.ts              # Supabase client (platform-aware secure storage)
   types/
@@ -86,6 +92,6 @@ Tracking against the spec's phase plan. Phase 1.4 lands before 1.2/1.3 per the s
 - [x] **1.2** Supabase setup — project linked, both migrations applied via SQL Editor, schema + RPCs verified live. `supabase gen types` deferred until CLI auth works (no functional impact; `Database = any` for now).
 - [~] **1.3** Authentication — email/password + session-gated routing done; Apple/Google Sign In deferred (need Apple Developer + Google Cloud OAuth setup)
 - [~] **1.5** Quest CRUD — list / create / detail / complete / abandon shipped via atomic RPCs; SQLite/MMKV offline cache + sync queue deferred to a follow-up
-- [ ] 1.6 Character sheet (basic)
+- [x] **1.6** Character sheet — name, level, XP bar (driven by `calculateLevel`), active-quest count, factions placeholder until 2.3, difficulty
 
 See [`QUESTLINE_PROJECT.md`](./QUESTLINE_PROJECT.md) for the full roadmap.

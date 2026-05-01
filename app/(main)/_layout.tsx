@@ -1,5 +1,21 @@
-import { Stack } from 'expo-router';
+import { Tabs } from 'expo-router';
 
 export default function MainLayout() {
-  return <Stack screenOptions={{ headerShown: false }} />;
+  return (
+    <Tabs
+      screenOptions={{
+        headerShown: false,
+        tabBarActiveTintColor: '#f59e0b', // amber-500
+        tabBarInactiveTintColor: '#a8a29e', // stone-400
+        tabBarStyle: {
+          backgroundColor: '#0c0a09', // stone-950
+          borderTopColor: '#292524', // stone-800
+        },
+      }}
+    >
+      <Tabs.Screen name="quest-board" options={{ title: 'Quests' }} />
+      <Tabs.Screen name="character-sheet" options={{ title: 'Character' }} />
+      <Tabs.Screen name="settings" options={{ title: 'Settings' }} />
+    </Tabs>
+  );
 }
