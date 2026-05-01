@@ -227,6 +227,21 @@ function pickModel(endpoint: ProxyRequest['endpoint']): keyof typeof PRICING {
   }
 }
 
+interface EndpointInferenceConfig {
+  // Deno SDK accepts the same shapes as the Node SDK; keep them minimal.
+  thinking: { type: 'adaptive' } | { type: 'disabled' };
+  effort?: 'low' | 'medium' | 'high';
+  max_tokens: number;
+}
+
+const ENDPOINT_INFERENCE: Record<ProxyRequest['endpoint'], EndpointInferenceConfig> = {
+  // Rich narrative, once-per-lifetime — let the model think.
+  character_creation: { thinking: { type: 'adaptive' }, max_tokens: 4096 },
+  // Decomposition task fired up to 50x/day — must be snappy. No thinking,
+  // low effort. The schema does the heavy lifting.
+  quest_generation: { thinking: { type: 'disabled' }, effort: 'low', max_tokens: 2048 },
+};
+
 function calculateCostUsd(
   model: keyof typeof PRICING,
   inputTokens: number,
@@ -281,21 +296,25 @@ Deno.serve(async (req) => {
   // 4. Call Claude.
   const { content: userMessage, schema } = buildUserMessage(body);
   const model = pickModel(body.endpoint);
+  const inference = ENDPOINT_INFERENCE[body.endpoint];
   const anthropic = new Anthropic({ apiKey: anthropicKey });
 
   let inputTokens = 0;
   let outputTokens = 0;
   let parsed: unknown;
   try {
+    const output_config: Record<string, unknown> = {
+      format: { type: 'json_schema', schema, name: body.endpoint },
+    };
+    if (inference.effort) output_config.effort = inference.effort;
+
     const response = await anthropic.messages.create({
       model,
-      max_tokens: 4096,
-      thinking: { type: 'adaptive' },
+      max_tokens: inference.max_tokens,
+      thinking: inference.thinking,
       system: ARCHIVIST_PROMPT,
       messages: [{ role: 'user', content: userMessage }],
-      output_config: {
-        format: { type: 'json_schema', schema, name: body.endpoint },
-      },
+      output_config,
     });
     inputTokens = response.usage.input_tokens;
     outputTokens = response.usage.output_tokens;

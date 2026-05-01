@@ -33,7 +33,9 @@ export interface GeneratedQuest {
   fromFallback: boolean;
 }
 
-const AI_TIMEOUT_MS = 6_000;
+// 15s — generous for a Sonnet round-trip. Spec only pins 6s for character
+// creation; quest generation has no fixed timeout but must feel responsive.
+const AI_TIMEOUT_MS = 15_000;
 
 function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
   return new Promise<T>((resolve, reject) => {
