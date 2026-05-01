@@ -1,9 +1,47 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, Pressable, ScrollView, Text, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Alert,
+  Platform,
+  Pressable,
+  ScrollView,
+  Text,
+  View,
+} from 'react-native';
 
 import { abandonQuest, completeQuest, getQuest } from '../../../lib/quests';
 import type { Quest } from '../../../lib/types/models';
+
+// react-native-web's Alert is a no-op, which strands the busy state when we
+// rely on the OK button's onPress for navigation. Wrap both flows in a
+// platform check: window.alert / window.confirm on web (synchronous), native
+// Alert.alert on iOS/Android (resolved via callback).
+function showInfoMessage(title: string, message: string): Promise<void> {
+  return new Promise((resolve) => {
+    if (Platform.OS === 'web') {
+      window.alert(`${title}\n\n${message}`);
+      resolve();
+    } else {
+      Alert.alert(title, message, [{ text: 'OK', onPress: () => resolve() }], {
+        onDismiss: () => resolve(),
+      });
+    }
+  });
+}
+
+function confirmDestructive(title: string, message: string): Promise<boolean> {
+  return new Promise((resolve) => {
+    if (Platform.OS === 'web') {
+      resolve(window.confirm(`${title}\n\n${message}`));
+    } else {
+      Alert.alert(title, message, [
+        { text: 'Cancel', style: 'cancel', onPress: () => resolve(false) },
+        { text: 'Confirm', style: 'destructive', onPress: () => resolve(true) },
+      ]);
+    }
+  });
+}
 
 export default function QuestDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -34,35 +72,33 @@ export default function QuestDetail() {
     setActionError(null);
     try {
       const result = await completeQuest(quest.id);
-      Alert.alert('Quest completed', `+${result.xpChange} XP earned · ${result.newTotalXp} total`, [
-        { text: 'OK', onPress: () => router.back() },
-      ]);
+      await showInfoMessage(
+        'Quest completed',
+        `+${result.xpChange} XP earned · ${result.newTotalXp} total`,
+      );
+      router.back();
     } catch (e) {
       setActionError(e instanceof Error ? e.message : String(e));
       setBusy(null);
     }
   };
 
-  const onAbandon = () => {
+  const onAbandon = async () => {
     if (!quest) return;
-    Alert.alert('Abandon quest?', 'No XP will be granted. This cannot be undone.', [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Abandon',
-        style: 'destructive',
-        onPress: async () => {
-          setBusy('abandon');
-          setActionError(null);
-          try {
-            await abandonQuest(quest.id);
-            router.back();
-          } catch (e) {
-            setActionError(e instanceof Error ? e.message : String(e));
-            setBusy(null);
-          }
-        },
-      },
-    ]);
+    const proceed = await confirmDestructive(
+      'Abandon quest?',
+      'No XP will be granted. This cannot be undone.',
+    );
+    if (!proceed) return;
+    setBusy('abandon');
+    setActionError(null);
+    try {
+      await abandonQuest(quest.id);
+      router.back();
+    } catch (e) {
+      setActionError(e instanceof Error ? e.message : String(e));
+      setBusy(null);
+    }
   };
 
   if (loadError) {
