@@ -33,6 +33,7 @@ npx expo start --ios       # requires macOS
 - `npm run typecheck` — `tsc --noEmit`
 - `npm run lint` — `expo lint` (Expo's ESLint flat config + Prettier)
 - `npm run format` / `npm run format:check` — Prettier
+- `npm test` / `npm run test:watch` — Jest (jest-expo preset)
 
 ## Project structure
 
@@ -43,16 +44,20 @@ app/
   (auth)/                  # login, signup
   (onboarding)/            # cinematic, character-creation
   (main)/                  # quest-board, character-sheet, settings
+lib/
+  engine/
+    xp.ts                  # pure-TS XP engine: levels, tiers, modifiers
+    xp.test.ts             # Jest tests — must stay green
 ```
 
 ## Phase status
 
-Tracking against the spec's phase plan:
+Tracking against the spec's phase plan. Phase 1.4 lands before 1.2/1.3 per the spec's non-negotiable: "Build the XP engine first, with tests, in pure TypeScript."
 
-- [x] **1.1** Project initialization (this commit)
+- [x] **1.1** Project initialization
+- [x] **1.4** XP engine (pure TS + Jest)
 - [ ] 1.2 Supabase setup
 - [ ] 1.3 Authentication
-- [ ] 1.4 XP engine (pure TS + Jest, before any UI work that depends on XP)
 - [ ] 1.5 Quest CRUD
 - [ ] 1.6 Character sheet (basic)
 
