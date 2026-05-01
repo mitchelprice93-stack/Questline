@@ -50,10 +50,32 @@ export async function callClaudeProxy<T>(
   }>('claude-proxy', { body: { endpoint, payload } });
 
   if (error) {
-    // FunctionsHttpError, FunctionsRelayError, FunctionsFetchError — surface the
-    // status if available so callers can branch on rate-limit vs server failure.
-    const status = (error as { context?: { status?: number } }).context?.status ?? 500;
-    throw new ClaudeProxyError(error.message, status);
+    // FunctionsHttpError wraps the actual Response in error.context. Pull the
+    // status + body out so callers see the real server error, not just
+    // "Edge Function returned a non-2xx status code".
+    let status = 500;
+    let serverMessage = error.message;
+    let code: string | undefined;
+
+    const ctx = (error as { context?: Response | { status?: number } }).context;
+    if (ctx && 'status' in ctx && typeof ctx.status === 'number') {
+      status = ctx.status;
+    }
+    if (ctx instanceof Response) {
+      try {
+        const body = (await ctx.clone().json()) as { error?: string; code?: string };
+        if (body.error) serverMessage = body.error;
+        if (body.code) code = body.code;
+      } catch {
+        try {
+          const text = await ctx.text();
+          if (text) serverMessage = text;
+        } catch {
+          // ignore
+        }
+      }
+    }
+    throw new ClaudeProxyError(serverMessage, status, code);
   }
   if (!data) {
     throw new ClaudeProxyError('Empty response from claude-proxy', 502);
