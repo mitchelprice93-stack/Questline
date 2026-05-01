@@ -110,9 +110,9 @@ Tracking against the spec's phase plan. Phase 1.4 lands before 1.2/1.3 per the s
 - [~] **1.3** Authentication — email/password + session-gated routing done; Apple/Google Sign In deferred (need Apple Developer + Google Cloud OAuth setup)
 - [~] **1.5** Quest CRUD — list / create / detail / complete / abandon shipped via atomic RPCs; SQLite/MMKV offline cache + sync queue deferred to a follow-up
 - [x] **1.6** Character sheet — name, level, XP bar (driven by `calculateLevel`), active-quest count, factions placeholder until 2.3, difficulty
-- [~] **2.1** Edge function proxy + Archivist system prompt — code committed; deploy via `supabase functions deploy claude-proxy` once CLI auth lands
-- [ ] 2.2 System prompt integration (folded into 2.1; lives at `prompts/archivist-v1.md`, embedded in the edge function)
-- [ ] 2.3 Character creation flow (7-card form)
+- [x] **2.1** Edge function proxy + Archivist system prompt
+- [x] **2.2** System prompt integration (folded into 2.1; lives at `prompts/archivist-v1.md`, embedded in the edge function)
+- [~] **2.3** Character creation flow — 7-step form, 6s AI timeout with templated fallback, atomic apply RPC; awaiting migration 0003 + first end-to-end test
 - [ ] 2.4 AI quest generation
 - [ ] 2.5 Response caching
 
