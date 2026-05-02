@@ -9,7 +9,7 @@ export default function Index() {
   if (loading || (session && profileLoading)) {
     return (
       <View className="flex-1 items-center justify-center bg-stone-950">
-        <Text className="text-stone-400">Loading…</Text>
+        <Text className="font-body text-stone-400">Loading…</Text>
       </View>
     );
   }

@@ -1,6 +1,7 @@
 import { Redirect, useRouter } from 'expo-router';
 import { useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 
 import { useAuth } from '../../lib/auth';
 import {
@@ -61,7 +62,13 @@ export default function CharacterCreation() {
   };
 
   if (revealed) {
-    return <Reveal sheet={revealed} onContinue={() => router.replace('/quest-board')} />;
+    return (
+      <Reveal
+        sheet={revealed}
+        chroniclerName={name.trim()}
+        onContinue={() => router.replace('/quest-board')}
+      />
+    );
   }
 
   // Anonymous user shouldn't be here — bounce.
@@ -73,8 +80,10 @@ export default function CharacterCreation() {
     return (
       <View className="flex-1 items-center justify-center bg-stone-950 px-6">
         <ActivityIndicator color="#f59e0b" size="large" />
-        <Text className="mt-6 text-xl text-stone-100">The Archivist studies your tome…</Text>
-        {error ? <Text className="mt-4 text-sm text-red-400">{error}</Text> : null}
+        <Text className="mt-6 font-display text-xl text-stone-100">
+          The Archivist studies your tome…
+        </Text>
+        {error ? <Text className="mt-4 font-body text-sm text-red-400">{error}</Text> : null}
       </View>
     );
   }
@@ -111,7 +120,7 @@ export default function CharacterCreation() {
 
   return (
     <ScrollView className="flex-1 bg-stone-950" contentContainerClassName="px-6 pt-16 pb-12">
-      <Text className="mb-1 text-xs uppercase tracking-widest text-stone-500">
+      <Text className="mb-1 font-display text-xs uppercase tracking-widest text-stone-500">
         Step {step + 1} of {TOTAL_STEPS}
       </Text>
       <View className="mb-8 h-1 overflow-hidden rounded-full bg-stone-800">
@@ -214,7 +223,7 @@ export default function CharacterCreation() {
         </Step>
       )}
 
-      {error ? <Text className="mt-4 text-sm text-red-400">{error}</Text> : null}
+      {error ? <Text className="mt-4 font-body text-sm text-red-400">{error}</Text> : null}
 
       <View className="mt-8 flex-row gap-3">
         {step > 0 ? (
@@ -222,7 +231,7 @@ export default function CharacterCreation() {
             onPress={back}
             className="flex-1 rounded-md border border-stone-700 bg-stone-900 px-4 py-3 active:bg-stone-800"
           >
-            <Text className="text-center text-stone-300">Back</Text>
+            <Text className="text-center font-body text-stone-300">Back</Text>
           </Pressable>
         ) : null}
         <Pressable
@@ -230,7 +239,7 @@ export default function CharacterCreation() {
           disabled={!canAdvance}
           className={`flex-1 rounded-md px-4 py-3 ${canAdvance ? 'bg-amber-600 active:bg-amber-700' : 'bg-stone-800'}`}
         >
-          <Text className="text-center font-medium text-stone-100">
+          <Text className="text-center font-body-medium text-stone-100">
             {step === TOTAL_STEPS - 1 ? 'Forge character' : 'Next'}
           </Text>
         </Pressable>
@@ -250,8 +259,8 @@ function Step({
 }) {
   return (
     <View>
-      <Text className="mb-2 text-3xl text-stone-100">{title}</Text>
-      <Text className="mb-6 text-stone-400">{flavor}</Text>
+      <Text className="mb-2 font-display text-3xl text-stone-100">{title}</Text>
+      <Text className="mb-6 font-body text-stone-400">{flavor}</Text>
       {children}
     </View>
   );
@@ -274,7 +283,7 @@ function Field({
 }) {
   return (
     <View className="mb-4">
-      <Text className="mb-2 text-sm text-stone-300">{label}</Text>
+      <Text className="mb-2 font-body text-sm text-stone-300">{label}</Text>
       <TextInput
         value={value}
         onChangeText={onChange}
@@ -283,7 +292,7 @@ function Field({
         placeholder={placeholder}
         placeholderTextColor="#57534e"
         textAlignVertical={multiline ? 'top' : 'auto'}
-        className={`rounded-md border border-stone-700 bg-stone-900 px-4 py-3 text-stone-100 ${
+        className={`rounded-md border border-stone-700 bg-stone-900 px-4 py-3 font-body text-stone-100 ${
           multiline ? 'min-h-[112px]' : ''
         }`}
       />
@@ -294,66 +303,102 @@ function Field({
 function Hint({ count, singular }: { count: number; singular: string }) {
   if (count === 0) return null;
   return (
-    <Text className="text-xs text-stone-500">
+    <Text className="font-body text-xs text-stone-500">
       {count} {singular}
       {count === 1 ? '' : 's'} parsed
     </Text>
   );
 }
 
-function Reveal({ sheet, onContinue }: { sheet: CharacterSheetResult; onContinue: () => void }) {
+// Phase 3.5 — sequenced reveal with staggered fade-in for each section.
+// Each Animated.View enters 200ms after the previous, so the chronicle unfolds
+// rather than appearing all at once.
+function Reveal({
+  sheet,
+  chroniclerName,
+  onContinue,
+}: {
+  sheet: CharacterSheetResult;
+  chroniclerName: string;
+  onContinue: () => void;
+}) {
+  const D = 800; // duration per section
+  const stagger = (n: number) => FadeInDown.delay(n * 200).duration(D);
+
   return (
     <ScrollView className="flex-1 bg-stone-950" contentContainerClassName="px-6 pt-16 pb-12">
-      <Text className="mb-1 text-xs uppercase tracking-widest text-amber-400">The Tome opens</Text>
-      <Text className="mb-2 text-3xl text-stone-100">{sheet.character_title}</Text>
-      <Text className="mb-8 text-stone-400">
-        Inscribed at Level {sheet.starting_level}
-        {sheet.fromFallback ? ' · templated (the Archivist was silent)' : ''}
-      </Text>
+      <Animated.View entering={stagger(0)}>
+        <Text className="mb-1 font-display text-xs uppercase tracking-widest text-amber-400">
+          The Tome opens
+        </Text>
+      </Animated.View>
+
+      <Animated.View entering={stagger(1)}>
+        <Text className="mb-1 font-display text-3xl text-stone-100">{chroniclerName}</Text>
+      </Animated.View>
+
+      <Animated.View entering={stagger(2)}>
+        <Text className="mb-2 font-display text-xl text-amber-300">{sheet.character_title}</Text>
+      </Animated.View>
+
+      <Animated.View entering={stagger(3)}>
+        <Text className="mb-8 font-body text-stone-400">
+          Inscribed at Level {sheet.starting_level}
+          {sheet.fromFallback ? ' · templated (the Archivist was silent)' : ''}
+        </Text>
+      </Animated.View>
 
       {sheet.factions.length > 0 ? (
-        <View className="mb-6">
-          <Text className="mb-2 text-sm text-stone-300">Factions</Text>
-          <View className="gap-2">
-            {sheet.factions.map((f, i) => (
-              <View key={i} className="rounded-md border border-stone-800 bg-stone-900 p-4">
-                <Text className="text-base text-stone-100">{f.name}</Text>
-                <Text className="text-xs text-stone-500">{f.real_world_domain}</Text>
-              </View>
-            ))}
+        <Animated.View entering={stagger(4)}>
+          <View className="mb-6">
+            <Text className="mb-2 font-body text-sm text-stone-300">Factions</Text>
+            <View className="gap-2">
+              {sheet.factions.map((f, i) => (
+                <View key={i} className="rounded-md border border-stone-800 bg-stone-900 p-4">
+                  <Text className="font-body-medium text-base text-stone-100">{f.name}</Text>
+                  <Text className="font-body text-xs text-stone-500">{f.real_world_domain}</Text>
+                </View>
+              ))}
+            </View>
           </View>
-        </View>
+        </Animated.View>
       ) : null}
 
       {sheet.campaigns.length > 0 ? (
-        <View className="mb-6">
-          <Text className="mb-2 text-sm text-stone-300">Campaigns</Text>
-          <View className="gap-2">
-            {sheet.campaigns.map((c, i) => (
-              <View key={i} className="rounded-md border border-stone-800 bg-stone-900 p-4">
-                <Text className="text-base text-stone-100">{c.arc_name}</Text>
-                <Text className="text-xs text-stone-500">{c.real_world_goal}</Text>
-              </View>
-            ))}
+        <Animated.View entering={stagger(5)}>
+          <View className="mb-6">
+            <Text className="mb-2 font-body text-sm text-stone-300">Campaigns</Text>
+            <View className="gap-2">
+              {sheet.campaigns.map((c, i) => (
+                <View key={i} className="rounded-md border border-stone-800 bg-stone-900 p-4">
+                  <Text className="font-body-medium text-base text-stone-100">{c.arc_name}</Text>
+                  <Text className="font-body text-xs text-stone-500">{c.real_world_goal}</Text>
+                </View>
+              ))}
+            </View>
           </View>
-        </View>
+        </Animated.View>
       ) : null}
 
-      <View className="mb-8 rounded-md border border-amber-900/40 bg-amber-950/20 p-4">
-        <Text className="mb-1 text-xs uppercase tracking-widest text-amber-500">
-          First quest hook
-        </Text>
-        <Text className="text-stone-200">{sheet.first_quest_hook}</Text>
-      </View>
+      <Animated.View entering={stagger(6)}>
+        <View className="mb-8 rounded-md border border-amber-900/40 bg-amber-950/20 p-4">
+          <Text className="mb-1 font-display text-xs uppercase tracking-widest text-amber-500">
+            First quest hook
+          </Text>
+          <Text className="font-body text-stone-200">{sheet.first_quest_hook}</Text>
+        </View>
+      </Animated.View>
 
-      <Pressable
-        onPress={onContinue}
-        className="rounded-md bg-amber-600 px-4 py-3 active:bg-amber-700"
-      >
-        <Text className="text-center text-base font-medium text-stone-100">
-          Begin your chronicle
-        </Text>
-      </Pressable>
+      <Animated.View entering={stagger(7)}>
+        <Pressable
+          onPress={onContinue}
+          className="rounded-md bg-amber-600 px-4 py-3 active:bg-amber-700"
+        >
+          <Text className="text-center font-display text-base text-stone-100">
+            Begin your chronicle
+          </Text>
+        </Pressable>
+      </Animated.View>
     </ScrollView>
   );
 }

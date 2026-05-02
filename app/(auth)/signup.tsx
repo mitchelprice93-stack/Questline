@@ -31,13 +31,13 @@ export default function Signup() {
   if (pendingConfirmation) {
     return (
       <View className="flex-1 justify-center bg-stone-950 px-6">
-        <Text className="mb-2 text-3xl text-stone-100">Check your inbox</Text>
-        <Text className="mb-6 text-stone-400">
+        <Text className="mb-2 font-display text-3xl text-stone-100">Check your inbox</Text>
+        <Text className="mb-6 font-body text-stone-400">
           The Archivist has sent a sealed message to{' '}
-          <Text className="text-stone-200">{email.trim()}</Text>. Confirm your address, then return
-          and sign in.
+          <Text className="font-body-medium text-stone-200">{email.trim()}</Text>. Confirm your
+          address, then return and sign in.
         </Text>
-        <Link href="/login" className="text-amber-400">
+        <Link href="/login" className="font-body-medium text-amber-400">
           Back to sign in
         </Link>
       </View>
@@ -48,51 +48,51 @@ export default function Signup() {
 
   return (
     <View className="flex-1 justify-center bg-stone-950 px-6">
-      <Text className="mb-1 text-3xl text-stone-100">Forge your character</Text>
-      <Text className="mb-8 text-stone-400">
+      <Text className="mb-1 font-display text-3xl text-stone-100">Forge your character</Text>
+      <Text className="mb-8 font-body text-stone-400">
         A new chronicle begins. Email and password are all the Archivist needs.
       </Text>
 
-      <Text className="mb-2 text-sm text-stone-300">Email</Text>
+      <Text className="mb-2 font-body text-sm text-stone-300">Email</Text>
       <TextInput
         value={email}
         onChangeText={setEmail}
         autoCapitalize="none"
         autoComplete="email"
         keyboardType="email-address"
-        className="mb-4 rounded-md border border-stone-700 bg-stone-900 px-4 py-3 text-stone-100"
+        className="mb-4 rounded-md border border-stone-700 bg-stone-900 px-4 py-3 font-body text-stone-100"
         placeholderTextColor="#78716c"
         editable={!loading}
       />
 
-      <Text className="mb-2 text-sm text-stone-300">Password</Text>
+      <Text className="mb-2 font-body text-sm text-stone-300">Password</Text>
       <TextInput
         value={password}
         onChangeText={setPassword}
         secureTextEntry
         autoCapitalize="none"
         autoComplete="new-password"
-        className="mb-1 rounded-md border border-stone-700 bg-stone-900 px-4 py-3 text-stone-100"
+        className="mb-1 rounded-md border border-stone-700 bg-stone-900 px-4 py-3 font-body text-stone-100"
         placeholderTextColor="#78716c"
         editable={!loading}
       />
-      <Text className="mb-4 text-xs text-stone-500">At least 6 characters.</Text>
+      <Text className="mb-4 font-body text-xs text-stone-500">At least 6 characters.</Text>
 
-      {error ? <Text className="mb-4 text-sm text-red-400">{error}</Text> : null}
+      {error ? <Text className="mb-4 font-body text-sm text-red-400">{error}</Text> : null}
 
       <Pressable
         onPress={onSubmit}
         disabled={disabled}
         className={`rounded-md px-4 py-3 ${disabled ? 'bg-stone-800' : 'bg-amber-600 active:bg-amber-700'}`}
       >
-        <Text className="text-center text-base font-medium text-stone-100">
+        <Text className="text-center font-body-medium text-base text-stone-100">
           {loading ? 'Inscribing…' : 'Create account'}
         </Text>
       </Pressable>
 
       <View className="mt-6 flex-row justify-center">
-        <Text className="text-stone-400">Already inscribed? </Text>
-        <Link href="/login" className="text-amber-400">
+        <Text className="font-body text-stone-400">Already inscribed? </Text>
+        <Link href="/login" className="font-body-medium text-amber-400">
           Sign in
         </Link>
       </View>

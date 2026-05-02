@@ -29,22 +29,22 @@ export default function QuestBoard() {
   return (
     <View className="flex-1 bg-stone-950 px-6 pt-16">
       <View className="mb-6 flex-row items-center justify-between">
-        <Text className="text-3xl text-stone-100">Quest Board</Text>
+        <Text className="font-display text-3xl text-stone-100">Quest Board</Text>
         <Link href="/quest-board/new" asChild>
           <Pressable className="rounded-md bg-amber-600 px-3 py-2 active:bg-amber-700">
-            <Text className="text-sm font-medium text-stone-100">+ New</Text>
+            <Text className="font-body-medium text-sm text-stone-100">+ New</Text>
           </Pressable>
         </Link>
       </View>
 
       {error ? (
-        <Text className="mb-4 text-sm text-red-400">{error}</Text>
+        <Text className="mb-4 font-body text-sm text-red-400">{error}</Text>
       ) : quests === null ? (
         <ActivityIndicator className="mt-8" color="#a8a29e" />
       ) : quests.length === 0 ? (
         <View className="mt-8 items-center">
-          <Text className="text-stone-400">No active quests.</Text>
-          <Text className="mt-1 text-stone-500">Forge one with the + button.</Text>
+          <Text className="font-body text-stone-400">No active quests.</Text>
+          <Text className="mt-1 font-body text-stone-500">Forge one with the + button.</Text>
         </View>
       ) : (
         <FlatList
@@ -63,14 +63,16 @@ function QuestRow({ quest }: { quest: Quest }) {
     <Link href={{ pathname: '/quest-board/[id]', params: { id: quest.id } }} asChild>
       <Pressable className="rounded-md border border-stone-800 bg-stone-900 p-4 active:bg-stone-800">
         <View className="flex-row items-center justify-between">
-          <Text className="flex-1 text-base text-stone-100" numberOfLines={1}>
+          <Text className="flex-1 font-display text-base text-stone-100" numberOfLines={1}>
             {quest.title}
           </Text>
-          <Text className="ml-3 text-xs uppercase text-amber-400">{quest.tier}</Text>
+          <Text className="ml-3 font-display text-xs uppercase tracking-widest text-amber-400">
+            {quest.tier}
+          </Text>
         </View>
         <View className="mt-1 flex-row items-center justify-between">
-          <Text className="text-xs text-stone-500">{quest.classification}</Text>
-          <Text className="text-xs text-stone-400">{quest.xp_reward} XP</Text>
+          <Text className="font-body text-xs text-stone-500">{quest.classification}</Text>
+          <Text className="font-body text-xs text-stone-400">{quest.xp_reward} XP</Text>
         </View>
       </Pressable>
     </Link>

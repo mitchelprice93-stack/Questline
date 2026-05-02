@@ -38,7 +38,7 @@ export default function CharacterSheet() {
   if (error) {
     return (
       <View className="flex-1 items-center justify-center bg-stone-950 px-6">
-        <Text className="text-red-400">{error}</Text>
+        <Text className="font-body text-red-400">{error}</Text>
       </View>
     );
   }
@@ -61,23 +61,25 @@ export default function CharacterSheet() {
 
   return (
     <ScrollView className="flex-1 bg-stone-950" contentContainerClassName="px-6 pt-16 pb-12">
-      <Text className="mb-1 text-3xl text-stone-100">{displayName}</Text>
+      <Text className="mb-1 font-display text-3xl text-stone-100">{displayName}</Text>
       {profile?.character_title ? (
-        <Text className="mb-6 text-stone-400">{profile.character_title}</Text>
+        <Text className="mb-6 font-display text-amber-300">{profile.character_title}</Text>
       ) : (
-        <Text className="mb-6 italic text-stone-500">Untitled, for now.</Text>
+        <Text className="mb-6 font-body italic text-stone-500">Untitled, for now.</Text>
       )}
 
       {/* Level + XP bar */}
       <View className="mb-8 rounded-md border border-stone-800 bg-stone-900 p-4">
         <View className="mb-2 flex-row items-baseline justify-between">
-          <Text className="text-stone-400">Level</Text>
-          <Text className="text-2xl text-stone-100">{level}</Text>
+          <Text className="font-display text-xs uppercase tracking-widest text-stone-400">
+            Level
+          </Text>
+          <Text className="font-display-bold text-2xl text-stone-100">{level}</Text>
         </View>
         <View className="mb-1 h-2 overflow-hidden rounded-full bg-stone-800">
           <View className="h-2 rounded-full bg-amber-500" style={{ width: `${progressPct}%` }} />
         </View>
-        <Text className="text-xs text-stone-500">
+        <Text className="font-body text-xs text-stone-500">
           {atMaxLevel
             ? `${totalXp.toLocaleString()} XP · max level reached`
             : `${currentLevelXp.toLocaleString()} / ${nextLevelXp.toLocaleString()} XP into this level · ${totalXp.toLocaleString()} total`}
@@ -86,30 +88,36 @@ export default function CharacterSheet() {
 
       {/* Active quests */}
       <View className="mb-8 rounded-md border border-stone-800 bg-stone-900 p-4">
-        <Text className="mb-1 text-stone-400">Active quests</Text>
-        <Text className="text-2xl text-stone-100">{activeQuests}</Text>
+        <Text className="mb-1 font-display text-xs uppercase tracking-widest text-stone-400">
+          Active quests
+        </Text>
+        <Text className="font-display-bold text-2xl text-stone-100">{activeQuests}</Text>
       </View>
 
       {/* Factions */}
-      <Text className="mb-2 text-sm text-stone-300">Factions</Text>
+      <Text className="mb-2 font-display text-xs uppercase tracking-widest text-stone-300">
+        Factions
+      </Text>
       {factions.length === 0 ? (
-        <Text className="mb-8 italic text-stone-500">
-          The Archivist will inscribe these during character creation (Phase 2.3).
+        <Text className="mb-8 font-body italic text-stone-500">
+          The Archivist will inscribe these during character creation.
         </Text>
       ) : (
         <View className="mb-8 gap-2">
           {factions.map((f) => (
             <View key={f.id} className="rounded-md border border-stone-800 bg-stone-900 px-4 py-3">
-              <Text className="text-base text-stone-100">{f.name}</Text>
-              <Text className="text-xs text-stone-500">{f.real_world_domain}</Text>
+              <Text className="font-body-medium text-base text-stone-100">{f.name}</Text>
+              <Text className="font-body text-xs text-stone-500">{f.real_world_domain}</Text>
             </View>
           ))}
         </View>
       )}
 
       {/* Difficulty */}
-      <Text className="mb-2 text-sm text-stone-300">Difficulty</Text>
-      <Text className="capitalize text-stone-100">{profile?.difficulty ?? 'adept'}</Text>
+      <Text className="mb-2 font-display text-xs uppercase tracking-widest text-stone-300">
+        Difficulty
+      </Text>
+      <Text className="font-body capitalize text-stone-100">{profile?.difficulty ?? 'adept'}</Text>
     </ScrollView>
   );
 }
