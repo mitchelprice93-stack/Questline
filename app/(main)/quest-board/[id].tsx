@@ -10,7 +10,7 @@ import {
   View,
 } from 'react-native';
 
-import { abandonQuest, completeQuest, getQuest } from '../../../lib/quests';
+import { abandonQuest, completeQuest, getQuest, updateQuestObjectives } from '../../../lib/quests';
 import type { Quest } from '../../../lib/types/models';
 
 // react-native-web's Alert is a no-op, which strands the busy state when we
@@ -83,6 +83,24 @@ export default function QuestDetail() {
     }
   };
 
+  const toggleObjective = async (idx: number) => {
+    if (!quest) return;
+    const previous = quest;
+    const newObjectives = quest.objectives.map((o, i) =>
+      i === idx ? { ...o, completed: !o.completed } : o,
+    );
+    // Optimistic update.
+    setQuest({ ...quest, objectives: newObjectives });
+    setActionError(null);
+    try {
+      await updateQuestObjectives(quest.id, newObjectives);
+    } catch (e) {
+      // Revert on error.
+      setQuest(previous);
+      setActionError(e instanceof Error ? e.message : String(e));
+    }
+  };
+
   const onAbandon = async () => {
     if (!quest) return;
     const proceed = await confirmDestructive(
@@ -144,10 +162,17 @@ export default function QuestDetail() {
         <View className="mb-6">
           <Text className="mb-2 text-xs text-stone-500">Objectives</Text>
           {quest.objectives.map((obj, idx) => (
-            <Text key={idx} className="text-stone-300">
-              {obj.completed ? '☑ ' : '☐ '}
-              {obj.text}
-            </Text>
+            <Pressable
+              key={idx}
+              onPress={() => toggleObjective(idx)}
+              disabled={busy !== null}
+              className="py-1.5 active:opacity-60"
+            >
+              <Text className={obj.completed ? 'text-stone-500 line-through' : 'text-stone-300'}>
+                {obj.completed ? '☑ ' : '☐ '}
+                {obj.text}
+              </Text>
+            </Pressable>
           ))}
         </View>
       ) : null}

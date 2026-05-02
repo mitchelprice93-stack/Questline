@@ -86,3 +86,11 @@ export async function abandonQuest(questId: string): Promise<void> {
   const { error } = await supabase.rpc('abandon_quest', { quest_id: questId });
   if (error) throw error;
 }
+
+export async function updateQuestObjectives(
+  questId: string,
+  objectives: QuestObjective[],
+): Promise<void> {
+  const { error } = await supabase.from('quests').update({ objectives }).eq('id', questId);
+  if (error) throw error;
+}
