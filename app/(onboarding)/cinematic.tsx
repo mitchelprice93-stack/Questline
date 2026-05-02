@@ -1,6 +1,7 @@
+import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated, {
   Easing,
   FadeIn,
@@ -28,6 +29,18 @@ const BEATS = [
 const TYPE_MS = 35; // milliseconds per character revealed
 const PAUSE_MS = 850; // hold after a beat fully renders before fading to next
 const SKIP_DELAY_MS = 3_000; // spec: skippable after 3 seconds
+
+// Asset imports — Metro bundles these at build time so they're cached and
+// resolved synchronously. Each layer is a separate require() so the bundler
+// can deduplicate and tree-shake unused ones.
+const ART = {
+  back: require('../../assets/cinematic/layer-1-back.png'),
+  shelves: require('../../assets/cinematic/layer-2-shelves.png'),
+  desk: require('../../assets/cinematic/layer-3-desk.png'),
+  candle: require('../../assets/cinematic/layer-4-candle.png'),
+  flame: require('../../assets/cinematic/layer-4-flame.png'),
+  vignette: require('../../assets/cinematic/layer-5-vignette.png'),
+};
 
 export default function Cinematic() {
   const router = useRouter();
@@ -63,13 +76,14 @@ export default function Cinematic() {
     return () => clearTimeout(t);
   }, []);
 
-  // Candle flicker — subtle opacity pulse on the warm glow layer.
-  const flicker = useSharedValue(0.7);
+  // Candle flicker — opacity pulse on the flame layer only. The candle body
+  // sits underneath and stays steady.
+  const flicker = useSharedValue(0.85);
   useEffect(() => {
     flicker.value = withRepeat(
       withSequence(
-        withTiming(0.95, { duration: 1_400, easing: Easing.inOut(Easing.ease) }),
-        withTiming(0.62, { duration: 900, easing: Easing.inOut(Easing.ease) }),
+        withTiming(1, { duration: 1_400, easing: Easing.inOut(Easing.ease) }),
+        withTiming(0.7, { duration: 900, easing: Easing.inOut(Easing.ease) }),
       ),
       -1,
       true,
@@ -89,44 +103,52 @@ export default function Cinematic() {
 
   return (
     <View className="flex-1 items-center justify-center overflow-hidden bg-stone-950 px-6">
-      {/* Layer 1 — candlelight glow (parallax stand-in until the commissioned
-          5-layer parchment scene lands). */}
-      <Animated.View
-        pointerEvents="none"
-        style={[
-          flickerStyle,
-          {
-            position: 'absolute',
-            width: 720,
-            height: 720,
-            borderRadius: 360,
-            backgroundColor: '#92400e', // amber-800
-            opacity: 0.22,
-          },
-        ]}
-      />
-
-      {/* Layer 2 — faint horizontal "shelves" suggesting library depth. */}
-      <View className="absolute inset-x-0 inset-y-12 justify-around" pointerEvents="none">
-        <View className="h-px bg-amber-900/15" />
-        <View className="h-px bg-amber-900/20" />
-        <View className="h-px bg-amber-900/15" />
-        <View className="h-px bg-amber-900/10" />
-      </View>
-
-      {/* Layer 3 — vignette frame. */}
-      <View
-        className="absolute inset-0 border-[24px] border-stone-950"
-        style={{
-          shadowColor: '#000',
-          shadowOpacity: 0.6,
-          shadowRadius: 80,
-        }}
+      {/* Layer 1 — back wall (full bleed, opaque). */}
+      <Image
+        source={ART.back}
+        contentFit="cover"
+        style={StyleSheet.absoluteFillObject}
         pointerEvents="none"
       />
 
-      {/* Layer 4 — narration. Re-mounted each beat so FadeIn / FadeOut can
-          run on the swap. */}
+      {/* Layer 2 — middle-back shelves. */}
+      <Image
+        source={ART.shelves}
+        contentFit="cover"
+        style={StyleSheet.absoluteFillObject}
+        pointerEvents="none"
+      />
+
+      {/* Layer 3 — desk + Tome. */}
+      <Image
+        source={ART.desk}
+        contentFit="cover"
+        style={StyleSheet.absoluteFillObject}
+        pointerEvents="none"
+      />
+
+      {/* Layer 4 — candle body (static). */}
+      <Image
+        source={ART.candle}
+        contentFit="cover"
+        style={StyleSheet.absoluteFillObject}
+        pointerEvents="none"
+      />
+
+      {/* Layer 4 — flame (flicker animated). */}
+      <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFillObject, flickerStyle]}>
+        <Image source={ART.flame} contentFit="cover" style={StyleSheet.absoluteFillObject} />
+      </Animated.View>
+
+      {/* Layer 5 — foreground vignette. */}
+      <Image
+        source={ART.vignette}
+        contentFit="cover"
+        style={StyleSheet.absoluteFillObject}
+        pointerEvents="none"
+      />
+
+      {/* Narration. Re-mounted each beat so FadeIn / FadeOut can run on the swap. */}
       <View className="z-10 items-center">
         <Animated.View
           key={beatIdx}
@@ -135,17 +157,16 @@ export default function Cinematic() {
         >
           <Text className="max-w-md text-center font-display text-2xl leading-relaxed text-stone-100">
             {visibleText}
-            {isTyping ? <Text className="text-amber-400"> ▎</Text> : null}
+            {isTyping ? <Text className="text-amber-300"> ▎</Text> : null}
           </Text>
         </Animated.View>
       </View>
 
-      {/* Layer 5 — controls. Skip floats bottom-right; Begin appears once all
-          beats have rendered. */}
+      {/* Controls. Skip floats bottom-right; Begin appears once all beats render. */}
       {skipVisible && !done ? (
         <Animated.View entering={FadeIn.duration(400)} className="absolute bottom-10 right-6">
           <Pressable onPress={onContinue} className="px-3 py-2 active:opacity-60">
-            <Text className="font-display text-xs uppercase tracking-[0.4em] text-stone-500">
+            <Text className="font-display text-xs uppercase tracking-[0.4em] text-stone-300">
               Skip
             </Text>
           </Pressable>
