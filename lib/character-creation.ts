@@ -5,6 +5,7 @@
 
 import { callClaudeProxy, ClaudeProxyError } from './ai';
 import { assessStartingLevel, LEVEL_THRESHOLDS } from './engine/xp';
+import { asError } from './errors';
 import { supabase } from './supabase';
 
 export interface CharacterCreationInput {
@@ -145,5 +146,5 @@ export async function applyCharacterSheet(
     p_factions: sheet.factions,
     p_campaigns: sheet.campaigns,
   });
-  if (error) throw error;
+  if (error) throw asError(error);
 }

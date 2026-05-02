@@ -7,6 +7,7 @@
 // follow-up that wires SQLite/MMKV.
 
 import { xpForTier } from './engine/xp';
+import { asError } from './errors';
 import { supabase } from './supabase';
 import type { Quest, QuestClassification, QuestObjective, QuestStatus } from './types/models';
 import type { QuestTier } from './engine/xp';
@@ -27,13 +28,13 @@ export async function listQuests(status: QuestStatus = 'active'): Promise<Quest[
     .select('*')
     .eq('status', status)
     .order('created_at', { ascending: false });
-  if (error) throw error;
+  if (error) throw asError(error);
   return (data ?? []) as Quest[];
 }
 
 export async function getQuest(id: string): Promise<Quest | null> {
   const { data, error } = await supabase.from('quests').select('*').eq('id', id).maybeSingle();
-  if (error) throw error;
+  if (error) throw asError(error);
   return (data ?? null) as Quest | null;
 }
 
@@ -61,7 +62,7 @@ export async function createQuest(input: CreateQuestInput): Promise<Quest> {
     })
     .select()
     .single();
-  if (error) throw error;
+  if (error) throw asError(error);
   return data as Quest;
 }
 
@@ -72,7 +73,7 @@ export interface CompleteQuestResult {
 
 export async function completeQuest(questId: string): Promise<CompleteQuestResult> {
   const { data, error } = await supabase.rpc('complete_quest', { quest_id: questId });
-  if (error) throw error;
+  if (error) throw asError(error);
   // RPC returns SETOF, supabase-js gives us an array — take the first row.
   const row = Array.isArray(data) ? data[0] : data;
   if (!row) throw new Error('complete_quest returned no row');
@@ -84,7 +85,7 @@ export async function completeQuest(questId: string): Promise<CompleteQuestResul
 
 export async function abandonQuest(questId: string): Promise<void> {
   const { error } = await supabase.rpc('abandon_quest', { quest_id: questId });
-  if (error) throw error;
+  if (error) throw asError(error);
 }
 
 export async function updateQuestObjectives(
@@ -92,5 +93,5 @@ export async function updateQuestObjectives(
   objectives: QuestObjective[],
 ): Promise<void> {
   const { error } = await supabase.from('quests').update({ objectives }).eq('id', questId);
-  if (error) throw error;
+  if (error) throw asError(error);
 }
