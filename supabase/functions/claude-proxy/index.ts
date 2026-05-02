@@ -16,38 +16,41 @@
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import Anthropic from 'npm:@anthropic-ai/sdk@0.92.0';
 
-// Diagnostic: log every outbound fetch the SDK makes so we can see exactly
-// which header value fails Deno's ByteString check. Logs land in the
-// Supabase function logs.
-const _originalFetch = globalThis.fetch;
-globalThis.fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
-  try {
-    const url = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
-    if (url.includes('anthropic.com')) {
-      console.log('[fetch] URL:', url);
-      const headersList: [string, string][] = [];
-      if (init?.headers) {
-        const h = init.headers as Record<string, string> | Headers | [string, string][];
-        if (h instanceof Headers) {
-          h.forEach((v, k) => headersList.push([k, v]));
-        } else if (Array.isArray(h)) {
-          for (const [k, v] of h) headersList.push([k, v]);
-        } else {
-          for (const [k, v] of Object.entries(h)) headersList.push([k, String(v)]);
-        }
-      }
-      for (const [k, v] of headersList) {
-        const safe = k.toLowerCase() === 'x-api-key' ? '<redacted>' : v;
-        const nonAscii = [...v].some((c) => c.charCodeAt(0) > 127);
-        console.log(`[fetch] header ${k} = ${safe}${nonAscii ? '  <-- NON-ASCII' : ''}`);
-      }
+// Diagnostic: monkey-patch Headers.append so we can see EXACTLY which header
+// key/value pair fails Deno's ByteString check. The SDK fails during request
+// construction (before fetch is even called), so this is the only way to
+// catch it.
+const _OriginalHeaders = globalThis.Headers;
+class LoggedHeaders extends _OriginalHeaders {
+  append(name: string, value: string): void {
+    try {
+      super.append(name, value);
+    } catch (e) {
+      const nonAscii = [...String(value)]
+        .map((c, i) => ({ c, i, code: c.charCodeAt(0) }))
+        .filter((x) => x.code > 127);
+      console.log(
+        `[Headers.append] FAILED  name=${JSON.stringify(name)}  value=${JSON.stringify(String(value).slice(0, 200))}  nonAsciiChars=${JSON.stringify(nonAscii.slice(0, 10))}`,
+      );
+      throw e;
     }
-    return await _originalFetch(input, init);
-  } catch (e) {
-    console.log('[fetch] threw:', e instanceof Error ? e.message : String(e));
-    throw e;
   }
-};
+  set(name: string, value: string): void {
+    try {
+      super.set(name, value);
+    } catch (e) {
+      const nonAscii = [...String(value)]
+        .map((c, i) => ({ c, i, code: c.charCodeAt(0) }))
+        .filter((x) => x.code > 127);
+      console.log(
+        `[Headers.set] FAILED  name=${JSON.stringify(name)}  value=${JSON.stringify(String(value).slice(0, 200))}  nonAsciiChars=${JSON.stringify(nonAscii.slice(0, 10))}`,
+      );
+      throw e;
+    }
+  }
+}
+// deno-lint-ignore no-explicit-any
+(globalThis as any).Headers = LoggedHeaders;
 
 // ASCII-only normalization for body content — defensive workaround in case
 // non-ASCII bytes are leaking into a header somewhere downstream.
@@ -385,6 +388,9 @@ Deno.serve(async (req) => {
     parsed = JSON.parse(textBlock.text);
   } catch (e) {
     const message = e instanceof Error ? e.message : String(e);
+    const stack = e instanceof Error ? e.stack : undefined;
+    console.log('[anthropic] call failed:', message);
+    if (stack) console.log('[anthropic] stack:', stack);
     // Best-effort log even on failure — input tokens may be zero if the call never reached the API.
     await serviceClient.from('ai_call_log').insert({
       user_id: userId,
