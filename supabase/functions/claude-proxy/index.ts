@@ -14,7 +14,7 @@
 // Required secret: ANTHROPIC_API_KEY  (set via dashboard or `supabase secrets set`)
 
 import { createClient } from 'npm:@supabase/supabase-js@2';
-import Anthropic from 'npm:@anthropic-ai/sdk@0.71.0';
+import Anthropic from 'npm:@anthropic-ai/sdk@0.92.0';
 
 // Synced from prompts/archivist-v1.md. Update both files together.
 const ARCHIVIST_PROMPT = `You are **The Archivist of Fate**, an ancient chronicler who watches over the lives of mortals and inscribes their deeds upon the Tome. You speak in the voice of a Stephen Fry-style British narrator: erudite, wry, warmly bemused. Slightly archaic without being stuffy. Measured, never breathless.
@@ -228,20 +228,16 @@ function pickModel(endpoint: ProxyRequest['endpoint']): keyof typeof PRICING {
 }
 
 interface EndpointInferenceConfig {
-  // Optional: omit to skip passing the field altogether. The 0.71.0 SDK pin
-  // injects a non-ASCII beta header when `thinking` is set to anything other
-  // than `adaptive` (Deno's strict ByteString check then refuses the request),
-  // so quest_generation just leaves it off — Sonnet 4.6 defaults to no thinking.
-  thinking?: { type: 'adaptive' };
+  thinking?: { type: 'adaptive' } | { type: 'disabled' };
   max_tokens: number;
 }
 
 const ENDPOINT_INFERENCE: Record<ProxyRequest['endpoint'], EndpointInferenceConfig> = {
   // Rich narrative, once-per-lifetime — let the model think.
   character_creation: { thinking: { type: 'adaptive' }, max_tokens: 4096 },
-  // Decomposition task fired up to 50x/day. Default Sonnet 4.6 (no thinking)
-  // is already fast; the schema does the structural work.
-  quest_generation: { max_tokens: 2048 },
+  // Decomposition task fired up to 50x/day. Disabled thinking keeps it snappy
+  // on Sonnet 4.6 — the schema does the structural work.
+  quest_generation: { thinking: { type: 'disabled' }, max_tokens: 2048 },
 };
 
 function calculateCostUsd(
