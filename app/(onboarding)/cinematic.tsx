@@ -39,7 +39,8 @@ const ART = {
   desk: require('../../assets/cinematic/layer-3-desk.png'),
   candle: require('../../assets/cinematic/layer-4-candle.png'),
   flame: require('../../assets/cinematic/layer-4-flame.png'),
-  vignette: require('../../assets/cinematic/layer-5-vignette.png'),
+  // layer-5-vignette.png currently exports opaque (no transparent center) so it
+  // hides everything below it — temporarily disabled until re-authored.
 };
 
 export default function Cinematic() {
@@ -140,14 +141,6 @@ export default function Cinematic() {
       <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFillObject, flickerStyle]}>
         <Image source={ART.flame} contentFit="cover" style={StyleSheet.absoluteFillObject} />
       </Animated.View>
-
-      {/* Layer 5 — foreground vignette. */}
-      <Image
-        source={ART.vignette}
-        contentFit="cover"
-        style={StyleSheet.absoluteFillObject}
-        pointerEvents="none"
-      />
 
       {/* Narration. Re-mounted each beat so FadeIn / FadeOut can run on the swap. */}
       <View className="z-10 items-center">
