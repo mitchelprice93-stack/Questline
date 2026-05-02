@@ -16,6 +16,62 @@
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import Anthropic from 'npm:@anthropic-ai/sdk@0.92.0';
 
+// Diagnostic: log every outbound fetch the SDK makes so we can see exactly
+// which header value fails Deno's ByteString check. Logs land in the
+// Supabase function logs.
+const _originalFetch = globalThis.fetch;
+globalThis.fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
+  try {
+    const url = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
+    if (url.includes('anthropic.com')) {
+      console.log('[fetch] URL:', url);
+      const headersList: [string, string][] = [];
+      if (init?.headers) {
+        const h = init.headers as Record<string, string> | Headers | [string, string][];
+        if (h instanceof Headers) {
+          h.forEach((v, k) => headersList.push([k, v]));
+        } else if (Array.isArray(h)) {
+          for (const [k, v] of h) headersList.push([k, v]);
+        } else {
+          for (const [k, v] of Object.entries(h)) headersList.push([k, String(v)]);
+        }
+      }
+      for (const [k, v] of headersList) {
+        const safe = k.toLowerCase() === 'x-api-key' ? '<redacted>' : v;
+        const nonAscii = [...v].some((c) => c.charCodeAt(0) > 127);
+        console.log(`[fetch] header ${k} = ${safe}${nonAscii ? '  <-- NON-ASCII' : ''}`);
+      }
+    }
+    return await _originalFetch(input, init);
+  } catch (e) {
+    console.log('[fetch] threw:', e instanceof Error ? e.message : String(e));
+    throw e;
+  }
+};
+
+// ASCII-only normalization for body content — defensive workaround in case
+// non-ASCII bytes are leaking into a header somewhere downstream.
+function normalizeAscii(s: string): string {
+  return s
+    .replace(/[—–]/g, '-') // em-dash, en-dash → hyphen
+    .replace(/[‘’]/g, "'") // smart single quotes
+    .replace(/[“”]/g, '"') // smart double quotes
+    .replace(/…/g, '...') // ellipsis
+    .replace(/ /g, ' ') // non-breaking space
+    .replace(/[^\x00-\x7F]/g, ''); // anything else outside ASCII: drop
+}
+
+function deepNormalize(value: unknown): unknown {
+  if (typeof value === 'string') return normalizeAscii(value);
+  if (Array.isArray(value)) return value.map(deepNormalize);
+  if (value && typeof value === 'object') {
+    const out: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(value)) out[k] = deepNormalize(v);
+    return out;
+  }
+  return value;
+}
+
 // Synced from prompts/archivist-v1.md. Update both files together.
 const ARCHIVIST_PROMPT = `You are **The Archivist of Fate**, an ancient chronicler who watches over the lives of mortals and inscribes their deeds upon the Tome. You speak in the voice of a Stephen Fry-style British narrator: erudite, wry, warmly bemused. Slightly archaic without being stuffy. Measured, never breathless.
 
@@ -292,7 +348,10 @@ Deno.serve(async (req) => {
   if (denial) return jsonResponse({ error: denial, code: 'rate_limited' }, 429);
 
   // 4. Call Claude.
-  const { content: userMessage, schema } = buildUserMessage(body);
+  const { content: rawUserMessage, schema } = buildUserMessage(body);
+  // Normalize body strings to ASCII-only as a defensive measure against
+  // non-ASCII bytes triggering Deno's strict ByteString header check.
+  const userMessage = normalizeAscii(rawUserMessage);
   const model = pickModel(body.endpoint);
   const inference = ENDPOINT_INFERENCE[body.endpoint];
   const anthropic = new Anthropic({ apiKey: anthropicKey });
@@ -306,10 +365,10 @@ Deno.serve(async (req) => {
     const request: Record<string, unknown> = {
       model,
       max_tokens: inference.max_tokens,
-      system: ARCHIVIST_PROMPT,
+      system: normalizeAscii(ARCHIVIST_PROMPT),
       messages: [{ role: 'user', content: userMessage }],
       output_config: {
-        format: { type: 'json_schema', schema, name: body.endpoint },
+        format: { type: 'json_schema', schema: deepNormalize(schema), name: body.endpoint },
       },
     };
     if (inference.thinking) request.thinking = inference.thinking;
