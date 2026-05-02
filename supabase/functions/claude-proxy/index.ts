@@ -228,19 +228,20 @@ function pickModel(endpoint: ProxyRequest['endpoint']): keyof typeof PRICING {
 }
 
 interface EndpointInferenceConfig {
-  // Deno SDK accepts the same shapes as the Node SDK; keep them minimal.
-  thinking: { type: 'adaptive' } | { type: 'disabled' };
+  // Optional: omit to skip passing the field altogether. The 0.71.0 SDK pin
+  // injects a non-ASCII beta header when `thinking` is set to anything other
+  // than `adaptive` (Deno's strict ByteString check then refuses the request),
+  // so quest_generation just leaves it off — Sonnet 4.6 defaults to no thinking.
+  thinking?: { type: 'adaptive' };
   max_tokens: number;
 }
 
 const ENDPOINT_INFERENCE: Record<ProxyRequest['endpoint'], EndpointInferenceConfig> = {
   // Rich narrative, once-per-lifetime — let the model think.
   character_creation: { thinking: { type: 'adaptive' }, max_tokens: 4096 },
-  // Decomposition task fired up to 50x/day. Disabled thinking keeps it
-  // snappy on Sonnet 4.6; the schema does the heavy lifting. Avoid output_config.effort
-  // here — the @anthropic-ai/sdk pin in this function (0.71.0) injects a beta
-  // header from it that fails Deno's ByteString header check on some routes.
-  quest_generation: { thinking: { type: 'disabled' }, max_tokens: 2048 },
+  // Decomposition task fired up to 50x/day. Default Sonnet 4.6 (no thinking)
+  // is already fast; the schema does the structural work.
+  quest_generation: { max_tokens: 2048 },
 };
 
 function calculateCostUsd(
@@ -304,16 +305,20 @@ Deno.serve(async (req) => {
   let outputTokens = 0;
   let parsed: unknown;
   try {
-    const response = await anthropic.messages.create({
+    // Only spread `thinking` when it's set — passing `undefined` to the SDK
+    // can still trigger header injection on some versions.
+    const request: Record<string, unknown> = {
       model,
       max_tokens: inference.max_tokens,
-      thinking: inference.thinking,
       system: ARCHIVIST_PROMPT,
       messages: [{ role: 'user', content: userMessage }],
       output_config: {
         format: { type: 'json_schema', schema, name: body.endpoint },
       },
-    });
+    };
+    if (inference.thinking) request.thinking = inference.thinking;
+    // deno-lint-ignore no-explicit-any
+    const response = await anthropic.messages.create(request as any);
     inputTokens = response.usage.input_tokens;
     outputTokens = response.usage.output_tokens;
 
