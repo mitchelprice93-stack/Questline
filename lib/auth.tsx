@@ -164,7 +164,9 @@ export function useProtectedRoute() {
       if (!inAuthGroup) target = '/login';
     } else if (inAuthGroup) {
       target = hasCharacter ? '/quest-board' : nextOnboardingStep();
-    } else if (hasCharacter && inOnboarding) {
+    } else if (hasCharacter && onCharacterCreation) {
+      // Already created — character-creation has its own Redirect too,
+      // but the gate covers the brief window before that mounts.
       target = '/quest-board';
     } else if (!hasCharacter && !inOnboarding) {
       target = nextOnboardingStep();
@@ -173,6 +175,8 @@ export function useProtectedRoute() {
     } else if (!hasCharacter && onCharacterCreation && !cinematicSeen) {
       target = '/cinematic';
     }
+    // Note: /cinematic is intentionally reachable by users with a character
+    // (the Settings → Replay opening cinematic button uses this).
 
     if (target) router.replace(target);
   }, [session, profile, segments, loading, profileLoading, cinematicSeen, router]);

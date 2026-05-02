@@ -44,7 +44,7 @@ const ART = {
 
 export default function Cinematic() {
   const router = useRouter();
-  const { markCinematicSeen } = useAuth();
+  const { markCinematicSeen, profile } = useAuth();
 
   const [beatIdx, setBeatIdx] = useState(0);
   const [revealed, setRevealed] = useState(0);
@@ -94,7 +94,8 @@ export default function Cinematic() {
 
   const onContinue = async () => {
     await markCinematicSeen();
-    router.replace('/character-creation');
+    // Replay case: user already has a character, send them home.
+    router.replace(profile?.character_name ? '/quest-board' : '/character-creation');
   };
 
   const currentBeat = BEATS[beatIdx] ?? '';
