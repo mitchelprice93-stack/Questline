@@ -371,7 +371,7 @@ Deno.serve(async (req) => {
       system: normalizeAscii(ARCHIVIST_PROMPT),
       messages: [{ role: 'user', content: userMessage }],
       output_config: {
-        format: { type: 'json_schema', schema: deepNormalize(schema), name: body.endpoint },
+        format: { type: 'json_schema', schema: deepNormalize(schema) },
       },
     };
     if (inference.thinking) request.thinking = inference.thinking;
