@@ -4,12 +4,18 @@ import { ActivityIndicator, ScrollView, Text, View } from 'react-native';
 
 import { useAuth } from '../../lib/auth';
 import { calculateLevel } from '../../lib/engine/xp';
-import { getActiveQuestCount, getCurrentProfile, listFactions } from '../../lib/profile';
-import type { Faction, Profile } from '../../lib/types/models';
+import {
+  getActiveQuestCount,
+  getCurrentProfile,
+  listCampaigns,
+  listFactions,
+} from '../../lib/profile';
+import type { Campaign, Faction, Profile } from '../../lib/types/models';
 
 interface SheetData {
   profile: Profile | null;
   factions: Faction[];
+  campaigns: Campaign[];
   activeQuests: number;
 }
 
@@ -22,9 +28,14 @@ export default function CharacterSheet() {
     useCallback(() => {
       let cancelled = false;
       setError(null);
-      Promise.all([getCurrentProfile(), listFactions(), getActiveQuestCount()])
-        .then(([profile, factions, activeQuests]) => {
-          if (!cancelled) setData({ profile, factions, activeQuests });
+      Promise.all([
+        getCurrentProfile(),
+        listFactions(),
+        listCampaigns('active'),
+        getActiveQuestCount(),
+      ])
+        .then(([profile, factions, campaigns, activeQuests]) => {
+          if (!cancelled) setData({ profile, factions, campaigns, activeQuests });
         })
         .catch((e: unknown) => {
           if (!cancelled) setError(e instanceof Error ? e.message : String(e));
@@ -50,7 +61,7 @@ export default function CharacterSheet() {
     );
   }
 
-  const { profile, factions, activeQuests } = data;
+  const { profile, factions, campaigns, activeQuests } = data;
   const totalXp = profile?.total_xp ?? 0;
   const { level, currentLevelXp, nextLevelXp } = calculateLevel(totalXp);
   const atMaxLevel = nextLevelXp === 0;
@@ -108,6 +119,26 @@ export default function CharacterSheet() {
             <View key={f.id} className="rounded-md border border-stone-800 bg-stone-900 px-4 py-3">
               <Text className="font-body-medium text-base text-stone-100">{f.name}</Text>
               <Text className="font-body text-xs text-stone-500">{f.real_world_domain}</Text>
+            </View>
+          ))}
+        </View>
+      )}
+
+      {/* Campaigns — long-term arcs you set during character creation. Quests
+          on the Quest Board are individual steps toward these. */}
+      <Text className="mb-2 font-display text-xs uppercase tracking-widest text-stone-300">
+        Campaigns
+      </Text>
+      {campaigns.length === 0 ? (
+        <Text className="mb-8 font-body italic text-stone-500">
+          No active arcs. Forge new ones as your chronicle unfolds.
+        </Text>
+      ) : (
+        <View className="mb-8 gap-2">
+          {campaigns.map((c) => (
+            <View key={c.id} className="rounded-md border border-stone-800 bg-stone-900 px-4 py-3">
+              <Text className="font-body-medium text-base text-stone-100">{c.arc_name}</Text>
+              <Text className="font-body text-xs text-stone-500">{c.real_world_goal}</Text>
             </View>
           ))}
         </View>

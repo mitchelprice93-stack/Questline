@@ -50,3 +50,14 @@ export interface Faction {
   real_world_domain: string;
   created_at: string;
 }
+
+export interface Campaign {
+  id: string;
+  user_id: string;
+  faction_id: string | null;
+  arc_name: string;
+  real_world_goal: string;
+  progress_pct: number;
+  status: 'active' | 'completed' | 'abandoned';
+  created_at: string;
+}

@@ -2,7 +2,7 @@
 
 import { asError } from './errors';
 import { supabase } from './supabase';
-import type { Faction, Profile } from './types/models';
+import type { Campaign, Faction, Profile } from './types/models';
 
 export async function getCurrentProfile(): Promise<Profile | null> {
   const {
@@ -37,4 +37,14 @@ export async function listFactions(): Promise<Faction[]> {
     .order('created_at', { ascending: true });
   if (error) throw asError(error);
   return (data ?? []) as Faction[];
+}
+
+export async function listCampaigns(status: Campaign['status'] = 'active'): Promise<Campaign[]> {
+  const { data, error } = await supabase
+    .from('campaigns')
+    .select('*')
+    .eq('status', status)
+    .order('created_at', { ascending: true });
+  if (error) throw asError(error);
+  return (data ?? []) as Campaign[];
 }
