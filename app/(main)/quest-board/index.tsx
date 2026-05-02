@@ -2,6 +2,7 @@ import { Link, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, Text, View } from 'react-native';
 
+import { deadlineUrgency, formatDeadlineRelative, urgencyClasses } from '../../../lib/dates';
 import { listQuests } from '../../../lib/quests';
 import type { Quest } from '../../../lib/types/models';
 
@@ -59,9 +60,14 @@ export default function QuestBoard() {
 }
 
 function QuestRow({ quest }: { quest: Quest }) {
+  const urgency = deadlineUrgency(quest.deadline);
+  const palette = urgency ? urgencyClasses[urgency] : urgencyClasses.normal;
+  const relative = urgency ? formatDeadlineRelative(quest.deadline) : null;
   return (
     <Link href={{ pathname: '/quest-board/[id]', params: { id: quest.id } }} asChild>
-      <Pressable className="rounded-md border border-stone-800 bg-stone-900 p-4 active:bg-stone-800">
+      <Pressable
+        className={`rounded-md border bg-stone-900 p-4 active:bg-stone-800 ${palette.border}`}
+      >
         <View className="flex-row items-center justify-between">
           <Text className="flex-1 font-display text-base text-stone-100" numberOfLines={1}>
             {quest.title}
@@ -74,6 +80,9 @@ function QuestRow({ quest }: { quest: Quest }) {
           <Text className="font-body text-xs text-stone-500">{quest.classification}</Text>
           <Text className="font-body text-xs text-stone-400">{quest.xp_reward} XP</Text>
         </View>
+        {relative ? (
+          <Text className={`mt-2 font-body text-xs ${palette.text}`}>{relative}</Text>
+        ) : null}
       </Pressable>
     </Link>
   );

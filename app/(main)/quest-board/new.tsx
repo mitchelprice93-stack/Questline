@@ -2,6 +2,7 @@ import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 
+import { parseDeadline } from '../../../lib/dates';
 import { xpForTier, type QuestTier } from '../../../lib/engine/xp';
 import { generateQuest, type GeneratedQuest } from '../../../lib/quest-generation';
 import { createQuest } from '../../../lib/quests';
@@ -24,6 +25,7 @@ export default function NewQuest() {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [objectives, setObjectives] = useState<QuestObjective[]>([]);
+  const [deadlineRaw, setDeadlineRaw] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -58,6 +60,17 @@ export default function NewQuest() {
 
   const onSave = async () => {
     if (!draft) return;
+    let deadlineIso: string | null = null;
+    if (deadlineRaw.trim()) {
+      const parsed = parseDeadline(deadlineRaw);
+      if (!parsed) {
+        setError(
+          `Couldn't read "${deadlineRaw.trim()}" as a date. Try something like "May 15, 2026", "5/15/26", or "next Friday".`,
+        );
+        return;
+      }
+      deadlineIso = parsed.toISOString();
+    }
     setSubmitting(true);
     setError(null);
     try {
@@ -66,7 +79,7 @@ export default function NewQuest() {
         description: description.trim() ? description.trim() : null,
         tier,
         classification,
-        deadline: null,
+        deadline: deadlineIso,
         objectives: objectives
           .map((o) => ({ ...o, text: o.text.trim() }))
           .filter((o) => o.text.length > 0),
@@ -190,6 +203,20 @@ export default function NewQuest() {
         <Text className="mb-2 font-body text-sm text-stone-300">Objectives</Text>
         <ObjectivesEditor objectives={objectives} onChange={setObjectives} disabled={submitting} />
       </View>
+
+      <Text className="mb-2 font-body text-sm text-stone-300">Deadline (optional)</Text>
+      <TextInput
+        value={deadlineRaw}
+        onChangeText={setDeadlineRaw}
+        autoCapitalize="none"
+        placeholder="e.g., May 15, 2026 · 5/15/26 · next Friday"
+        placeholderTextColor="#57534e"
+        className="mb-1 rounded-md border border-stone-700 bg-stone-900 px-4 py-3 font-body text-stone-100"
+        editable={!submitting}
+      />
+      <Text className="mb-6 font-body text-xs text-stone-500">
+        Plain language is fine — the Tome reads dates loosely.
+      </Text>
 
       {error ? <Text className="mb-4 font-body text-sm text-red-400">{error}</Text> : null}
 

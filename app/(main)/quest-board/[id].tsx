@@ -13,6 +13,13 @@ import {
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 
 import { useAuth } from '../../../lib/auth';
+import {
+  deadlineUrgency,
+  formatDeadline,
+  formatDeadlineRelative,
+  parseDeadline,
+  urgencyClasses,
+} from '../../../lib/dates';
 import { calculateLevel, xpForTier, type QuestTier } from '../../../lib/engine/xp';
 import {
   abandonQuest,
@@ -169,7 +176,8 @@ export default function QuestDetail() {
     setEditTier(quest.tier);
     setEditClassification(quest.classification);
     setEditObjectives(quest.objectives);
-    setEditDeadline(quest.deadline ?? '');
+    // Pre-fill with the human-readable form so the user can re-edit naturally.
+    setEditDeadline(formatDeadline(quest.deadline) ?? '');
     setActionError(null);
     setEditMode(true);
   };
@@ -181,6 +189,17 @@ export default function QuestDetail() {
 
   const onSaveEdits = async () => {
     if (!quest) return;
+    let deadlineIso: string | null = null;
+    if (editDeadline.trim()) {
+      const parsed = parseDeadline(editDeadline);
+      if (!parsed) {
+        setActionError(
+          `Couldn't read "${editDeadline.trim()}" as a date. Try something like "May 15, 2026", "5/15/26", or "next Friday".`,
+        );
+        return;
+      }
+      deadlineIso = parsed.toISOString();
+    }
     setBusy('save-edits');
     setActionError(null);
     try {
@@ -189,7 +208,7 @@ export default function QuestDetail() {
         description: editDescription.trim() ? editDescription.trim() : null,
         tier: editTier,
         classification: editClassification,
-        deadline: editDeadline.trim() ? editDeadline.trim() : null,
+        deadline: deadlineIso,
         objectives: editObjectives
           .map((o) => ({ ...o, text: o.text.trim() }))
           .filter((o) => o.text.length > 0),
@@ -279,16 +298,19 @@ export default function QuestDetail() {
           />
         </View>
 
-        <Text className="mb-2 font-body text-sm text-stone-300">Deadline (optional, ISO date)</Text>
+        <Text className="mb-2 font-body text-sm text-stone-300">Deadline (optional)</Text>
         <TextInput
           value={editDeadline}
           onChangeText={setEditDeadline}
           autoCapitalize="none"
-          placeholder="2026-05-15T18:00:00Z"
+          placeholder="e.g., May 15, 2026 · 5/15/26 · next Friday"
           placeholderTextColor="#57534e"
-          className="mb-6 rounded-md border border-stone-700 bg-stone-900 px-4 py-3 font-body text-stone-100"
+          className="mb-1 rounded-md border border-stone-700 bg-stone-900 px-4 py-3 font-body text-stone-100"
           editable={busy !== 'save-edits'}
         />
+        <Text className="mb-6 font-body text-xs text-stone-500">
+          Plain language is fine — the Tome reads dates loosely. Leave blank to remove.
+        </Text>
 
         {actionError ? (
           <Text className="mb-4 font-body text-sm text-red-400">{actionError}</Text>
@@ -336,14 +358,25 @@ export default function QuestDetail() {
         <Text className="mb-6 font-body italic text-stone-500">No description.</Text>
       )}
 
-      {quest.deadline ? (
-        <View className="mb-6">
-          <Text className="font-display text-xs uppercase tracking-widest text-stone-500">
-            Deadline
-          </Text>
-          <Text className="font-body text-stone-300">{quest.deadline}</Text>
-        </View>
-      ) : null}
+      {quest.deadline
+        ? (() => {
+            const urgency = deadlineUrgency(quest.deadline);
+            const palette = urgency ? urgencyClasses[urgency] : urgencyClasses.normal;
+            return (
+              <View className={`mb-6 rounded-md border bg-stone-900 p-4 ${palette.border}`}>
+                <Text className="font-display text-xs uppercase tracking-widest text-stone-500">
+                  Deadline
+                </Text>
+                <Text className="mt-1 font-body text-stone-200">
+                  {formatDeadline(quest.deadline)}
+                </Text>
+                <Text className={`mt-1 font-body text-xs ${palette.text}`}>
+                  {formatDeadlineRelative(quest.deadline)}
+                </Text>
+              </View>
+            );
+          })()
+        : null}
 
       {quest.objectives.length > 0 ? (
         <View className="mb-6">
