@@ -347,9 +347,11 @@ export default function QuestDetail() {
           {quest.tier}
         </Text>
         <Text className="font-body text-xs text-stone-500">·</Text>
-        <Text className="font-body text-xs text-stone-400">{quest.classification}</Text>
+        <Text className="font-display text-xs uppercase tracking-widest text-stone-400">
+          {quest.classification}
+        </Text>
         <Text className="font-body text-xs text-stone-500">·</Text>
-        <Text className="font-body text-xs text-stone-400">{quest.xp_reward} XP</Text>
+        <Text className="font-body text-xs text-stone-300">{quest.xp_reward} XP</Text>
       </View>
 
       {quest.description ? (

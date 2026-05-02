@@ -77,11 +77,13 @@ function QuestRow({ quest }: { quest: Quest }) {
           </Text>
         </View>
         <View className="mt-1 flex-row items-center justify-between">
-          <Text className="font-body text-xs text-stone-500">{quest.classification}</Text>
-          <Text className="font-body text-xs text-stone-400">{quest.xp_reward} XP</Text>
+          <Text className="font-display text-xs uppercase tracking-widest text-stone-400">
+            {quest.classification}
+          </Text>
+          <Text className="font-body text-xs text-stone-300">{quest.xp_reward} XP</Text>
         </View>
         {relative ? (
-          <Text className={`mt-2 font-body text-xs ${palette.text}`}>{relative}</Text>
+          <Text className={`mt-2 font-body text-sm ${palette.text}`}>{relative}</Text>
         ) : null}
       </Pressable>
     </Link>

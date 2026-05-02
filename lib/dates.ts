@@ -82,8 +82,8 @@ export function deadlineUrgency(
  * className strings for borders, backgrounds, and text.
  */
 export const urgencyClasses: Record<DeadlineUrgency, { border: string; text: string }> = {
-  overdue: { border: 'border-red-500/60', text: 'text-red-400' },
-  urgent: { border: 'border-orange-500/60', text: 'text-orange-400' },
-  soon: { border: 'border-amber-500/40', text: 'text-amber-400' },
-  normal: { border: 'border-stone-800', text: 'text-stone-400' },
+  overdue: { border: 'border-red-500/60', text: 'text-red-300' },
+  urgent: { border: 'border-orange-500/60', text: 'text-orange-300' },
+  soon: { border: 'border-amber-500/40', text: 'text-amber-300' },
+  normal: { border: 'border-stone-800', text: 'text-stone-300' },
 };
