@@ -116,6 +116,7 @@ Tracking against the spec's phase plan. Phase 1.4 lands before 1.2/1.3 per the s
 - [x] **2.4** AI quest generation — plain-language input → AI-forged draft (title / description / objectives / tier / classification / tactical warnings) → editable review with save / regenerate / discard. Code still owns XP via `xpForTier`. Verified end-to-end.
 - [ ] 2.5 Response caching
 - [~] **3.1** Visual identity — Cinzel + EB Garamond loaded via expo-google-fonts; `font-display` / `font-body` tokens in tailwind; applied across all screens. Final color palette + commissioned app icon / wordmark deferred.
+- [~] **3.2** Cinematic intro — type-on text sequence, candle flicker, vignette frame, skip-after-3s, first-run-only gating per user via AsyncStorage. Commissioned 5-layer parchment scene + Rive dust motes / quill entrance deferred.
 - [x] **3.5** Character sheet reveal animation — sequenced FadeInDown stagger on each section (caption → name → title → level → factions → campaigns → first quest hook → CTA).
 - [~] **3.6** Quest micro-animations — level-up takeover modal triggered when a completion crosses a level threshold (caption → "LEVEL N" → delta → continue CTA). Quest-accept parchment unfurl + non-level-up XP toast deferred.
 

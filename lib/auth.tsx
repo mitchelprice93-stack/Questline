@@ -2,6 +2,7 @@ import type { AuthError, Session } from '@supabase/supabase-js';
 import { useRouter, useSegments } from 'expo-router';
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react';
 
+import { hasSeenCinematic, markCinematicSeen as markSeenAsync } from './cinematic';
 import { getCurrentProfile } from './profile';
 import { supabase } from './supabase';
 import type { Profile } from './types/models';
@@ -13,11 +14,15 @@ interface AuthContextValue {
   /** True until the initial profile fetch settles. Distinct from `loading`,
    *  which only covers the initial session lookup. */
   profileLoading: boolean;
+  /** null until the first cinematic-seen check resolves, then true/false. */
+  cinematicSeen: boolean | null;
   signIn: (email: string, password: string) => Promise<{ error: AuthError | null }>;
   signUp: (email: string, password: string) => Promise<{ error: AuthError | null }>;
   signOut: () => Promise<{ error: AuthError | null }>;
   /** Re-fetch the profile (call after character creation, settings updates, etc.). */
   refetchProfile: () => Promise<void>;
+  /** Mark the cinematic as seen for the current user (persists + updates state). */
+  markCinematicSeen: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -27,6 +32,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
   const [profileLoading, setProfileLoading] = useState(true);
+  const [cinematicSeen, setCinematicSeen] = useState<boolean | null>(null);
 
   const refetchProfile = useCallback(async () => {
     setProfileLoading(true);
@@ -40,6 +46,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setProfileLoading(false);
     }
   }, []);
+
+  const markCinematicSeen = useCallback(async () => {
+    if (!session?.user.id) return;
+    await markSeenAsync(session.user.id);
+    setCinematicSeen(true);
+  }, [session?.user.id]);
 
   useEffect(() => {
     let mounted = true;
@@ -72,11 +84,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     refetchProfile();
   }, [session?.user.id, loading, refetchProfile]);
 
+  // Load cinematic-seen flag when session changes.
+  useEffect(() => {
+    if (loading) return;
+    if (!session) {
+      setCinematicSeen(null);
+      return;
+    }
+    hasSeenCinematic(session.user.id).then(setCinematicSeen);
+  }, [session?.user.id, loading]);
+
   const value: AuthContextValue = {
     session,
     profile,
     loading,
     profileLoading,
+    cinematicSeen,
     signIn: async (email, password) => {
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       return { error };
@@ -90,6 +113,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return { error };
     },
     refetchProfile,
+    markCinematicSeen,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
@@ -108,39 +132,48 @@ export function useAuth(): AuthContextValue {
  *
  * Rules:
  *   - no session, outside (auth)        → /login
- *   - session, inside (auth)            → /character-creation if no character, else /quest-board
- *   - session, no character, not in (onboarding) → /character-creation
+ *   - session, inside (auth)            → next onboarding step (or /quest-board if done)
+ *   - session, no character, not in (onboarding) → next onboarding step
  *
- * No rule pushes a user *away* from /(onboarding)/character-creation. The
- * reveal screen at the end of character creation needs to render even after
- * the profile gains a character_name; the user proceeds via the in-screen CTA.
+ * Onboarding order: cinematic (first run) → character-creation → quest-board.
  */
 export function useProtectedRoute() {
-  const { session, profile, loading, profileLoading } = useAuth();
+  const { session, profile, loading, profileLoading, cinematicSeen } = useAuth();
   const segments = useSegments();
   const router = useRouter();
 
   useEffect(() => {
     if (loading) return;
-    // While the initial profile fetch is in flight, don't redirect — we'd
-    // bounce the user to /character-creation prematurely.
+    // While the initial profile or cinematic check is in flight, don't
+    // redirect — we'd bounce the user prematurely.
     if (session && profileLoading) return;
+    if (session && cinematicSeen === null) return;
 
-    const firstSegment = segments[0];
-    const inAuthGroup = firstSegment === '(auth)';
-    const inOnboarding = firstSegment === '(onboarding)';
+    const inAuthGroup = segments[0] === '(auth)';
+    const inOnboarding = segments[0] === '(onboarding)';
+    const onCinematic = inOnboarding && segments[1] === 'cinematic';
+    const onCharacterCreation = inOnboarding && segments[1] === 'character-creation';
     const hasCharacter = !!profile?.character_name;
 
-    type GateRoute = '/login' | '/quest-board' | '/character-creation';
+    type GateRoute = '/login' | '/quest-board' | '/character-creation' | '/cinematic';
+    const nextOnboardingStep = (): GateRoute =>
+      cinematicSeen ? '/character-creation' : '/cinematic';
+
     let target: GateRoute | null = null;
     if (!session) {
       if (!inAuthGroup) target = '/login';
     } else if (inAuthGroup) {
-      target = hasCharacter ? '/quest-board' : '/character-creation';
+      target = hasCharacter ? '/quest-board' : nextOnboardingStep();
+    } else if (hasCharacter && inOnboarding) {
+      target = '/quest-board';
     } else if (!hasCharacter && !inOnboarding) {
+      target = nextOnboardingStep();
+    } else if (!hasCharacter && onCinematic && cinematicSeen) {
       target = '/character-creation';
+    } else if (!hasCharacter && onCharacterCreation && !cinematicSeen) {
+      target = '/cinematic';
     }
 
     if (target) router.replace(target);
-  }, [session, profile, segments, loading, profileLoading, router]);
+  }, [session, profile, segments, loading, profileLoading, cinematicSeen, router]);
 }
