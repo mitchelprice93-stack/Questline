@@ -113,7 +113,7 @@ Tracking against the spec's phase plan. Phase 1.4 lands before 1.2/1.3 per the s
 - [x] **2.1** Edge function proxy + Archivist system prompt
 - [x] **2.2** System prompt integration (folded into 2.1; lives at `prompts/archivist-v1.md`, embedded in the edge function)
 - [x] **2.3** Character creation flow — 7-step form, 6s AI timeout with templated fallback, atomic apply RPC; verified end-to-end
-- [x] **2.4** AI quest generation — plain-language input → AI-forged draft (title / description / objectives / tier / classification / tactical warnings) → editable review with save / regenerate / discard. Code still owns XP via `xpForTier`.
+- [x] **2.4** AI quest generation — plain-language input → AI-forged draft (title / description / objectives / tier / classification / tactical warnings) → editable review with save / regenerate / discard. Code still owns XP via `xpForTier`. Verified end-to-end.
 - [ ] 2.5 Response caching
 
 See [`QUESTLINE_PROJECT.md`](./QUESTLINE_PROJECT.md) for the full roadmap.

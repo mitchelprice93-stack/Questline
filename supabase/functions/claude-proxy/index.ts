@@ -16,64 +16,6 @@
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import Anthropic from 'npm:@anthropic-ai/sdk@0.92.0';
 
-// Diagnostic: monkey-patch Headers.append so we can see EXACTLY which header
-// key/value pair fails Deno's ByteString check. The SDK fails during request
-// construction (before fetch is even called), so this is the only way to
-// catch it.
-const _OriginalHeaders = globalThis.Headers;
-class LoggedHeaders extends _OriginalHeaders {
-  append(name: string, value: string): void {
-    try {
-      super.append(name, value);
-    } catch (e) {
-      const nonAscii = [...String(value)]
-        .map((c, i) => ({ c, i, code: c.charCodeAt(0) }))
-        .filter((x) => x.code > 127);
-      console.log(
-        `[Headers.append] FAILED  name=${JSON.stringify(name)}  value=${JSON.stringify(String(value).slice(0, 200))}  nonAsciiChars=${JSON.stringify(nonAscii.slice(0, 10))}`,
-      );
-      throw e;
-    }
-  }
-  set(name: string, value: string): void {
-    try {
-      super.set(name, value);
-    } catch (e) {
-      const nonAscii = [...String(value)]
-        .map((c, i) => ({ c, i, code: c.charCodeAt(0) }))
-        .filter((x) => x.code > 127);
-      console.log(
-        `[Headers.set] FAILED  name=${JSON.stringify(name)}  value=${JSON.stringify(String(value).slice(0, 200))}  nonAsciiChars=${JSON.stringify(nonAscii.slice(0, 10))}`,
-      );
-      throw e;
-    }
-  }
-}
-// deno-lint-ignore no-explicit-any
-(globalThis as any).Headers = LoggedHeaders;
-
-// ASCII-only normalization for body content — defensive workaround in case
-// non-ASCII bytes are leaking into a header somewhere downstream.
-function normalizeAscii(s: string): string {
-  return s
-    .replace(/[—–]/g, '-') // em-dash, en-dash → hyphen
-    .replace(/[‘’]/g, "'") // smart single quotes
-    .replace(/[“”]/g, '"') // smart double quotes
-    .replace(/…/g, '...') // ellipsis
-    .replace(/ /g, ' ') // non-breaking space
-    .replace(/[^\x00-\x7F]/g, ''); // anything else outside ASCII: drop
-}
-
-function deepNormalize(value: unknown): unknown {
-  if (typeof value === 'string') return normalizeAscii(value);
-  if (Array.isArray(value)) return value.map(deepNormalize);
-  if (value && typeof value === 'object') {
-    const out: Record<string, unknown> = {};
-    for (const [k, v] of Object.entries(value)) out[k] = deepNormalize(v);
-    return out;
-  }
-  return value;
-}
 
 // Synced from prompts/archivist-v1.md. Update both files together.
 const ARCHIVIST_PROMPT = `You are **The Archivist of Fate**, an ancient chronicler who watches over the lives of mortals and inscribes their deeds upon the Tome. You speak in the voice of a Stephen Fry-style British narrator: erudite, wry, warmly bemused. Slightly archaic without being stuffy. Measured, never breathless.
@@ -351,10 +293,7 @@ Deno.serve(async (req) => {
   if (denial) return jsonResponse({ error: denial, code: 'rate_limited' }, 429);
 
   // 4. Call Claude.
-  const { content: rawUserMessage, schema } = buildUserMessage(body);
-  // Normalize body strings to ASCII-only as a defensive measure against
-  // non-ASCII bytes triggering Deno's strict ByteString header check.
-  const userMessage = normalizeAscii(rawUserMessage);
+  const { content: userMessage, schema } = buildUserMessage(body);
   const model = pickModel(body.endpoint);
   const inference = ENDPOINT_INFERENCE[body.endpoint];
   const anthropic = new Anthropic({ apiKey: anthropicKey });
@@ -363,15 +302,13 @@ Deno.serve(async (req) => {
   let outputTokens = 0;
   let parsed: unknown;
   try {
-    // Only spread `thinking` when it's set — passing `undefined` to the SDK
-    // can still trigger header injection on some versions.
     const request: Record<string, unknown> = {
       model,
       max_tokens: inference.max_tokens,
-      system: normalizeAscii(ARCHIVIST_PROMPT),
+      system: ARCHIVIST_PROMPT,
       messages: [{ role: 'user', content: userMessage }],
       output_config: {
-        format: { type: 'json_schema', schema: deepNormalize(schema) },
+        format: { type: 'json_schema', schema },
       },
     };
     if (inference.thinking) request.thinking = inference.thinking;
