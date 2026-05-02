@@ -7,14 +7,25 @@ import {
   Pressable,
   ScrollView,
   Text,
+  TextInput,
   View,
 } from 'react-native';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 
 import { useAuth } from '../../../lib/auth';
-import { calculateLevel } from '../../../lib/engine/xp';
-import { abandonQuest, completeQuest, getQuest, updateQuestObjectives } from '../../../lib/quests';
-import type { Quest } from '../../../lib/types/models';
+import { calculateLevel, xpForTier, type QuestTier } from '../../../lib/engine/xp';
+import {
+  abandonQuest,
+  completeQuest,
+  getQuest,
+  updateQuest,
+  updateQuestObjectives,
+} from '../../../lib/quests';
+import type { Quest, QuestClassification, QuestObjective } from '../../../lib/types/models';
+import { ObjectivesEditor } from './_objectives-editor';
+
+const TIERS: QuestTier[] = ['trivial', 'minor', 'standard', 'major', 'legendary'];
+const CLASSIFICATIONS: QuestClassification[] = ['daily', 'side', 'main', 'legendary'];
 
 // react-native-web's Alert is a no-op, which strands the busy state when we
 // rely on the OK button's onPress for navigation. Wrap both flows in a
@@ -60,8 +71,18 @@ export default function QuestDetail() {
   const [quest, setQuest] = useState<Quest | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
-  const [busy, setBusy] = useState<'complete' | 'abandon' | null>(null);
+  const [busy, setBusy] = useState<'complete' | 'abandon' | 'save-edits' | null>(null);
   const [levelUp, setLevelUp] = useState<LevelUpState | null>(null);
+
+  // Edit-mode state. Populated from the loaded quest on entry, written back via
+  // updateQuest on save.
+  const [editMode, setEditMode] = useState(false);
+  const [editTitle, setEditTitle] = useState('');
+  const [editDescription, setEditDescription] = useState('');
+  const [editTier, setEditTier] = useState<QuestTier>('standard');
+  const [editClassification, setEditClassification] = useState<QuestClassification>('side');
+  const [editObjectives, setEditObjectives] = useState<QuestObjective[]>([]);
+  const [editDeadline, setEditDeadline] = useState('');
 
   useEffect(() => {
     if (!id) return;
@@ -87,8 +108,6 @@ export default function QuestDetail() {
       const result = await completeQuest(quest.id);
       const { level: newLevel } = calculateLevel(result.newTotalXp);
       if (newLevel > oldLevel) {
-        // Phase 3.6 — level-up takeover. Refetch the profile so the character
-        // sheet reflects the new level when the user dismisses.
         refetchProfile();
         setLevelUp({
           oldLevel,
@@ -143,6 +162,47 @@ export default function QuestDetail() {
     }
   };
 
+  const onEnterEdit = () => {
+    if (!quest) return;
+    setEditTitle(quest.title);
+    setEditDescription(quest.description ?? '');
+    setEditTier(quest.tier);
+    setEditClassification(quest.classification);
+    setEditObjectives(quest.objectives);
+    setEditDeadline(quest.deadline ?? '');
+    setActionError(null);
+    setEditMode(true);
+  };
+
+  const onCancelEdit = () => {
+    setEditMode(false);
+    setActionError(null);
+  };
+
+  const onSaveEdits = async () => {
+    if (!quest) return;
+    setBusy('save-edits');
+    setActionError(null);
+    try {
+      const updated = await updateQuest(quest.id, {
+        title: editTitle.trim(),
+        description: editDescription.trim() ? editDescription.trim() : null,
+        tier: editTier,
+        classification: editClassification,
+        deadline: editDeadline.trim() ? editDeadline.trim() : null,
+        objectives: editObjectives
+          .map((o) => ({ ...o, text: o.text.trim() }))
+          .filter((o) => o.text.length > 0),
+      });
+      setQuest(updated);
+      setEditMode(false);
+      setBusy(null);
+    } catch (e) {
+      setActionError(e instanceof Error ? e.message : String(e));
+      setBusy(null);
+    }
+  };
+
   if (levelUp) {
     return <LevelUpTakeover {...levelUp} onContinue={() => router.back()} />;
   }
@@ -162,6 +222,101 @@ export default function QuestDetail() {
     );
   }
 
+  if (editMode) {
+    const canSave = editTitle.trim().length > 0 && busy !== 'save-edits';
+    return (
+      <ScrollView className="flex-1 bg-stone-950" contentContainerClassName="px-6 pt-16 pb-12">
+        <Text className="mb-1 font-display text-xs uppercase tracking-widest text-amber-400">
+          Editing quest
+        </Text>
+        <Text className="mb-6 font-display text-3xl text-stone-100">{quest.title}</Text>
+
+        <Text className="mb-2 font-body text-sm text-stone-300">Title</Text>
+        <TextInput
+          value={editTitle}
+          onChangeText={setEditTitle}
+          editable={busy !== 'save-edits'}
+          className="mb-4 rounded-md border border-stone-700 bg-stone-900 px-4 py-3 font-body text-stone-100"
+        />
+
+        <Text className="mb-2 font-body text-sm text-stone-300">Description</Text>
+        <TextInput
+          value={editDescription}
+          onChangeText={setEditDescription}
+          multiline
+          editable={busy !== 'save-edits'}
+          textAlignVertical="top"
+          className="mb-4 min-h-[112px] rounded-md border border-stone-700 bg-stone-900 px-4 py-3 font-body text-stone-100"
+        />
+
+        <Text className="mb-2 font-body text-sm text-stone-300">
+          Tier · grants {xpForTier(editTier)} XP
+        </Text>
+        <View className="mb-4 flex-row flex-wrap gap-2">
+          {TIERS.map((t) => (
+            <Chip key={t} label={t} selected={editTier === t} onPress={() => setEditTier(t)} />
+          ))}
+        </View>
+
+        <Text className="mb-2 font-body text-sm text-stone-300">Classification</Text>
+        <View className="mb-4 flex-row flex-wrap gap-2">
+          {CLASSIFICATIONS.map((c) => (
+            <Chip
+              key={c}
+              label={c}
+              selected={editClassification === c}
+              onPress={() => setEditClassification(c)}
+            />
+          ))}
+        </View>
+
+        <Text className="mb-2 font-body text-sm text-stone-300">Objectives</Text>
+        <View className="mb-6">
+          <ObjectivesEditor
+            objectives={editObjectives}
+            onChange={setEditObjectives}
+            disabled={busy === 'save-edits'}
+          />
+        </View>
+
+        <Text className="mb-2 font-body text-sm text-stone-300">Deadline (optional, ISO date)</Text>
+        <TextInput
+          value={editDeadline}
+          onChangeText={setEditDeadline}
+          autoCapitalize="none"
+          placeholder="2026-05-15T18:00:00Z"
+          placeholderTextColor="#57534e"
+          className="mb-6 rounded-md border border-stone-700 bg-stone-900 px-4 py-3 font-body text-stone-100"
+          editable={busy !== 'save-edits'}
+        />
+
+        {actionError ? (
+          <Text className="mb-4 font-body text-sm text-red-400">{actionError}</Text>
+        ) : null}
+
+        <View className="flex-row gap-3">
+          <Pressable
+            onPress={onSaveEdits}
+            disabled={!canSave}
+            className={`flex-1 rounded-md px-4 py-3 ${canSave ? 'bg-amber-600 active:bg-amber-700' : 'bg-stone-800'}`}
+          >
+            <Text className="text-center font-display text-base text-stone-100">
+              {busy === 'save-edits' ? 'Saving…' : 'Save changes'}
+            </Text>
+          </Pressable>
+          <Pressable
+            onPress={onCancelEdit}
+            disabled={busy === 'save-edits'}
+            className="rounded-md border border-stone-700 bg-stone-900 px-4 py-3 active:bg-stone-800"
+          >
+            <Text className="text-center font-body text-stone-300">Cancel</Text>
+          </Pressable>
+        </View>
+      </ScrollView>
+    );
+  }
+
+  // View mode — read-only display + actions.
   return (
     <ScrollView className="flex-1 bg-stone-950" contentContainerClassName="px-6 pt-16 pb-12">
       <Text className="mb-1 font-display text-3xl text-stone-100">{quest.title}</Text>
@@ -232,6 +387,14 @@ export default function QuestDetail() {
       </Pressable>
 
       <Pressable
+        onPress={onEnterEdit}
+        disabled={busy !== null}
+        className="mb-3 rounded-md border border-stone-700 bg-stone-900 px-4 py-3 active:bg-stone-800"
+      >
+        <Text className="text-center font-body text-base text-stone-200">Edit quest</Text>
+      </Pressable>
+
+      <Pressable
         onPress={onAbandon}
         disabled={busy !== null}
         className="rounded-md border border-stone-700 bg-stone-900 px-4 py-3 active:bg-stone-800"
@@ -241,6 +404,29 @@ export default function QuestDetail() {
         </Text>
       </Pressable>
     </ScrollView>
+  );
+}
+
+function Chip({
+  label,
+  selected,
+  onPress,
+}: {
+  label: string;
+  selected: boolean;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable
+      onPress={onPress}
+      className={`rounded-full border px-3 py-1.5 ${selected ? 'border-amber-500 bg-amber-600/20' : 'border-stone-700 bg-stone-900'}`}
+    >
+      <Text
+        className={`font-body-medium text-sm capitalize ${selected ? 'text-amber-300' : 'text-stone-300'}`}
+      >
+        {label}
+      </Text>
+    </Pressable>
   );
 }
 

@@ -5,7 +5,8 @@ import { ActivityIndicator, Pressable, ScrollView, Text, TextInput, View } from 
 import { xpForTier, type QuestTier } from '../../../lib/engine/xp';
 import { generateQuest, type GeneratedQuest } from '../../../lib/quest-generation';
 import { createQuest } from '../../../lib/quests';
-import type { QuestClassification } from '../../../lib/types/models';
+import type { QuestClassification, QuestObjective } from '../../../lib/types/models';
+import { ObjectivesEditor } from './_objectives-editor';
 
 const TIERS: QuestTier[] = ['trivial', 'minor', 'standard', 'major', 'legendary'];
 const CLASSIFICATIONS: QuestClassification[] = ['daily', 'side', 'main', 'legendary'];
@@ -22,6 +23,7 @@ export default function NewQuest() {
   const [classification, setClassification] = useState<QuestClassification>('side');
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
+  const [objectives, setObjectives] = useState<QuestObjective[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -36,6 +38,7 @@ export default function NewQuest() {
       setDescription(generated.description);
       setTier(generated.suggested_tier);
       setClassification(generated.classification);
+      setObjectives(generated.objectives);
       setPhase('review');
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
@@ -64,7 +67,9 @@ export default function NewQuest() {
         tier,
         classification,
         deadline: null,
-        objectives: draft.objectives,
+        objectives: objectives
+          .map((o) => ({ ...o, text: o.text.trim() }))
+          .filter((o) => o.text.length > 0),
       });
       router.back();
     } catch (e) {
@@ -181,21 +186,10 @@ export default function NewQuest() {
         ))}
       </View>
 
-      {draft.objectives.length > 0 ? (
-        <View className="mb-6">
-          <Text className="mb-2 font-body text-sm text-stone-300">Objectives</Text>
-          <View className="rounded-md border border-stone-800 bg-stone-900 p-4">
-            {draft.objectives.map((obj, i) => (
-              <Text key={i} className="font-body text-sm text-stone-300">
-                ☐ {obj.text}
-              </Text>
-            ))}
-          </View>
-          <Text className="mt-1 font-body text-xs text-stone-500">
-            Edit individual objectives later from the quest detail screen.
-          </Text>
-        </View>
-      ) : null}
+      <View className="mb-6">
+        <Text className="mb-2 font-body text-sm text-stone-300">Objectives</Text>
+        <ObjectivesEditor objectives={objectives} onChange={setObjectives} disabled={submitting} />
+      </View>
 
       {error ? <Text className="mb-4 font-body text-sm text-red-400">{error}</Text> : null}
 

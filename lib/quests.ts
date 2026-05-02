@@ -95,3 +95,37 @@ export async function updateQuestObjectives(
   const { error } = await supabase.from('quests').update({ objectives }).eq('id', questId);
   if (error) throw asError(error);
 }
+
+export interface UpdateQuestInput {
+  title: string;
+  description: string | null;
+  tier: QuestTier;
+  classification: QuestClassification;
+  deadline: string | null;
+  objectives: QuestObjective[];
+}
+
+/**
+ * Update an active quest's editable fields. Recomputes xp_reward from the
+ * tier so the engine remains the only source of XP. RLS gates this to the
+ * caller's own quests.
+ */
+export async function updateQuest(questId: string, input: UpdateQuestInput): Promise<Quest> {
+  const xp_reward = xpForTier(input.tier);
+  const { data, error } = await supabase
+    .from('quests')
+    .update({
+      title: input.title,
+      description: input.description,
+      tier: input.tier,
+      classification: input.classification,
+      xp_reward,
+      deadline: input.deadline,
+      objectives: input.objectives,
+    })
+    .eq('id', questId)
+    .select()
+    .single();
+  if (error) throw asError(error);
+  return data as Quest;
+}
