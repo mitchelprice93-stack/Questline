@@ -1,15 +1,6 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import {
-  ActivityIndicator,
-  Alert,
-  Platform,
-  Pressable,
-  ScrollView,
-  Text,
-  TextInput,
-  View,
-} from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 
 import { useAuth } from '../../../lib/auth';
@@ -20,6 +11,7 @@ import {
   parseDeadline,
   urgencyClasses,
 } from '../../../lib/dates';
+import { confirmDestructive, showInfoMessage } from '../../../lib/dialogs';
 import { calculateLevel, xpForTier, type QuestTier } from '../../../lib/engine/xp';
 import {
   abandonQuest,
@@ -33,36 +25,6 @@ import { ObjectivesEditor } from './_objectives-editor';
 
 const TIERS: QuestTier[] = ['trivial', 'minor', 'standard', 'major', 'legendary'];
 const CLASSIFICATIONS: QuestClassification[] = ['daily', 'side', 'main', 'legendary'];
-
-// react-native-web's Alert is a no-op, which strands the busy state when we
-// rely on the OK button's onPress for navigation. Wrap both flows in a
-// platform check: window.alert / window.confirm on web (synchronous), native
-// Alert.alert on iOS/Android (resolved via callback).
-function showInfoMessage(title: string, message: string): Promise<void> {
-  return new Promise((resolve) => {
-    if (Platform.OS === 'web') {
-      window.alert(`${title}\n\n${message}`);
-      resolve();
-    } else {
-      Alert.alert(title, message, [{ text: 'OK', onPress: () => resolve() }], {
-        onDismiss: () => resolve(),
-      });
-    }
-  });
-}
-
-function confirmDestructive(title: string, message: string): Promise<boolean> {
-  return new Promise((resolve) => {
-    if (Platform.OS === 'web') {
-      resolve(window.confirm(`${title}\n\n${message}`));
-    } else {
-      Alert.alert(title, message, [
-        { text: 'Cancel', style: 'cancel', onPress: () => resolve(false) },
-        { text: 'Confirm', style: 'destructive', onPress: () => resolve(true) },
-      ]);
-    }
-  });
-}
 
 interface LevelUpState {
   oldLevel: number;
