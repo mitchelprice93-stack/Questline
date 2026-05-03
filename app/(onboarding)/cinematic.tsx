@@ -1,75 +1,31 @@
-import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
+import { useVideoPlayer, VideoView } from 'expo-video';
 import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import Animated, {
-  Easing,
-  FadeIn,
-  FadeOut,
-  useAnimatedStyle,
-  useSharedValue,
-  withRepeat,
-  withSequence,
-  withTiming,
-} from 'react-native-reanimated';
+import Animated, { FadeIn } from 'react-native-reanimated';
 
 import { useAuth } from '../../lib/auth';
 
-// The five narration beats. Stephen Fry voice — measured, lightly amused.
-// Kept short on purpose; the cinematic should feel like a held breath, not a
-// monologue.
-const BEATS = [
-  'And so the Tome opens once more.',
-  'I am the Archivist of Fate.',
-  'Lives find their measure here, day by day.',
-  'Your story is yours to tell. Mine, simply, to record.',
-  'Tell me, then. Who are you?',
-];
-
-const TYPE_MS = 35; // milliseconds per character revealed
-const PAUSE_MS = 850; // hold after a beat fully renders before fading to next
+// The intro video carries its own narration and ambient track. The 21.0–21.43s
+// region is a near-still desk shot with only wind + candle audio, ideal for an
+// idle loop while the user decides to begin.
+const VIDEO = require('../../assets/cinematic/intro.mp4');
+const LOOP_START = 21.0;
+const LOOP_END = 21.43;
 const SKIP_DELAY_MS = 3_000; // spec: skippable after 3 seconds
-
-// Asset imports — Metro bundles these at build time so they're cached and
-// resolved synchronously. Each layer is a separate require() so the bundler
-// can deduplicate and tree-shake unused ones.
-const ART = {
-  back: require('../../assets/cinematic/layer-1-back.png'),
-  shelves: require('../../assets/cinematic/layer-2-shelves.png'),
-  desk: require('../../assets/cinematic/layer-3-desk.png'),
-  candle: require('../../assets/cinematic/layer-4-candle.png'),
-  flame: require('../../assets/cinematic/layer-4-flame.png'),
-  // layer-5-vignette.png currently exports opaque (no transparent center) so it
-  // hides everything below it — temporarily disabled until re-authored.
-};
 
 export default function Cinematic() {
   const router = useRouter();
   const { markCinematicSeen, profile } = useAuth();
 
-  const [beatIdx, setBeatIdx] = useState(0);
-  const [revealed, setRevealed] = useState(0);
-  const [done, setDone] = useState(false);
+  const [phase, setPhase] = useState<'intro' | 'loop'>('intro');
   const [skipVisible, setSkipVisible] = useState(false);
 
-  // Type-on / advance loop.
-  useEffect(() => {
-    if (done) return;
-    const beat = BEATS[beatIdx] ?? '';
-    if (revealed < beat.length) {
-      const t = setTimeout(() => setRevealed((c) => c + 1), TYPE_MS);
-      return () => clearTimeout(t);
-    }
-    const t = setTimeout(() => {
-      if (beatIdx < BEATS.length - 1) {
-        setBeatIdx((i) => i + 1);
-        setRevealed(0);
-      } else {
-        setDone(true);
-      }
-    }, PAUSE_MS);
-    return () => clearTimeout(t);
-  }, [beatIdx, revealed, done]);
+  const player = useVideoPlayer(VIDEO, (p) => {
+    p.loop = false;
+    p.timeUpdateEventInterval = 0.1; // 100ms — tight enough to catch LOOP_END
+    p.play();
+  });
 
   // Reveal Skip after the spec's 3-second grace window.
   useEffect(() => {
@@ -77,21 +33,29 @@ export default function Cinematic() {
     return () => clearTimeout(t);
   }, []);
 
-  // Candle flicker — opacity pulse on the flame layer only. The candle body
-  // sits underneath and stays steady.
-  const flicker = useSharedValue(0.85);
+  // When the intro reaches its end, jump back to the ambient loop window and
+  // surface the Begin button. After this point the video stays in [LOOP_START,
+  // LOOP_END] until the user taps Begin.
   useEffect(() => {
-    flicker.value = withRepeat(
-      withSequence(
-        withTiming(1, { duration: 1_400, easing: Easing.inOut(Easing.ease) }),
-        withTiming(0.7, { duration: 900, easing: Easing.inOut(Easing.ease) }),
-      ),
-      -1,
-      true,
-    );
-  }, [flicker]);
+    const sub = player.addListener('playToEnd', () => {
+      player.currentTime = LOOP_START;
+      player.play();
+      setPhase('loop');
+    });
+    return () => sub.remove();
+  }, [player]);
 
-  const flickerStyle = useAnimatedStyle(() => ({ opacity: flicker.value }));
+  // Snap back to LOOP_START whenever playback crosses LOOP_END, but only once
+  // we're in the loop phase — the intro plays through unchanged.
+  useEffect(() => {
+    if (phase !== 'loop') return;
+    const sub = player.addListener('timeUpdate', ({ currentTime }) => {
+      if (currentTime >= LOOP_END) {
+        player.currentTime = LOOP_START;
+      }
+    });
+    return () => sub.remove();
+  }, [player, phase]);
 
   const onContinue = async () => {
     await markCinematicSeen();
@@ -99,65 +63,19 @@ export default function Cinematic() {
     router.replace(profile?.character_name ? '/quest-board' : '/character-creation');
   };
 
-  const currentBeat = BEATS[beatIdx] ?? '';
-  const visibleText = currentBeat.slice(0, revealed);
-  const isTyping = revealed < currentBeat.length;
-
   return (
-    <View className="flex-1 items-center justify-center overflow-hidden bg-stone-950 px-6">
-      {/* Layer 1 — back wall (full bleed, opaque). */}
-      <Image
-        source={ART.back}
-        contentFit="cover"
+    <View className="flex-1 items-center justify-center overflow-hidden bg-stone-950">
+      <VideoView
+        player={player}
         style={StyleSheet.absoluteFillObject}
+        contentFit="cover"
+        nativeControls={false}
         pointerEvents="none"
       />
 
-      {/* Layer 2 — middle-back shelves. */}
-      <Image
-        source={ART.shelves}
-        contentFit="cover"
-        style={StyleSheet.absoluteFillObject}
-        pointerEvents="none"
-      />
-
-      {/* Layer 3 — desk + Tome. */}
-      <Image
-        source={ART.desk}
-        contentFit="cover"
-        style={StyleSheet.absoluteFillObject}
-        pointerEvents="none"
-      />
-
-      {/* Layer 4 — candle body (static). */}
-      <Image
-        source={ART.candle}
-        contentFit="cover"
-        style={StyleSheet.absoluteFillObject}
-        pointerEvents="none"
-      />
-
-      {/* Layer 4 — flame (flicker animated). */}
-      <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFillObject, flickerStyle]}>
-        <Image source={ART.flame} contentFit="cover" style={StyleSheet.absoluteFillObject} />
-      </Animated.View>
-
-      {/* Narration. Re-mounted each beat so FadeIn / FadeOut can run on the swap. */}
-      <View className="z-10 items-center">
-        <Animated.View
-          key={beatIdx}
-          entering={FadeIn.duration(450)}
-          exiting={FadeOut.duration(300)}
-        >
-          <Text className="max-w-md text-center font-display text-2xl leading-relaxed text-stone-100">
-            {visibleText}
-            {isTyping ? <Text className="text-amber-300"> ▎</Text> : null}
-          </Text>
-        </Animated.View>
-      </View>
-
-      {/* Controls. Skip floats bottom-right; Begin appears once all beats render. */}
-      {skipVisible && !done ? (
+      {/* Skip floats bottom-right during the intro only. Once we're looping the
+          ambient region the Begin button takes over. */}
+      {skipVisible && phase === 'intro' ? (
         <Animated.View entering={FadeIn.duration(400)} className="absolute bottom-10 right-6">
           <Pressable onPress={onContinue} className="px-3 py-2 active:opacity-60">
             <Text className="font-display text-xs uppercase tracking-[0.4em] text-stone-300">
@@ -167,9 +85,9 @@ export default function Cinematic() {
         </Animated.View>
       ) : null}
 
-      {done ? (
+      {phase === 'loop' ? (
         <Animated.View
-          entering={FadeIn.duration(700).delay(400)}
+          entering={FadeIn.duration(700).delay(200)}
           className="absolute bottom-10 left-6 right-6"
         >
           <Pressable
