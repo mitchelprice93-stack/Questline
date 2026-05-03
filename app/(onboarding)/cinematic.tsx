@@ -6,12 +6,12 @@ import Animated, { FadeIn } from 'react-native-reanimated';
 
 import { useAuth } from '../../lib/auth';
 
-// The intro video carries its own narration and ambient track. The 21.0–21.43s
-// region is a near-still desk shot with only wind + candle audio, ideal for an
-// idle loop while the user decides to begin.
-const VIDEO = require('../../assets/cinematic/intro.mp4');
-const LOOP_START = 21.0;
-const LOOP_END = 21.43;
+// Two clips: the narrated intro plays once, then we hand off to a separate
+// holding loop authored to seam back to itself with only ambient (wind +
+// candle) audio. Cleaner than seeking inside one file — no decoder hitch on
+// the seek-back, and the loop seam is exactly where the artist put it.
+const INTRO_VIDEO = require('../../assets/cinematic/intro.mp4');
+const HOLDING_VIDEO = require('../../assets/cinematic/holding.mp4');
 const SKIP_DELAY_MS = 3_000; // spec: skippable after 3 seconds
 
 type Phase = 'idle' | 'intro' | 'loop';
@@ -21,64 +21,62 @@ export default function Cinematic() {
   const { markCinematicSeen, profile } = useAuth();
 
   // 'idle' = pre-tap (web autoplay-with-audio is blocked without a user
-  // gesture, so we wait for the first tap). 'intro' = video playing through.
-  // 'loop' = video has hit its end and is looping the ambient region.
+  // gesture). 'intro' = narrated video playing through. 'loop' = ambient
+  // holding video looping while the user reads "Begin your chronicle".
   const [phase, setPhase] = useState<Phase>('idle');
   const [skipVisible, setSkipVisible] = useState(false);
 
-  const player = useVideoPlayer(VIDEO, (p) => {
+  const introPlayer = useVideoPlayer(INTRO_VIDEO, (p) => {
     p.loop = false;
-    p.timeUpdateEventInterval = 0.1; // 100ms — tight enough to catch LOOP_END
-    // Intentionally NOT calling p.play() here. Browsers reject autoplay with
-    // audio outside a user gesture, which leaves the video frozen on frame 1.
-    // We start playback in the tap handler instead.
+    // Don't autoplay — see onStart for the user-gesture-driven play call.
+  });
+
+  const holdingPlayer = useVideoPlayer(HOLDING_VIDEO, (p) => {
+    p.loop = true;
+    p.muted = false;
+    // Stays paused until the intro finishes; we start it in the playToEnd
+    // handler below.
   });
 
   // Surface playback errors and status transitions to the console so we have
   // something to grep when a frozen-frame report comes in.
   useEffect(() => {
-    const sub = player.addListener('statusChange', ({ status, error }) => {
-      if (error) console.warn('[cinematic] player error', error);
-      else console.log('[cinematic] status', status);
+    const sub = introPlayer.addListener('statusChange', ({ status, error }) => {
+      if (error) console.warn('[cinematic] intro error', error);
+      else console.log('[cinematic] intro status', status);
     });
     return () => sub.remove();
-  }, [player]);
+  }, [introPlayer]);
+
+  useEffect(() => {
+    const sub = holdingPlayer.addListener('statusChange', ({ status, error }) => {
+      if (error) console.warn('[cinematic] holding error', error);
+      else console.log('[cinematic] holding status', status);
+    });
+    return () => sub.remove();
+  }, [holdingPlayer]);
 
   // Reveal Skip after the spec's 3-second grace window. Timer starts when the
-  // intro begins playing, not on mount — there's no point letting the user
-  // skip a video that hasn't started yet.
+  // intro begins playing, not on mount.
   useEffect(() => {
     if (phase !== 'intro') return;
     const t = setTimeout(() => setSkipVisible(true), SKIP_DELAY_MS);
     return () => clearTimeout(t);
   }, [phase]);
 
-  // When the intro reaches its end, jump back to the ambient loop window and
-  // surface the Begin button. After this point the video stays in [LOOP_START,
-  // LOOP_END] until the user taps Begin.
+  // When the narrated intro reaches its end, kick off the holding loop and
+  // surface the Begin button.
   useEffect(() => {
-    const sub = player.addListener('playToEnd', () => {
-      player.currentTime = LOOP_START;
-      player.play();
+    const sub = introPlayer.addListener('playToEnd', () => {
+      introPlayer.pause();
+      holdingPlayer.play();
       setPhase('loop');
     });
     return () => sub.remove();
-  }, [player]);
-
-  // Snap back to LOOP_START whenever playback crosses LOOP_END, but only once
-  // we're in the loop phase — the intro plays through unchanged.
-  useEffect(() => {
-    if (phase !== 'loop') return;
-    const sub = player.addListener('timeUpdate', ({ currentTime }) => {
-      if (currentTime >= LOOP_END) {
-        player.currentTime = LOOP_START;
-      }
-    });
-    return () => sub.remove();
-  }, [player, phase]);
+  }, [introPlayer, holdingPlayer]);
 
   const onStart = () => {
-    player.play();
+    introPlayer.play();
     setPhase('intro');
   };
 
@@ -90,13 +88,26 @@ export default function Cinematic() {
 
   return (
     <View className="flex-1 items-center justify-center overflow-hidden bg-stone-950">
-      <VideoView
-        player={player}
-        style={StyleSheet.absoluteFillObject}
-        contentFit="cover"
-        nativeControls={false}
-        pointerEvents="none"
-      />
+      {/* Render whichever clip is active. Hot-swapping the source on a single
+          VideoView causes a brief black flash; mounting both and toggling
+          opacity-style visibility is cleaner. */}
+      {phase === 'loop' ? (
+        <VideoView
+          player={holdingPlayer}
+          style={StyleSheet.absoluteFillObject}
+          contentFit="cover"
+          nativeControls={false}
+          pointerEvents="none"
+        />
+      ) : (
+        <VideoView
+          player={introPlayer}
+          style={StyleSheet.absoluteFillObject}
+          contentFit="cover"
+          nativeControls={false}
+          pointerEvents="none"
+        />
+      )}
 
       {/* Pre-tap gate. Required for web autoplay-with-audio; harmless on
           native (the user just taps once to start the show). */}
