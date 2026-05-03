@@ -8,8 +8,9 @@ import { useAuth } from '../../lib/auth';
 
 // Two clips: the narrated intro plays once, then we hand off to a separate
 // holding loop authored to seam back to itself with only ambient (wind +
-// candle) audio. Cleaner than seeking inside one file — no decoder hitch on
-// the seek-back, and the loop seam is exactly where the artist put it.
+// candle) audio. We keep a single player and `replace()` the source on
+// handoff — that way the original user-gesture clearance carries over and
+// browsers don't re-block autoplay on the second clip.
 const INTRO_VIDEO = require('../../assets/cinematic/intro.mp4');
 const HOLDING_VIDEO = require('../../assets/cinematic/holding.mp4');
 const SKIP_DELAY_MS = 3_000; // spec: skippable after 3 seconds
@@ -26,35 +27,21 @@ export default function Cinematic() {
   const [phase, setPhase] = useState<Phase>('idle');
   const [skipVisible, setSkipVisible] = useState(false);
 
-  const introPlayer = useVideoPlayer(INTRO_VIDEO, (p) => {
+  const player = useVideoPlayer(INTRO_VIDEO, (p) => {
     p.loop = false;
-    // Don't autoplay — see onStart for the user-gesture-driven play call.
-  });
-
-  const holdingPlayer = useVideoPlayer(HOLDING_VIDEO, (p) => {
-    p.loop = true;
-    p.muted = false;
-    // Stays paused until the intro finishes; we start it in the playToEnd
-    // handler below.
+    // Don't autoplay — we play() inside the tap handler so the browser sees
+    // a user gesture and unblocks audio playback.
   });
 
   // Surface playback errors and status transitions to the console so we have
   // something to grep when a frozen-frame report comes in.
   useEffect(() => {
-    const sub = introPlayer.addListener('statusChange', ({ status, error }) => {
-      if (error) console.warn('[cinematic] intro error', error);
-      else console.log('[cinematic] intro status', status);
+    const sub = player.addListener('statusChange', ({ status, error }) => {
+      if (error) console.warn('[cinematic] player error', error);
+      else console.log('[cinematic] player status', status);
     });
     return () => sub.remove();
-  }, [introPlayer]);
-
-  useEffect(() => {
-    const sub = holdingPlayer.addListener('statusChange', ({ status, error }) => {
-      if (error) console.warn('[cinematic] holding error', error);
-      else console.log('[cinematic] holding status', status);
-    });
-    return () => sub.remove();
-  }, [holdingPlayer]);
+  }, [player]);
 
   // Reveal Skip after the spec's 3-second grace window. Timer starts when the
   // intro begins playing, not on mount.
@@ -64,19 +51,23 @@ export default function Cinematic() {
     return () => clearTimeout(t);
   }, [phase]);
 
-  // When the narrated intro reaches its end, kick off the holding loop and
-  // surface the Begin button.
+  // When the narrated intro reaches its end, swap the source to the holding
+  // clip and turn on native looping. Same player instance — keeps the user
+  // gesture clearance the browser granted on the initial tap.
   useEffect(() => {
-    const sub = introPlayer.addListener('playToEnd', () => {
-      introPlayer.pause();
-      holdingPlayer.play();
+    const sub = player.addListener('playToEnd', () => {
+      // With loop=true the player will repeat without firing playToEnd again,
+      // so this listener naturally fires only once per session.
+      player.replace(HOLDING_VIDEO);
+      player.loop = true;
+      player.play();
       setPhase('loop');
     });
     return () => sub.remove();
-  }, [introPlayer, holdingPlayer]);
+  }, [player]);
 
   const onStart = () => {
-    introPlayer.play();
+    player.play();
     setPhase('intro');
   };
 
@@ -88,26 +79,13 @@ export default function Cinematic() {
 
   return (
     <View className="flex-1 items-center justify-center overflow-hidden bg-stone-950">
-      {/* Render whichever clip is active. Hot-swapping the source on a single
-          VideoView causes a brief black flash; mounting both and toggling
-          opacity-style visibility is cleaner. */}
-      {phase === 'loop' ? (
-        <VideoView
-          player={holdingPlayer}
-          style={StyleSheet.absoluteFillObject}
-          contentFit="cover"
-          nativeControls={false}
-          pointerEvents="none"
-        />
-      ) : (
-        <VideoView
-          player={introPlayer}
-          style={StyleSheet.absoluteFillObject}
-          contentFit="cover"
-          nativeControls={false}
-          pointerEvents="none"
-        />
-      )}
+      <VideoView
+        player={player}
+        style={StyleSheet.absoluteFillObject}
+        contentFit="cover"
+        nativeControls={false}
+        pointerEvents="none"
+      />
 
       {/* Pre-tap gate. Required for web autoplay-with-audio; harmless on
           native (the user just taps once to start the show). */}
