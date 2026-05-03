@@ -9,7 +9,13 @@
 import { xpForTier } from './engine/xp';
 import { asError } from './errors';
 import { supabase } from './supabase';
-import type { Quest, QuestClassification, QuestObjective, QuestStatus } from './types/models';
+import type {
+  Quest,
+  QuestClassification,
+  QuestObjective,
+  QuestRecurrence,
+  QuestStatus,
+} from './types/models';
 import type { QuestTier } from './engine/xp';
 
 export interface CreateQuestInput {
@@ -20,6 +26,8 @@ export interface CreateQuestInput {
   deadline: string | null; // ISO timestamp; pass null to skip
   /** Optional checklist. Pass empty / omit for no objectives. */
   objectives?: QuestObjective[];
+  /** null = one-shot. 'daily' / 'weekly' = auto-recurring with streak tracking. */
+  recurrence?: QuestRecurrence;
 }
 
 export async function listQuests(status: QuestStatus = 'active'): Promise<Quest[]> {
@@ -59,6 +67,7 @@ export async function createQuest(input: CreateQuestInput): Promise<Quest> {
       xp_reward,
       deadline: input.deadline,
       objectives: input.objectives ?? [],
+      recurrence: input.recurrence ?? null,
     })
     .select()
     .single();
@@ -68,7 +77,12 @@ export async function createQuest(input: CreateQuestInput): Promise<Quest> {
 
 export interface CompleteQuestResult {
   newTotalXp: number;
+  /** Total XP awarded by this completion (base reward + any milestone bonus). */
   xpChange: number;
+  /** New streak count for recurring quests; 0 for one-shot completions. */
+  newStreak: number;
+  /** Bonus XP awarded for hitting a streak milestone (7/30/100). 0 otherwise. */
+  milestoneBonus: number;
 }
 
 export async function completeQuest(questId: string): Promise<CompleteQuestResult> {
@@ -80,6 +94,8 @@ export async function completeQuest(questId: string): Promise<CompleteQuestResul
   return {
     newTotalXp: Number(row.new_total_xp),
     xpChange: Number(row.xp_change),
+    newStreak: Number(row.new_streak ?? 0),
+    milestoneBonus: Number(row.milestone_bonus ?? 0),
   };
 }
 
@@ -103,12 +119,17 @@ export interface UpdateQuestInput {
   classification: QuestClassification;
   deadline: string | null;
   objectives: QuestObjective[];
+  recurrence: QuestRecurrence;
 }
 
 /**
  * Update an active quest's editable fields. Recomputes xp_reward from the
  * tier so the engine remains the only source of XP. RLS gates this to the
  * caller's own quests.
+ *
+ * Note: switching recurrence on/off does NOT reset streak_count or
+ * last_completed_at. If you set a one-shot quest to 'daily' it picks up the
+ * streak math from now (which means a fresh first completion → streak 1).
  */
 export async function updateQuest(questId: string, input: UpdateQuestInput): Promise<Quest> {
   const xp_reward = xpForTier(input.tier);
@@ -122,6 +143,7 @@ export async function updateQuest(questId: string, input: UpdateQuestInput): Pro
       xp_reward,
       deadline: input.deadline,
       objectives: input.objectives,
+      recurrence: input.recurrence,
     })
     .eq('id', questId)
     .select()

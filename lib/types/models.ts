@@ -28,7 +28,10 @@ export interface Quest {
   recurrence: QuestRecurrence;
   streak_count: number;
   deadline: string | null;
+  /** Set when a one-shot quest reaches `completed` status. */
   completed_at: string | null;
+  /** For recurring quests: timestamp of the most recent successful completion. */
+  last_completed_at: string | null;
   created_at: string;
 }
 

@@ -8,7 +8,9 @@ import {
   deadlineUrgency,
   formatDeadline,
   formatDeadlineRelative,
+  isCompletedThisPeriod,
   parseDeadline,
+  recurrenceStatusLabel,
   urgencyClasses,
 } from '../../../lib/dates';
 import { confirmDestructive, showInfoMessage } from '../../../lib/dialogs';
@@ -20,17 +22,35 @@ import {
   updateQuest,
   updateQuestObjectives,
 } from '../../../lib/quests';
-import type { Quest, QuestClassification, QuestObjective } from '../../../lib/types/models';
+import type {
+  Quest,
+  QuestClassification,
+  QuestObjective,
+  QuestRecurrence,
+} from '../../../lib/types/models';
 import { ObjectivesEditor } from './_objectives-editor';
 
 const TIERS: QuestTier[] = ['trivial', 'minor', 'standard', 'major', 'legendary'];
 const CLASSIFICATIONS: QuestClassification[] = ['daily', 'side', 'main', 'legendary'];
+type RecurrenceChoice = 'none' | 'daily' | 'weekly';
+const RECURRENCES: RecurrenceChoice[] = ['none', 'daily', 'weekly'];
+
+function recurrenceForDb(choice: RecurrenceChoice): QuestRecurrence {
+  return choice === 'none' ? null : choice;
+}
+function recurrenceForUi(value: QuestRecurrence): RecurrenceChoice {
+  return value ?? 'none';
+}
 
 interface LevelUpState {
   oldLevel: number;
   newLevel: number;
   newTotalXp: number;
   xpChange: number;
+  /** Bonus XP awarded for hitting a streak milestone, surfaced separately. */
+  milestoneBonus?: number;
+  /** Streak after this completion (for recurring quests). */
+  newStreak?: number;
 }
 
 export default function QuestDetail() {
@@ -52,6 +72,7 @@ export default function QuestDetail() {
   const [editClassification, setEditClassification] = useState<QuestClassification>('side');
   const [editObjectives, setEditObjectives] = useState<QuestObjective[]>([]);
   const [editDeadline, setEditDeadline] = useState('');
+  const [editRecurrence, setEditRecurrence] = useState<RecurrenceChoice>('none');
 
   useEffect(() => {
     if (!id) return;
@@ -76,6 +97,11 @@ export default function QuestDetail() {
       const oldLevel = profile?.level ?? 1;
       const result = await completeQuest(quest.id);
       const { level: newLevel } = calculateLevel(result.newTotalXp);
+      const milestoneLine =
+        result.milestoneBonus > 0
+          ? ` · streak ${result.newStreak} milestone bonus +${result.milestoneBonus} XP`
+          : '';
+      const streakLine = result.newStreak > 0 ? ` · streak ${result.newStreak}` : '';
       if (newLevel > oldLevel) {
         refetchProfile();
         setLevelUp({
@@ -83,7 +109,20 @@ export default function QuestDetail() {
           newLevel,
           newTotalXp: result.newTotalXp,
           xpChange: result.xpChange,
+          milestoneBonus: result.milestoneBonus,
+          newStreak: result.newStreak,
         });
+      } else if (quest.recurrence) {
+        // Recurring: stay on the page so the user can see the streak update.
+        // Refresh quest to pick up the new last_completed_at + streak_count.
+        await showInfoMessage(
+          'Quest completed',
+          `+${result.xpChange} XP earned${streakLine}${milestoneLine}`,
+        );
+        const fresh = await getQuest(quest.id);
+        if (fresh) setQuest(fresh);
+        refetchProfile();
+        setBusy(null);
       } else {
         await showInfoMessage(
           'Quest completed',
@@ -140,6 +179,7 @@ export default function QuestDetail() {
     setEditObjectives(quest.objectives);
     // Pre-fill with the human-readable form so the user can re-edit naturally.
     setEditDeadline(formatDeadline(quest.deadline) ?? '');
+    setEditRecurrence(recurrenceForUi(quest.recurrence));
     setActionError(null);
     setEditMode(true);
   };
@@ -171,6 +211,7 @@ export default function QuestDetail() {
         tier: editTier,
         classification: editClassification,
         deadline: deadlineIso,
+        recurrence: recurrenceForDb(editRecurrence),
         objectives: editObjectives
           .map((o) => ({ ...o, text: o.text.trim() }))
           .filter((o) => o.text.length > 0),
@@ -251,6 +292,25 @@ export default function QuestDetail() {
           ))}
         </View>
 
+        <Text className="mb-2 font-body text-sm text-stone-300">Recurrence</Text>
+        <View className="mb-1 flex-row flex-wrap gap-2">
+          {RECURRENCES.map((r) => (
+            <Chip
+              key={r}
+              label={r}
+              selected={editRecurrence === r}
+              onPress={() => setEditRecurrence(r)}
+            />
+          ))}
+        </View>
+        <Text className="mb-4 font-body text-xs text-stone-500">
+          {editRecurrence === 'none'
+            ? 'A one-time quest. Completes once and goes to the log.'
+            : editRecurrence === 'daily'
+              ? 'Resets each day. Streak grows on consecutive days.'
+              : 'Resets each week. Streak grows on consecutive weeks.'}
+        </Text>
+
         <Text className="mb-2 font-body text-sm text-stone-300">Objectives</Text>
         <View className="mb-6">
           <ObjectivesEditor
@@ -301,6 +361,8 @@ export default function QuestDetail() {
   }
 
   // View mode — read-only display + actions.
+  const onCooldown = isCompletedThisPeriod(quest.recurrence, quest.last_completed_at);
+  const cooldownLabel = recurrenceStatusLabel(quest.recurrence, quest.last_completed_at);
   return (
     <ScrollView className="flex-1 bg-stone-950" contentContainerClassName="px-6 pt-16 pb-12">
       <Text className="mb-1 font-display text-3xl text-stone-100">{quest.title}</Text>
@@ -315,6 +377,24 @@ export default function QuestDetail() {
         <Text className="font-body text-xs text-stone-500">·</Text>
         <Text className="font-body text-xs text-stone-300">{quest.xp_reward} XP</Text>
       </View>
+
+      {quest.recurrence ? (
+        <View className="mb-6 rounded-md border border-amber-900/50 bg-stone-900 p-4">
+          <Text className="font-display text-xs uppercase tracking-widest text-amber-400">
+            {quest.recurrence === 'daily' ? 'Daily quest' : 'Weekly quest'}
+          </Text>
+          <View className="mt-1 flex-row items-baseline justify-between">
+            <Text className="font-body text-sm text-stone-300">
+              {quest.streak_count > 0
+                ? `Streak · ${quest.streak_count} ${quest.recurrence === 'daily' ? 'days' : 'weeks'}`
+                : 'No streak yet — complete to start one'}
+            </Text>
+            {cooldownLabel ? (
+              <Text className="font-body text-xs text-stone-400">{cooldownLabel}</Text>
+            ) : null}
+          </View>
+        </View>
+      ) : null}
 
       {quest.description ? (
         <Text className="mb-6 font-body text-stone-300">{quest.description}</Text>
@@ -375,11 +455,17 @@ export default function QuestDetail() {
 
       <Pressable
         onPress={onComplete}
-        disabled={busy !== null}
-        className={`mb-3 rounded-md px-4 py-3 ${busy ? 'bg-stone-800' : 'bg-amber-600 active:bg-amber-700'}`}
+        disabled={busy !== null || onCooldown}
+        className={`mb-3 rounded-md px-4 py-3 ${
+          busy !== null || onCooldown ? 'bg-stone-800' : 'bg-amber-600 active:bg-amber-700'
+        }`}
       >
         <Text className="text-center font-display text-base text-stone-100">
-          {busy === 'complete' ? 'Completing…' : 'Mark complete'}
+          {busy === 'complete'
+            ? 'Completing…'
+            : onCooldown
+              ? cooldownLabel ?? 'Already done this period'
+              : 'Mark complete'}
         </Text>
       </Pressable>
 
@@ -435,6 +521,8 @@ function LevelUpTakeover({
   newLevel,
   newTotalXp,
   xpChange,
+  milestoneBonus,
+  newStreak,
   onContinue,
 }: LevelUpState & { onContinue: () => void }) {
   const stagger = (n: number) => FadeInDown.delay(300 + n * 350).duration(700);
@@ -457,11 +545,23 @@ function LevelUpTakeover({
         </Text>
       </Animated.View>
       <Animated.View entering={stagger(3)}>
-        <Text className="mb-12 text-center font-body text-stone-500">
+        <Text className="mb-2 text-center font-body text-stone-500">
           +{xpChange.toLocaleString()} XP · {newTotalXp.toLocaleString()} total
         </Text>
       </Animated.View>
-      <Animated.View entering={stagger(4)} className="w-full">
+      {milestoneBonus && milestoneBonus > 0 && newStreak ? (
+        <Animated.View entering={stagger(4)}>
+          <Text className="mb-12 text-center font-display text-xs uppercase tracking-[0.3em] text-amber-300">
+            {newStreak}-streak milestone · +{milestoneBonus} bonus XP
+          </Text>
+        </Animated.View>
+      ) : (
+        <View className="mb-12" />
+      )}
+      <Animated.View
+        entering={stagger(milestoneBonus && milestoneBonus > 0 ? 5 : 4)}
+        className="w-full"
+      >
         <Pressable
           onPress={onContinue}
           className="rounded-md bg-amber-600 px-4 py-3 active:bg-amber-700"

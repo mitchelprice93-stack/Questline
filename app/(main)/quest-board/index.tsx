@@ -2,7 +2,12 @@ import { Link, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, Text, View } from 'react-native';
 
-import { deadlineUrgency, formatDeadlineRelative, urgencyClasses } from '../../../lib/dates';
+import {
+  deadlineUrgency,
+  formatDeadlineRelative,
+  recurrenceStatusLabel,
+  urgencyClasses,
+} from '../../../lib/dates';
 import { listQuests } from '../../../lib/quests';
 import type { Quest } from '../../../lib/types/models';
 
@@ -63,6 +68,12 @@ function QuestRow({ quest }: { quest: Quest }) {
   const urgency = deadlineUrgency(quest.deadline);
   const palette = urgency ? urgencyClasses[urgency] : urgencyClasses.normal;
   const relative = urgency ? formatDeadlineRelative(quest.deadline) : null;
+  const recurrenceLabel = quest.recurrence === 'daily' ? 'Daily' : 'Weekly';
+  const cooldownLabel = recurrenceStatusLabel(quest.recurrence, quest.last_completed_at);
+  const streakLabel =
+    quest.recurrence && quest.streak_count > 0
+      ? `· ${quest.streak_count}${quest.recurrence === 'daily' ? 'd' : 'w'} streak`
+      : '';
   return (
     <Link href={{ pathname: '/quest-board/[id]', params: { id: quest.id } }} asChild>
       <Pressable
@@ -79,10 +90,13 @@ function QuestRow({ quest }: { quest: Quest }) {
         <View className="mt-1 flex-row items-center justify-between">
           <Text className="font-display text-xs uppercase tracking-widest text-stone-400">
             {quest.classification}
+            {quest.recurrence ? ` · ${recurrenceLabel} ${streakLabel}` : ''}
           </Text>
           <Text className="font-body text-xs text-stone-300">{quest.xp_reward} XP</Text>
         </View>
-        {relative ? (
+        {cooldownLabel ? (
+          <Text className="mt-2 font-body text-sm text-stone-500">{cooldownLabel}</Text>
+        ) : relative ? (
           <Text className={`mt-2 font-body text-sm ${palette.text}`}>{relative}</Text>
         ) : null}
       </Pressable>

@@ -19,6 +19,23 @@ export interface Modifier {
 
 export const MAX_LEVEL = 50;
 
+/**
+ * One-time bonuses awarded on top of a recurring quest's tier XP when its
+ * streak hits the listed threshold. Must stay in sync with the milestone
+ * constants in the complete_quest SQL function — the SQL is canonical and
+ * the values here are duplicated for client-side display only.
+ */
+export const STREAK_BONUSES: Record<number, number> = {
+  7: 250,
+  30: 1500,
+  100: 5000,
+};
+
+/** Returns the streak-milestone bonus for the given streak count, or 0. */
+export function streakBonusFor(streak: number): number {
+  return STREAK_BONUSES[streak] ?? 0;
+}
+
 const TIER_XP: Record<QuestTier, number> = {
   trivial: 100,
   minor: 500,

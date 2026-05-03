@@ -87,3 +87,57 @@ export const urgencyClasses: Record<DeadlineUrgency, { border: string; text: str
   soon: { border: 'border-amber-500/40', text: 'text-amber-300' },
   normal: { border: 'border-stone-800', text: 'text-stone-300' },
 };
+
+// ---- Recurring quest period helpers ----------------------------------------
+//
+// All period math runs in UTC so the client matches the server-side
+// `date_trunc` checks in complete_quest. A small timezone mismatch around
+// midnight is acceptable — the client uses these to disable buttons; the
+// RPC is canonical and will reject a stale request with P0003.
+
+/** UTC YYYY-MM-DD for a Date. */
+function utcDayKey(d: Date): string {
+  return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}-${String(d.getUTCDate()).padStart(2, '0')}`;
+}
+
+/** UTC Monday-of-the-week-containing-d as YYYY-MM-DD. ISO weeks start Mon. */
+function utcWeekKey(d: Date): string {
+  const day = d.getUTCDay(); // 0 = Sunday
+  // Postgres date_trunc('week') treats Monday as the start of the week. JS
+  // getUTCDay returns 0 for Sunday — convert to a 0-based offset from Monday.
+  const offsetFromMonday = (day + 6) % 7;
+  const monday = new Date(
+    Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate() - offsetFromMonday),
+  );
+  return utcDayKey(monday);
+}
+
+/**
+ * True when the last_completed_at timestamp falls in the same period (day
+ * for 'daily', ISO week for 'weekly') as `now`. Returns false for one-shot
+ * quests and quests that have never been completed.
+ */
+export function isCompletedThisPeriod(
+  recurrence: 'daily' | 'weekly' | null,
+  lastCompletedAt: string | null,
+  now: Date = new Date(),
+): boolean {
+  if (!recurrence || !lastCompletedAt) return false;
+  const last = new Date(lastCompletedAt);
+  if (isNaN(last.getTime())) return false;
+  if (recurrence === 'daily') return utcDayKey(last) === utcDayKey(now);
+  return utcWeekKey(last) === utcWeekKey(now);
+}
+
+/**
+ * Short label for a recurring quest's period status, e.g. "Done today",
+ * "Done this week", or null when the quest is ready to be completed.
+ */
+export function recurrenceStatusLabel(
+  recurrence: 'daily' | 'weekly' | null,
+  lastCompletedAt: string | null,
+  now: Date = new Date(),
+): string | null {
+  if (!isCompletedThisPeriod(recurrence, lastCompletedAt, now)) return null;
+  return recurrence === 'daily' ? 'Done today' : 'Done this week';
+}

@@ -259,10 +259,10 @@ Test file: `lib/engine/xp.test.ts`. Use Jest. Cover edge cases: zero XP, negativ
 **Exit criteria:** A user can rely on Questline as their actual task manager for a full week without missing anything important.
 
 ## 4.1 Recurring Quests
-- [ ] Daily quest type — auto-resets each day
-- [ ] Weekly quest type — auto-resets each week
-- [ ] Streak tracking on recurring quests
-- [ ] Streak rewards: bonus XP at 7-day, 30-day, 100-day milestones
+- [x] Daily quest type — auto-resets each day
+- [x] Weekly quest type — auto-resets each week
+- [x] Streak tracking on recurring quests
+- [x] Streak rewards: bonus XP at 7-day, 30-day, 100-day milestones
 
 ## 4.2 Debuff Engine
 - [ ] Background job (Supabase scheduled function) runs daily

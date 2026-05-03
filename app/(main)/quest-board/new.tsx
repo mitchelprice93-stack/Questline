@@ -6,11 +6,21 @@ import { parseDeadline } from '../../../lib/dates';
 import { xpForTier, type QuestTier } from '../../../lib/engine/xp';
 import { generateQuest, type GeneratedQuest } from '../../../lib/quest-generation';
 import { createQuest } from '../../../lib/quests';
-import type { QuestClassification, QuestObjective } from '../../../lib/types/models';
+import type {
+  QuestClassification,
+  QuestObjective,
+  QuestRecurrence,
+} from '../../../lib/types/models';
 import { ObjectivesEditor } from './_objectives-editor';
 
 const TIERS: QuestTier[] = ['trivial', 'minor', 'standard', 'major', 'legendary'];
 const CLASSIFICATIONS: QuestClassification[] = ['daily', 'side', 'main', 'legendary'];
+type RecurrenceChoice = 'none' | 'daily' | 'weekly';
+const RECURRENCES: RecurrenceChoice[] = ['none', 'daily', 'weekly'];
+
+function recurrenceForDb(choice: RecurrenceChoice): QuestRecurrence {
+  return choice === 'none' ? null : choice;
+}
 
 type Phase = 'input' | 'loading' | 'review';
 
@@ -26,6 +36,7 @@ export default function NewQuest() {
   const [description, setDescription] = useState('');
   const [objectives, setObjectives] = useState<QuestObjective[]>([]);
   const [deadlineRaw, setDeadlineRaw] = useState('');
+  const [recurrence, setRecurrence] = useState<RecurrenceChoice>('none');
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -80,6 +91,7 @@ export default function NewQuest() {
         tier,
         classification,
         deadline: deadlineIso,
+        recurrence: recurrenceForDb(recurrence),
         objectives: objectives
           .map((o) => ({ ...o, text: o.text.trim() }))
           .filter((o) => o.text.length > 0),
@@ -198,6 +210,20 @@ export default function NewQuest() {
           />
         ))}
       </View>
+
+      <Text className="mb-2 font-body text-sm text-stone-300">Recurrence</Text>
+      <View className="mb-1 flex-row flex-wrap gap-2">
+        {RECURRENCES.map((r) => (
+          <Chip key={r} label={r} selected={recurrence === r} onPress={() => setRecurrence(r)} />
+        ))}
+      </View>
+      <Text className="mb-4 font-body text-xs text-stone-500">
+        {recurrence === 'none'
+          ? 'A one-time quest. Completes once and goes to the log.'
+          : recurrence === 'daily'
+            ? 'Resets each day. Completing it on consecutive days builds a streak.'
+            : 'Resets each week. Completing it on consecutive weeks builds a streak.'}
+      </Text>
 
       <View className="mb-6">
         <Text className="mb-2 font-body text-sm text-stone-300">Objectives</Text>

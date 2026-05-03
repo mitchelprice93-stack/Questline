@@ -5,6 +5,8 @@ import {
   calculateLevel,
   LEVEL_THRESHOLDS,
   MAX_LEVEL,
+  STREAK_BONUSES,
+  streakBonusFor,
   xpForTier,
 } from './xp';
 
@@ -194,5 +196,28 @@ describe('assessStartingLevel', () => {
 
   test('floors fractional campaign counts', () => {
     expect(assessStartingLevel('', 2.9)).toBe(3); // 1 + floor(2.9) = 3
+  });
+});
+
+describe('streakBonusFor', () => {
+  test('returns 0 for non-milestone streaks', () => {
+    expect(streakBonusFor(0)).toBe(0);
+    expect(streakBonusFor(1)).toBe(0);
+    expect(streakBonusFor(6)).toBe(0);
+    expect(streakBonusFor(8)).toBe(0);
+    expect(streakBonusFor(29)).toBe(0);
+    expect(streakBonusFor(99)).toBe(0);
+    expect(streakBonusFor(101)).toBe(0);
+  });
+
+  test('returns the spec bonuses at exact thresholds', () => {
+    expect(streakBonusFor(7)).toBe(250);
+    expect(streakBonusFor(30)).toBe(1500);
+    expect(streakBonusFor(100)).toBe(5000);
+  });
+
+  test('table matches the SQL constants in complete_quest', () => {
+    // If you change these, also update 20260503000000_recurring_quests.sql
+    expect(STREAK_BONUSES).toEqual({ 7: 250, 30: 1500, 100: 5000 });
   });
 });
