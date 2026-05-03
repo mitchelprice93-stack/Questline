@@ -68,12 +68,20 @@ function QuestRow({ quest }: { quest: Quest }) {
   const urgency = deadlineUrgency(quest.deadline);
   const palette = urgency ? urgencyClasses[urgency] : urgencyClasses.normal;
   const relative = urgency ? formatDeadlineRelative(quest.deadline) : null;
-  const recurrenceLabel = quest.recurrence === 'daily' ? 'Daily' : 'Weekly';
   const cooldownLabel = recurrenceStatusLabel(quest.recurrence, quest.last_completed_at);
-  const streakLabel =
-    quest.recurrence && quest.streak_count > 0
-      ? `· ${quest.streak_count}${quest.recurrence === 'daily' ? 'd' : 'w'} streak`
-      : '';
+  // Build the meta line piece-by-piece so we can dedupe when classification and
+  // recurrence say the same thing (e.g. classification='daily' + recurrence='daily').
+  const metaParts: string[] = [];
+  if (quest.recurrence !== quest.classification) metaParts.push(quest.classification);
+  if (quest.recurrence) {
+    metaParts.push(quest.recurrence === 'daily' ? 'Daily' : 'Weekly');
+    if (quest.streak_count > 0) {
+      metaParts.push(
+        `${quest.streak_count}${quest.recurrence === 'daily' ? 'd' : 'w'} streak`,
+      );
+    }
+  }
+  const metaLine = metaParts.join(' · ');
   return (
     <Link href={{ pathname: '/quest-board/[id]', params: { id: quest.id } }} asChild>
       <Pressable
@@ -89,8 +97,7 @@ function QuestRow({ quest }: { quest: Quest }) {
         </View>
         <View className="mt-1 flex-row items-center justify-between">
           <Text className="font-display text-xs uppercase tracking-widest text-stone-400">
-            {quest.classification}
-            {quest.recurrence ? ` · ${recurrenceLabel} ${streakLabel}` : ''}
+            {metaLine}
           </Text>
           <Text className="font-body text-xs text-stone-300">{quest.xp_reward} XP</Text>
         </View>
