@@ -8,6 +8,7 @@
 
 import { xpForTier } from './engine/xp';
 import { asError } from './errors';
+import { cancelDeadlineReminders, scheduleDeadlineReminders } from './notifications';
 import { supabase } from './supabase';
 import type {
   Quest,
@@ -86,7 +87,10 @@ export async function createQuest(input: CreateQuestInput): Promise<Quest> {
     .select()
     .single();
   if (error) throw asError(error);
-  return data as Quest;
+  const quest = data as Quest;
+  // Schedule deadline reminders. No-op on web / without permission.
+  void scheduleDeadlineReminders(quest.id, quest.title, quest.deadline);
+  return quest;
 }
 
 export interface CompleteQuestResult {
@@ -107,6 +111,9 @@ export async function completeQuest(questId: string): Promise<CompleteQuestResul
   // RPC returns SETOF, supabase-js gives us an array — take the first row.
   const row = Array.isArray(data) ? data[0] : data;
   if (!row) throw new Error('complete_quest returned no row');
+  // For one-shot quests the row is now in 'completed' status; reminders no
+  // longer make sense. Recurring quests stay active so we leave them alone.
+  void cancelDeadlineReminders(questId);
   return {
     newTotalXp: Number(row.new_total_xp),
     xpChange: Number(row.xp_change),
@@ -119,6 +126,7 @@ export async function completeQuest(questId: string): Promise<CompleteQuestResul
 export async function abandonQuest(questId: string): Promise<void> {
   const { error } = await supabase.rpc('abandon_quest', { quest_id: questId });
   if (error) throw asError(error);
+  void cancelDeadlineReminders(questId);
 }
 
 export async function updateQuestObjectives(
@@ -166,5 +174,9 @@ export async function updateQuest(questId: string, input: UpdateQuestInput): Pro
     .select()
     .single();
   if (error) throw asError(error);
-  return data as Quest;
+  const quest = data as Quest;
+  // Re-sync deadline reminders to whatever the new deadline says (or
+  // cancel them if the deadline was cleared).
+  void scheduleDeadlineReminders(quest.id, quest.title, quest.deadline);
+  return quest;
 }

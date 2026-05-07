@@ -275,12 +275,12 @@ Test file: `lib/engine/xp.test.ts`. Use Jest. Cover edge cases: zero XP, negativ
 - [x] Difficulty scaling: Master/Legendary stack debuffs (sum of pcts); Apprentice/Adept apply only the worst
 
 ## 4.3 Push Notifications
-- [ ] Expo Push notifications setup
-- [ ] Local notifications for quest deadlines (24h, 1h before)
-- [ ] Remote notifications for debuff warnings ("The embers dim — your Forge quest grows cold")
-- [ ] Daily check-in nudge (configurable time, default 8 AM)
-- [ ] All notifications use Archivist voice in copy
-- [ ] Permission request shown during onboarding with clear value prop
+- [ ] Expo Push notifications setup — token registration deferred until first remote-push use case (debuff warnings)
+- [x] Local notifications for quest deadlines (24h, 1h before) — scheduled on quest create/edit, cancelled on complete/abandon
+- [ ] Remote notifications for debuff warnings — deferred to a follow-up that adds an edge function + push tokens
+- [x] Daily check-in nudge (configurable time, default off; 7/8/9 AM and 8 PM presets)
+- [x] All notifications use Archivist voice in copy ("A deadline draws near", "The Tome stirs")
+- [~] Permission request shown — exposed in Settings; onboarding-time prompt deferred to Phase 5 polish
 
 ## 4.4 Quest Log & History
 - [x] Active quests view (default Quest Board)
@@ -290,7 +290,7 @@ Test file: `lib/engine/xp.test.ts`. Use Jest. Cover edge cases: zero XP, negativ
 
 ## 4.5 Settings
 - [x] Difficulty toggle (Apprentice / Adept / Master / Legendary) — exposed on the Character Sheet; mid-campaign change applies to the next completion only (not retroactive)
-- [ ] Notification preferences (per-type toggles) — blocked on 4.3
+- [~] Notification preferences — daily check-in time picker live; per-deadline-reminder toggles deferred
 - [~] Audio settings — cinematic mute toggle live; voiceover/ambient toggles deferred until those tracks exist
 - [ ] Theme toggle (dark / light) — deferred (significant restyle)
 - [x] `+chronicle` export — downloads full state as plain text on web, hands off to the Share sheet on native

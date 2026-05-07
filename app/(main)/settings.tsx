@@ -1,5 +1,5 @@
 import { useRouter } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 
 import { requestEmailChange, requestPasswordReset } from '../../lib/account';
@@ -8,12 +8,58 @@ import { useAudioMuted } from '../../lib/audio-prefs';
 import { shareChronicle } from '../../lib/chronicle';
 import { confirmDestructive, showInfoMessage } from '../../lib/dialogs';
 import { errorMessage } from '../../lib/errors';
+import {
+  getCheckInTime,
+  getPermissionStatus,
+  requestPermission,
+  setCheckInTime,
+  type PermissionStatus,
+} from '../../lib/notifications';
+
+const CHECK_IN_OPTIONS: { key: 'off' | string; label: string }[] = [
+  { key: 'off', label: 'Off' },
+  { key: '07:00', label: '7 AM' },
+  { key: '08:00', label: '8 AM' },
+  { key: '09:00', label: '9 AM' },
+  { key: '20:00', label: '8 PM' },
+];
 
 export default function Settings() {
   const { session, signOut } = useAuth();
   const router = useRouter();
 
   const [muted, setMuted] = useAudioMuted();
+
+  const [permissionStatus, setPermissionStatus] = useState<PermissionStatus | null>(null);
+  const [checkInTime, setCheckInTimeState] = useState<string>('off');
+  const [notifBusy, setNotifBusy] = useState(false);
+
+  useEffect(() => {
+    void getPermissionStatus().then(setPermissionStatus);
+    void getCheckInTime().then(setCheckInTimeState);
+  }, []);
+
+  const onRequestPermission = async () => {
+    setNotifBusy(true);
+    try {
+      const next = await requestPermission();
+      setPermissionStatus(next);
+    } finally {
+      setNotifBusy(false);
+    }
+  };
+
+  const onSelectCheckIn = async (next: 'off' | string) => {
+    setNotifBusy(true);
+    try {
+      await setCheckInTime(next);
+      setCheckInTimeState(next);
+    } catch (e) {
+      console.warn('check-in schedule failed', e);
+    } finally {
+      setNotifBusy(false);
+    }
+  };
 
   const [exporting, setExporting] = useState(false);
   const [exportError, setExportError] = useState<string | null>(null);
@@ -194,6 +240,70 @@ export default function Settings() {
           Replay opening cinematic
         </Text>
       </Pressable>
+
+      {/* Notifications */}
+      <SectionHeader>Notifications</SectionHeader>
+      {permissionStatus === 'unsupported' ? (
+        <View className="mb-3 rounded-md border border-stone-800 bg-stone-900 px-4 py-3">
+          <Text className="font-body text-sm text-stone-400">
+            Local notifications aren&apos;t available on this platform. Open Questline on iOS or
+            Android to schedule deadline reminders and the daily check-in.
+          </Text>
+        </View>
+      ) : permissionStatus !== 'granted' ? (
+        <Pressable
+          onPress={onRequestPermission}
+          disabled={notifBusy}
+          className={`mb-3 rounded-md border border-stone-700 px-4 py-3 ${
+            notifBusy ? 'bg-stone-800' : 'bg-stone-900 active:bg-stone-800'
+          }`}
+        >
+          <Text className="text-center font-body text-base text-stone-200">
+            {notifBusy
+              ? 'Asking the device…'
+              : permissionStatus === 'denied'
+                ? 'Permission denied — open device Settings to re-enable'
+                : 'Allow notifications'}
+          </Text>
+        </Pressable>
+      ) : (
+        <>
+          <View className="mb-3 rounded-md border border-stone-800 bg-stone-900 px-4 py-3">
+            <Text className="font-body text-sm text-stone-300">
+              Deadline reminders are scheduled automatically when you set a deadline (24h and 1h
+              before).
+            </Text>
+          </View>
+          <Text className="mb-1 font-display text-[10px] uppercase tracking-widest text-stone-500">
+            Daily check-in
+          </Text>
+          <View className="mb-8 flex-row flex-wrap gap-2">
+            {CHECK_IN_OPTIONS.map((opt) => {
+              const selected = checkInTime === opt.key;
+              return (
+                <Pressable
+                  key={opt.key}
+                  onPress={() => void onSelectCheckIn(opt.key)}
+                  disabled={notifBusy}
+                  className={`rounded-full border px-3 py-1.5 ${
+                    selected
+                      ? 'border-amber-500 bg-amber-600/20'
+                      : 'border-stone-700 bg-stone-900'
+                  }`}
+                >
+                  <Text
+                    className={`font-body-medium text-sm ${
+                      selected ? 'text-amber-300' : 'text-stone-300'
+                    }`}
+                  >
+                    {opt.label}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
+        </>
+      )}
 
       {/* Audio */}
       <SectionHeader>Audio</SectionHeader>
