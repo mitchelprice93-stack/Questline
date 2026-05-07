@@ -102,7 +102,11 @@ export default function QuestDetail() {
     setBusy('complete');
     setActionError(null);
     try {
-      const oldLevel = profile?.level ?? 1;
+      // Derive oldLevel from total_xp, NOT profile.level. The latter is set
+      // once at character creation and never refreshed; trusting it makes
+      // the level-up animation fire on every completion after the user
+      // crosses any threshold past their starting level.
+      const oldLevel = calculateLevel(profile?.total_xp ?? 0).level;
       const result = await completeQuest(quest.id);
       const { level: newLevel } = calculateLevel(result.newTotalXp);
       const milestoneLine =
