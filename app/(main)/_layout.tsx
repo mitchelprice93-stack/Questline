@@ -16,6 +16,9 @@ export default function MainLayout() {
       <Tabs.Screen name="quest-board" options={{ title: 'Quests' }} />
       <Tabs.Screen name="character-sheet" options={{ title: 'Character' }} />
       <Tabs.Screen name="settings" options={{ title: 'Settings' }} />
+      {/* xp-history is reachable only from the Character Sheet — hide it
+          from the tab bar so it doesn't take a top-level slot. */}
+      <Tabs.Screen name="xp-history" options={{ href: null }} />
     </Tabs>
   );
 }

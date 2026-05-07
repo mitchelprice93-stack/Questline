@@ -1,4 +1,4 @@
-import { useFocusEffect } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 
@@ -47,6 +47,7 @@ const DRAFT_ID = '__draft__';
 
 export default function CharacterSheet() {
   const { session, refetchProfile } = useAuth();
+  const router = useRouter();
   const [data, setData] = useState<SheetData | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
@@ -191,6 +192,12 @@ export default function CharacterSheet() {
             ? `${totalXp.toLocaleString()} XP · max level reached`
             : `${currentLevelXp.toLocaleString()} / ${nextLevelXp.toLocaleString()} XP into this level · ${totalXp.toLocaleString()} total`}
         </Text>
+        <Pressable
+          onPress={() => router.push('/xp-history')}
+          className="mt-3 active:opacity-60"
+        >
+          <Text className="font-body text-xs text-amber-400">View XP history →</Text>
+        </Pressable>
       </View>
 
       {/* Active quests */}
