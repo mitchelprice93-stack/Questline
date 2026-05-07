@@ -1,21 +1,91 @@
 import { useRouter } from 'expo-router';
-import { Pressable, Text, View } from 'react-native';
+import { useState } from 'react';
+import { Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 
+import { requestEmailChange, requestPasswordReset } from '../../lib/account';
 import { useAuth } from '../../lib/auth';
+import { useAudioMuted } from '../../lib/audio-prefs';
+import { shareChronicle } from '../../lib/chronicle';
+import { confirmDestructive, showInfoMessage } from '../../lib/dialogs';
+import { errorMessage } from '../../lib/errors';
 
 export default function Settings() {
   const { session, signOut } = useAuth();
   const router = useRouter();
 
-  return (
-    <View className="flex-1 bg-stone-950 px-6 pt-16">
-      <Text className="mb-1 font-display text-3xl text-stone-100">Settings</Text>
-      <Text className="mb-8 font-body text-stone-400">
-        Phase 4.5 will populate notification, audio, and theme controls.
-      </Text>
+  const [muted, setMuted] = useAudioMuted();
 
+  const [exporting, setExporting] = useState(false);
+  const [exportError, setExportError] = useState<string | null>(null);
+
+  const [emailEditing, setEmailEditing] = useState(false);
+  const [newEmail, setNewEmail] = useState('');
+  const [emailBusy, setEmailBusy] = useState(false);
+  const [emailError, setEmailError] = useState<string | null>(null);
+
+  const [passwordBusy, setPasswordBusy] = useState(false);
+  const [passwordError, setPasswordError] = useState<string | null>(null);
+
+  const onExport = async () => {
+    setExportError(null);
+    setExporting(true);
+    try {
+      await shareChronicle();
+    } catch (e) {
+      setExportError(errorMessage(e));
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  const onSendEmailChange = async () => {
+    setEmailError(null);
+    setEmailBusy(true);
+    try {
+      await requestEmailChange(newEmail);
+      await showInfoMessage(
+        'Confirmation sent',
+        `Check ${newEmail.trim()} for a confirmation link. Your account email changes once you click through.`,
+      );
+      setEmailEditing(false);
+      setNewEmail('');
+    } catch (e) {
+      setEmailError(errorMessage(e));
+    } finally {
+      setEmailBusy(false);
+    }
+  };
+
+  const onSendPasswordReset = async () => {
+    if (!session?.user.email) return;
+    const proceed = await confirmDestructive(
+      'Send reset email?',
+      `A password-reset link will be sent to ${session.user.email}. Click through it to set a new password.`,
+    );
+    if (!proceed) return;
+    setPasswordError(null);
+    setPasswordBusy(true);
+    try {
+      await requestPasswordReset(session.user.email);
+      await showInfoMessage(
+        'Reset email sent',
+        `Check ${session.user.email} for the link.`,
+      );
+    } catch (e) {
+      setPasswordError(errorMessage(e));
+    } finally {
+      setPasswordBusy(false);
+    }
+  };
+
+  return (
+    <ScrollView className="flex-1 bg-stone-950" contentContainerClassName="px-6 pt-16 pb-12">
+      <Text className="mb-6 font-display text-3xl text-stone-100">Settings</Text>
+
+      {/* Account */}
+      <SectionHeader>Account</SectionHeader>
       {session?.user.email ? (
-        <View className="mb-8">
+        <View className="mb-3">
           <Text className="mb-1 font-display text-xs uppercase tracking-widest text-stone-500">
             Signed in as
           </Text>
@@ -23,21 +93,136 @@ export default function Settings() {
         </View>
       ) : null}
 
+      {emailEditing ? (
+        <View className="mb-3 rounded-md border border-amber-900/50 bg-stone-900 p-3">
+          <Text className="mb-1 font-display text-[10px] uppercase tracking-widest text-stone-500">
+            New email address
+          </Text>
+          <TextInput
+            value={newEmail}
+            onChangeText={setNewEmail}
+            placeholder="you@example.com"
+            placeholderTextColor="#57534e"
+            autoCapitalize="none"
+            keyboardType="email-address"
+            editable={!emailBusy}
+            className="mb-3 rounded-md border border-stone-700 bg-stone-950 px-3 py-2 font-body text-stone-100"
+          />
+          {emailError ? (
+            <Text className="mb-2 font-body text-sm text-red-400">{emailError}</Text>
+          ) : null}
+          <View className="flex-row gap-2">
+            <Pressable
+              onPress={onSendEmailChange}
+              disabled={emailBusy || !newEmail.trim()}
+              className={`flex-1 rounded-md px-3 py-2 ${
+                emailBusy || !newEmail.trim()
+                  ? 'bg-stone-800'
+                  : 'bg-amber-600 active:bg-amber-700'
+              }`}
+            >
+              <Text className="text-center font-body-medium text-sm text-stone-100">
+                {emailBusy ? 'Sending…' : 'Send confirmation'}
+              </Text>
+            </Pressable>
+            <Pressable
+              onPress={() => {
+                setEmailEditing(false);
+                setNewEmail('');
+                setEmailError(null);
+              }}
+              disabled={emailBusy}
+              className="rounded-md border border-stone-700 bg-stone-900 px-3 py-2 active:bg-stone-800"
+            >
+              <Text className="font-body text-sm text-stone-300">Cancel</Text>
+            </Pressable>
+          </View>
+        </View>
+      ) : (
+        <Pressable
+          onPress={() => setEmailEditing(true)}
+          className="mb-3 rounded-md border border-stone-700 bg-stone-900 px-4 py-3 active:bg-stone-800"
+        >
+          <Text className="text-center font-body text-base text-stone-200">Change email</Text>
+        </Pressable>
+      )}
+
+      <Pressable
+        onPress={onSendPasswordReset}
+        disabled={passwordBusy || !session?.user.email}
+        className={`mb-3 rounded-md border border-stone-700 px-4 py-3 ${
+          passwordBusy ? 'bg-stone-800' : 'bg-stone-900 active:bg-stone-800'
+        }`}
+      >
+        <Text className="text-center font-body text-base text-stone-200">
+          {passwordBusy ? 'Sending…' : 'Send password reset email'}
+        </Text>
+      </Pressable>
+      {passwordError ? (
+        <Text className="mb-3 font-body text-sm text-red-400">{passwordError}</Text>
+      ) : null}
+
+      <Pressable
+        onPress={() => signOut()}
+        className="mb-8 rounded-md border border-stone-700 bg-stone-900 px-4 py-3 active:bg-stone-800"
+      >
+        <Text className="text-center font-body text-base text-stone-100">Sign out</Text>
+      </Pressable>
+
+      {/* Chronicle */}
+      <SectionHeader>Chronicle</SectionHeader>
+      <Pressable
+        onPress={onExport}
+        disabled={exporting}
+        className={`mb-3 rounded-md border border-stone-700 px-4 py-3 ${
+          exporting ? 'bg-stone-800' : 'bg-stone-900 active:bg-stone-800'
+        }`}
+      >
+        <Text className="text-center font-body text-base text-stone-200">
+          {exporting ? 'Exporting…' : '+chronicle — export full state'}
+        </Text>
+      </Pressable>
+      {exportError ? (
+        <Text className="mb-3 font-body text-sm text-red-400">{exportError}</Text>
+      ) : null}
+
       <Pressable
         onPress={() => router.push('/cinematic')}
-        className="mb-3 rounded-md border border-stone-700 bg-stone-900 px-4 py-3 active:bg-stone-800"
+        className="mb-8 rounded-md border border-stone-700 bg-stone-900 px-4 py-3 active:bg-stone-800"
       >
         <Text className="text-center font-body text-base text-stone-200">
           Replay opening cinematic
         </Text>
       </Pressable>
 
+      {/* Audio */}
+      <SectionHeader>Audio</SectionHeader>
       <Pressable
-        onPress={() => signOut()}
-        className="rounded-md border border-stone-700 bg-stone-900 px-4 py-3 active:bg-stone-800"
+        onPress={() => void setMuted(!muted)}
+        className="mb-3 flex-row items-center justify-between rounded-md border border-stone-700 bg-stone-900 px-4 py-3 active:bg-stone-800"
       >
-        <Text className="text-center font-body text-base text-stone-100">Sign out</Text>
+        <View className="flex-1 pr-3">
+          <Text className="font-body text-base text-stone-200">Mute cinematic audio</Text>
+          <Text className="mt-0.5 font-body text-xs text-stone-500">
+            Affects the opening intro and ambient holding loop. Replay to hear changes.
+          </Text>
+        </View>
+        <View
+          className={`h-6 w-11 rounded-full ${muted ? 'bg-amber-600' : 'bg-stone-700'} justify-center`}
+        >
+          <View
+            className={`h-5 w-5 rounded-full bg-stone-100 ${muted ? 'self-end mr-0.5' : 'self-start ml-0.5'}`}
+          />
+        </View>
       </Pressable>
-    </View>
+    </ScrollView>
+  );
+}
+
+function SectionHeader({ children }: { children: string }) {
+  return (
+    <Text className="mb-3 font-display text-xs uppercase tracking-[0.3em] text-amber-400">
+      {children}
+    </Text>
   );
 }

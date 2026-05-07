@@ -5,6 +5,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
 
 import { useAuth } from '../../lib/auth';
+import { getAudioMuted } from '../../lib/audio-prefs';
 
 // Two clips: the narrated intro plays once, then we hand off to a separate
 // holding loop authored to seam back to itself with only ambient (wind +
@@ -32,6 +33,14 @@ export default function Cinematic() {
     // Don't autoplay — we play() inside the tap handler so the browser sees
     // a user gesture and unblocks audio playback.
   });
+
+  // Honor the persisted mute pref on mount. We read once; toggling from
+  // Settings while the cinematic plays is rare enough we don't subscribe.
+  useEffect(() => {
+    void getAudioMuted().then((m) => {
+      player.muted = m;
+    });
+  }, [player]);
 
   // Surface playback errors and status transitions to the console so we have
   // something to grep when a frozen-frame report comes in.

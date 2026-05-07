@@ -289,12 +289,12 @@ Test file: `lib/engine/xp.test.ts`. Use Jest. Cover edge cases: zero XP, negativ
 - [x] Search and filter by faction, tier, date range
 
 ## 4.5 Settings
-- [ ] Difficulty toggle (Apprentice / Adept / Master / Legendary) — irreversible mid-campaign without confirmation
-- [ ] Notification preferences (per-type toggles)
-- [ ] Audio settings (master mute, voiceover toggle, ambient toggle)
-- [ ] Theme toggle (dark / light)
-- [ ] `+chronicle` export — downloads full state as plain text file
-- [ ] Account management (email change, password reset, account deletion)
+- [x] Difficulty toggle (Apprentice / Adept / Master / Legendary) — exposed on the Character Sheet; mid-campaign change applies to the next completion only (not retroactive)
+- [ ] Notification preferences (per-type toggles) — blocked on 4.3
+- [~] Audio settings — cinematic mute toggle live; voiceover/ambient toggles deferred until those tracks exist
+- [ ] Theme toggle (dark / light) — deferred (significant restyle)
+- [x] `+chronicle` export — downloads full state as plain text on web, hands off to the Share sheet on native
+- [~] Account management — change email, send password reset; account deletion deferred to an admin edge function
 
 ## Phase 4 Definition of Done
 - Recurring quests cycle correctly across timezone changes and DST

@@ -1,0 +1,32 @@
+// Account management — change email, change password.
+//
+// Both flows go through Supabase Auth. The user receives a confirmation
+// email at the new address (or a reset link, for password) and the change
+// only takes effect once they click through. We don't auto-update local
+// state — the next session refresh will pick up the new email.
+
+import { asError } from './errors';
+import { supabase } from './supabase';
+
+/**
+ * Send a password-reset email. The user clicks the link, sets a new
+ * password, and is signed back in. Cleaner than asking for the new
+ * password inline because we don't have to handle the form state.
+ */
+export async function requestPasswordReset(email: string): Promise<void> {
+  const { error } = await supabase.auth.resetPasswordForEmail(email);
+  if (error) throw asError(error);
+}
+
+/**
+ * Initiate an email change. Supabase sends a confirmation link to the new
+ * address; the change applies once that link is clicked.
+ */
+export async function requestEmailChange(newEmail: string): Promise<void> {
+  const trimmed = newEmail.trim();
+  if (!trimmed || !trimmed.includes('@')) {
+    throw new Error('Please enter a valid email address.');
+  }
+  const { error } = await supabase.auth.updateUser({ email: trimmed });
+  if (error) throw asError(error);
+}
