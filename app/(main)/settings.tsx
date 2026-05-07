@@ -225,9 +225,13 @@ export default function Settings() {
         }`}
       >
         <Text className="text-center font-body text-base text-stone-200">
-          {exporting ? 'Exporting…' : '+chronicle — export full state'}
+          {exporting ? 'The scribes are at work…' : 'Transcribe the Tome'}
         </Text>
       </Pressable>
+      <Text className="-mt-1 mb-3 font-body text-xs text-stone-500">
+        Take a written copy of your chronicle — character, factions, campaigns,
+        and every quest the Tome remembers.
+      </Text>
       {exportError ? (
         <Text className="mb-3 font-body text-sm text-red-400">{exportError}</Text>
       ) : null}

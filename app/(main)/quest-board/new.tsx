@@ -11,6 +11,12 @@ import type {
   QuestObjective,
   QuestRecurrence,
 } from '../../../lib/types/models';
+import {
+  BuffEditor,
+  buffDraftToPayload,
+  emptyBuffDraft,
+  type BuffDraft,
+} from './_buff-editor';
 import { ObjectivesEditor } from './_objectives-editor';
 
 const TIERS: QuestTier[] = ['trivial', 'minor', 'standard', 'major', 'legendary'];
@@ -37,6 +43,7 @@ export default function NewQuest() {
   const [objectives, setObjectives] = useState<QuestObjective[]>([]);
   const [deadlineRaw, setDeadlineRaw] = useState('');
   const [recurrence, setRecurrence] = useState<RecurrenceChoice>('none');
+  const [buff, setBuff] = useState<BuffDraft>(emptyBuffDraft());
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -92,6 +99,7 @@ export default function NewQuest() {
         classification,
         deadline: deadlineIso,
         recurrence: recurrenceForDb(recurrence),
+        grantedBuff: buffDraftToPayload(buff),
         objectives: objectives
           .map((o) => ({ ...o, text: o.text.trim() }))
           .filter((o) => o.text.length > 0),
@@ -228,6 +236,11 @@ export default function NewQuest() {
       <View className="mb-6">
         <Text className="mb-2 font-body text-sm text-stone-300">Objectives</Text>
         <ObjectivesEditor objectives={objectives} onChange={setObjectives} disabled={submitting} />
+      </View>
+
+      <Text className="mb-2 font-body text-sm text-stone-300">Granted buff (optional)</Text>
+      <View className="mb-6">
+        <BuffEditor draft={buff} onChange={setBuff} disabled={submitting} />
       </View>
 
       <Text className="mb-2 font-body text-sm text-stone-300">Deadline (optional)</Text>

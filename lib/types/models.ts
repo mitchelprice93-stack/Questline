@@ -7,6 +7,7 @@ import type { Difficulty, QuestTier } from '../engine/xp';
 export type QuestClassification = 'daily' | 'side' | 'main' | 'legendary';
 export type QuestStatus = 'active' | 'completed' | 'abandoned';
 export type QuestRecurrence = 'daily' | 'weekly' | null;
+export type GrantedBuffCondition = 'on_complete' | 'on_time' | 'all_objectives';
 
 export interface QuestObjective {
   text: string;
@@ -34,6 +35,13 @@ export interface Quest {
   last_completed_at: string | null;
   /** Set when the quest was abandoned. */
   abandoned_at: string | null;
+  /** Pre-declared buff this quest will grant on completion if its condition
+   *  is satisfied. All four fields move together — either every one is set
+   *  or every one is null. */
+  granted_buff_name: string | null;
+  granted_buff_description: string | null;
+  granted_buff_pct: number | null;
+  granted_buff_condition: GrantedBuffCondition | null;
   created_at: string;
 }
 

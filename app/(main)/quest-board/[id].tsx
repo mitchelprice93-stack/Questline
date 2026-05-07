@@ -28,6 +28,13 @@ import type {
   QuestObjective,
   QuestRecurrence,
 } from '../../../lib/types/models';
+import {
+  BuffEditor,
+  buffDraftFromQuest,
+  buffDraftToPayload,
+  emptyBuffDraft,
+  type BuffDraft,
+} from './_buff-editor';
 import { ObjectivesEditor } from './_objectives-editor';
 
 const TIERS: QuestTier[] = ['trivial', 'minor', 'standard', 'major', 'legendary'];
@@ -73,6 +80,7 @@ export default function QuestDetail() {
   const [editObjectives, setEditObjectives] = useState<QuestObjective[]>([]);
   const [editDeadline, setEditDeadline] = useState('');
   const [editRecurrence, setEditRecurrence] = useState<RecurrenceChoice>('none');
+  const [editBuff, setEditBuff] = useState<BuffDraft>(emptyBuffDraft());
 
   useEffect(() => {
     if (!id) return;
@@ -102,8 +110,15 @@ export default function QuestDetail() {
           ? ` · streak ${result.newStreak} milestone bonus +${result.milestoneBonus} XP`
           : '';
       const streakLine = result.newStreak > 0 ? ` · streak ${result.newStreak}` : '';
-      const debuffLine =
-        result.debuffPct < 0 ? ` · debuffs applied (${result.debuffPct}%)` : '';
+      const modifierLine =
+        result.netModifierPct > 0
+          ? ` · modifiers +${result.netModifierPct}%`
+          : result.netModifierPct < 0
+            ? ` · modifiers ${result.netModifierPct}%`
+            : '';
+      const buffLine = result.buffGranted
+        ? ` · earned: ${result.buffGranted}`
+        : '';
       if (newLevel > oldLevel) {
         refetchProfile();
         setLevelUp({
@@ -119,7 +134,7 @@ export default function QuestDetail() {
         // Refresh quest to pick up the new last_completed_at + streak_count.
         await showInfoMessage(
           'Quest completed',
-          `+${result.xpChange} XP earned${streakLine}${milestoneLine}${debuffLine}`,
+          `+${result.xpChange} XP earned${streakLine}${milestoneLine}${modifierLine}${buffLine}`,
         );
         const fresh = await getQuest(quest.id);
         if (fresh) setQuest(fresh);
@@ -128,7 +143,7 @@ export default function QuestDetail() {
       } else {
         await showInfoMessage(
           'Quest completed',
-          `+${result.xpChange} XP earned${debuffLine} · ${result.newTotalXp} total`,
+          `+${result.xpChange} XP earned${modifierLine}${buffLine} · ${result.newTotalXp} total`,
         );
         router.back();
       }
@@ -182,6 +197,7 @@ export default function QuestDetail() {
     // Pre-fill with the human-readable form so the user can re-edit naturally.
     setEditDeadline(formatDeadline(quest.deadline) ?? '');
     setEditRecurrence(recurrenceForUi(quest.recurrence));
+    setEditBuff(buffDraftFromQuest(quest));
     setActionError(null);
     setEditMode(true);
   };
@@ -214,6 +230,7 @@ export default function QuestDetail() {
         classification: editClassification,
         deadline: deadlineIso,
         recurrence: recurrenceForDb(editRecurrence),
+        grantedBuff: buffDraftToPayload(editBuff),
         objectives: editObjectives
           .map((o) => ({ ...o, text: o.text.trim() }))
           .filter((o) => o.text.length > 0),
@@ -322,6 +339,15 @@ export default function QuestDetail() {
           />
         </View>
 
+        <Text className="mb-2 font-body text-sm text-stone-300">Granted buff (optional)</Text>
+        <View className="mb-6">
+          <BuffEditor
+            draft={editBuff}
+            onChange={setEditBuff}
+            disabled={busy === 'save-edits'}
+          />
+        </View>
+
         <Text className="mb-2 font-body text-sm text-stone-300">Deadline (optional)</Text>
         <TextInput
           value={editDeadline}
@@ -395,6 +421,34 @@ export default function QuestDetail() {
               <Text className="font-body text-xs text-stone-400">{cooldownLabel}</Text>
             ) : null}
           </View>
+        </View>
+      ) : null}
+
+      {quest.granted_buff_name && quest.granted_buff_pct !== null ? (
+        <View className="mb-6 rounded-md border border-emerald-900/50 bg-stone-900 p-4">
+          <View className="flex-row items-baseline justify-between">
+            <Text className="font-display text-xs uppercase tracking-widest text-emerald-300">
+              Granted buff
+            </Text>
+            <Text className="font-body text-xs text-emerald-300">
+              +{quest.granted_buff_pct}%
+            </Text>
+          </View>
+          <Text className="mt-1 font-body-medium text-base text-stone-100">
+            {quest.granted_buff_name}
+          </Text>
+          {quest.granted_buff_description ? (
+            <Text className="mt-0.5 font-body text-xs text-stone-400">
+              {quest.granted_buff_description}
+            </Text>
+          ) : null}
+          <Text className="mt-2 font-body text-xs text-stone-500">
+            {quest.granted_buff_condition === 'on_time'
+              ? 'Earned if you finish before the deadline.'
+              : quest.granted_buff_condition === 'all_objectives'
+                ? 'Earned if every objective box is checked.'
+                : 'Earned on completion.'}
+          </Text>
         </View>
       ) : null}
 

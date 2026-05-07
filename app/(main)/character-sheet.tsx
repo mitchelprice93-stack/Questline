@@ -13,10 +13,11 @@ import {
   updateFaction,
 } from '../../lib/character-sheet';
 import {
+  listActiveBuffs,
   listActiveDebuffs,
   refreshDebuffs,
   restUser,
-  type ActiveDebuff,
+  type ActiveModifier,
 } from '../../lib/debuffs';
 import { confirmDestructive, showInfoMessage } from '../../lib/dialogs';
 import { calculateLevel, type Difficulty } from '../../lib/engine/xp';
@@ -34,7 +35,8 @@ interface SheetData {
   factions: Faction[];
   campaigns: Campaign[];
   activeQuests: number;
-  debuffs: ActiveDebuff[];
+  buffs: ActiveModifier[];
+  debuffs: ActiveModifier[];
 }
 
 const DIFFICULTIES: Difficulty[] = ['apprentice', 'adept', 'master', 'legendary'];
@@ -68,13 +70,14 @@ export default function CharacterSheet() {
           console.warn('refreshDebuffs failed', e);
         }
       }
-      const [factions, campaigns, activeQuests, debuffs] = await Promise.all([
+      const [factions, campaigns, activeQuests, buffs, debuffs] = await Promise.all([
         listFactions(),
         listCampaigns('active'),
         getActiveQuestCount(),
+        listActiveBuffs(),
         listActiveDebuffs(),
       ]);
-      setData({ profile, factions, campaigns, activeQuests, debuffs });
+      setData({ profile, factions, campaigns, activeQuests, buffs, debuffs });
     } catch (e) {
       setError(errorMessage(e));
     }
@@ -140,7 +143,7 @@ export default function CharacterSheet() {
     );
   }
 
-  const { profile, factions, campaigns, activeQuests, debuffs } = data;
+  const { profile, factions, campaigns, activeQuests, buffs, debuffs } = data;
   const restCooldownMs = 7 * 24 * 60 * 60 * 1000;
   const restAvailableAt = profile?.last_rest_at
     ? new Date(profile.last_rest_at).getTime() + restCooldownMs
@@ -197,6 +200,35 @@ export default function CharacterSheet() {
         </Text>
         <Text className="font-display-bold text-2xl text-stone-100">{activeQuests}</Text>
       </View>
+
+      {/* Buffs — earned by completing quests under their granted-buff
+          conditions. Stack across the next completion (regardless of
+          difficulty). Hidden when none are active. */}
+      {buffs.length > 0 ? (
+        <>
+          <Text className="mb-2 font-display text-xs uppercase tracking-widest text-stone-300">
+            Buffs
+          </Text>
+          <View className="mb-8 gap-2">
+            {buffs.map((b) => (
+              <View
+                key={b.id}
+                className="rounded-md border border-emerald-900/40 bg-stone-900 px-4 py-3"
+              >
+                <View className="flex-row items-baseline justify-between">
+                  <Text className="font-body-medium text-base text-stone-100">{b.name}</Text>
+                  <Text className="font-body text-xs text-emerald-300">
+                    +{b.xp_modifier_pct}%
+                  </Text>
+                </View>
+                {b.effect_description ? (
+                  <Text className="font-body text-xs text-stone-400">{b.effect_description}</Text>
+                ) : null}
+              </View>
+            ))}
+          </View>
+        </>
+      ) : null}
 
       {/* Debuffs — visible whenever any are active. Rest button always
           renders but disables on cooldown. */}

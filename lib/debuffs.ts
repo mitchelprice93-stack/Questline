@@ -1,4 +1,4 @@
-// Debuff engine client API.
+// Buff/debuff engine client API.
 //
 // The DB owns the math (refresh_debuffs_for, complete_quest, rest_user RPCs).
 // These wrappers just unwrap supabase-js error envelopes.
@@ -6,8 +6,9 @@
 import { asError } from './errors';
 import { supabase } from './supabase';
 
-export interface ActiveDebuff {
+export interface ActiveModifier {
   id: string;
+  type: 'buff' | 'debuff';
   name: string;
   effect_description: string | null;
   xp_modifier_pct: number;
@@ -15,6 +16,9 @@ export interface ActiveDebuff {
   quest_id: string | null;
   created_at: string;
 }
+
+/** @deprecated kept for one release while screens migrate to ActiveModifier. */
+export type ActiveDebuff = ActiveModifier;
 
 /**
  * Reconcile time-based debuffs against the user's quest state. Idempotent.
@@ -26,17 +30,19 @@ export async function refreshDebuffs(userId: string): Promise<void> {
   if (error) throw asError(error);
 }
 
-/** List unconsumed debuffs for the current user, newest first. */
-export async function listActiveDebuffs(): Promise<ActiveDebuff[]> {
+async function listModifiers(type: 'buff' | 'debuff'): Promise<ActiveModifier[]> {
   const { data, error } = await supabase
     .from('modifiers')
-    .select('id, name, effect_description, xp_modifier_pct, source_kind, quest_id, created_at')
-    .eq('type', 'debuff')
+    .select('id, type, name, effect_description, xp_modifier_pct, source_kind, quest_id, created_at')
+    .eq('type', type)
     .is('consumed_at', null)
     .order('created_at', { ascending: false });
   if (error) throw asError(error);
-  return (data ?? []) as ActiveDebuff[];
+  return (data ?? []) as ActiveModifier[];
 }
+
+export const listActiveDebuffs = (): Promise<ActiveModifier[]> => listModifiers('debuff');
+export const listActiveBuffs = (): Promise<ActiveModifier[]> => listModifiers('buff');
 
 export interface RestResult {
   clearedCount: number;

@@ -11,6 +11,7 @@ import { asError } from './errors';
 import { cancelDeadlineReminders, scheduleDeadlineReminders } from './notifications';
 import { supabase } from './supabase';
 import type {
+  GrantedBuffCondition,
   Quest,
   QuestClassification,
   QuestObjective,
@@ -18,6 +19,13 @@ import type {
   QuestStatus,
 } from './types/models';
 import type { QuestTier } from './engine/xp';
+
+export interface GrantedBuff {
+  name: string;
+  description: string | null;
+  pct: number;
+  condition: GrantedBuffCondition;
+}
 
 // Re-export the pure filter so existing call sites (and the Quest Board
 // screen) can keep importing from one place.
@@ -33,6 +41,25 @@ export interface CreateQuestInput {
   objectives?: QuestObjective[];
   /** null = one-shot. 'daily' / 'weekly' = auto-recurring with streak tracking. */
   recurrence?: QuestRecurrence;
+  /** Optional pre-declared buff awarded on completion if its condition is met. */
+  grantedBuff?: GrantedBuff | null;
+}
+
+function buffColumns(buff: GrantedBuff | null | undefined) {
+  if (!buff) {
+    return {
+      granted_buff_name: null,
+      granted_buff_description: null,
+      granted_buff_pct: null,
+      granted_buff_condition: null,
+    };
+  }
+  return {
+    granted_buff_name: buff.name.trim(),
+    granted_buff_description: buff.description?.trim() || null,
+    granted_buff_pct: Math.round(buff.pct),
+    granted_buff_condition: buff.condition,
+  };
 }
 
 export async function listQuests(status: QuestStatus = 'active'): Promise<Quest[]> {
@@ -83,6 +110,7 @@ export async function createQuest(input: CreateQuestInput): Promise<Quest> {
       deadline: input.deadline,
       objectives: input.objectives ?? [],
       recurrence: input.recurrence ?? null,
+      ...buffColumns(input.grantedBuff),
     })
     .select()
     .single();
@@ -95,14 +123,16 @@ export async function createQuest(input: CreateQuestInput): Promise<Quest> {
 
 export interface CompleteQuestResult {
   newTotalXp: number;
-  /** Total XP awarded by this completion (base after debuffs + milestone bonus). */
+  /** Total XP awarded by this completion (base after modifiers + milestone bonus). */
   xpChange: number;
   /** New streak count for recurring quests; 0 for one-shot completions. */
   newStreak: number;
   /** Bonus XP awarded for hitting a streak milestone (7/30/100). 0 otherwise. */
   milestoneBonus: number;
-  /** Net debuff percentage applied to the base reward (e.g. -10 for cobwebs). */
-  debuffPct: number;
+  /** Net modifier applied to the base reward (positive = buff-dominant). */
+  netModifierPct: number;
+  /** Name of the buff this completion granted, if its condition was met. */
+  buffGranted: string | null;
 }
 
 export async function completeQuest(questId: string): Promise<CompleteQuestResult> {
@@ -119,7 +149,8 @@ export async function completeQuest(questId: string): Promise<CompleteQuestResul
     xpChange: Number(row.xp_change),
     newStreak: Number(row.new_streak ?? 0),
     milestoneBonus: Number(row.milestone_bonus ?? 0),
-    debuffPct: Number(row.debuff_pct ?? 0),
+    netModifierPct: Number(row.net_modifier_pct ?? 0),
+    buffGranted: (row.buff_granted as string | null) ?? null,
   };
 }
 
@@ -145,6 +176,8 @@ export interface UpdateQuestInput {
   deadline: string | null;
   objectives: QuestObjective[];
   recurrence: QuestRecurrence;
+  /** Pass null to remove the granted buff; omit to leave unchanged. */
+  grantedBuff?: GrantedBuff | null;
 }
 
 /**
@@ -158,18 +191,22 @@ export interface UpdateQuestInput {
  */
 export async function updateQuest(questId: string, input: UpdateQuestInput): Promise<Quest> {
   const xp_reward = xpForTier(input.tier);
+  const patch: Record<string, unknown> = {
+    title: input.title,
+    description: input.description,
+    tier: input.tier,
+    classification: input.classification,
+    xp_reward,
+    deadline: input.deadline,
+    objectives: input.objectives,
+    recurrence: input.recurrence,
+  };
+  if (input.grantedBuff !== undefined) {
+    Object.assign(patch, buffColumns(input.grantedBuff));
+  }
   const { data, error } = await supabase
     .from('quests')
-    .update({
-      title: input.title,
-      description: input.description,
-      tier: input.tier,
-      classification: input.classification,
-      xp_reward,
-      deadline: input.deadline,
-      objectives: input.objectives,
-      recurrence: input.recurrence,
-    })
+    .update(patch)
     .eq('id', questId)
     .select()
     .single();

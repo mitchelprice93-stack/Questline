@@ -20,6 +20,10 @@ function makeQuest(partial: Partial<Quest> = {}): Quest {
     completed_at: partial.completed_at ?? null,
     last_completed_at: null,
     abandoned_at: partial.abandoned_at ?? null,
+    granted_buff_name: null,
+    granted_buff_description: null,
+    granted_buff_pct: null,
+    granted_buff_condition: null,
     created_at: partial.created_at ?? '2026-05-01T00:00:00Z',
   };
 }
