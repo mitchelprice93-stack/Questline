@@ -102,6 +102,8 @@ export default function QuestDetail() {
           ? ` · streak ${result.newStreak} milestone bonus +${result.milestoneBonus} XP`
           : '';
       const streakLine = result.newStreak > 0 ? ` · streak ${result.newStreak}` : '';
+      const debuffLine =
+        result.debuffPct < 0 ? ` · debuffs applied (${result.debuffPct}%)` : '';
       if (newLevel > oldLevel) {
         refetchProfile();
         setLevelUp({
@@ -117,7 +119,7 @@ export default function QuestDetail() {
         // Refresh quest to pick up the new last_completed_at + streak_count.
         await showInfoMessage(
           'Quest completed',
-          `+${result.xpChange} XP earned${streakLine}${milestoneLine}`,
+          `+${result.xpChange} XP earned${streakLine}${milestoneLine}${debuffLine}`,
         );
         const fresh = await getQuest(quest.id);
         if (fresh) setQuest(fresh);
@@ -126,7 +128,7 @@ export default function QuestDetail() {
       } else {
         await showInfoMessage(
           'Quest completed',
-          `+${result.xpChange} XP earned · ${result.newTotalXp} total`,
+          `+${result.xpChange} XP earned${debuffLine} · ${result.newTotalXp} total`,
         );
         router.back();
       }

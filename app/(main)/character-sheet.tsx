@@ -12,7 +12,13 @@ import {
   updateDifficulty,
   updateFaction,
 } from '../../lib/character-sheet';
-import { confirmDestructive } from '../../lib/dialogs';
+import {
+  listActiveDebuffs,
+  refreshDebuffs,
+  restUser,
+  type ActiveDebuff,
+} from '../../lib/debuffs';
+import { confirmDestructive, showInfoMessage } from '../../lib/dialogs';
 import { calculateLevel, type Difficulty } from '../../lib/engine/xp';
 import { errorMessage } from '../../lib/errors';
 import {
@@ -28,6 +34,7 @@ interface SheetData {
   factions: Faction[];
   campaigns: Campaign[];
   activeQuests: number;
+  debuffs: ActiveDebuff[];
 }
 
 const DIFFICULTIES: Difficulty[] = ['apprentice', 'adept', 'master', 'legendary'];
@@ -50,13 +57,24 @@ export default function CharacterSheet() {
   const refresh = useCallback(async () => {
     setError(null);
     try {
-      const [profile, factions, campaigns, activeQuests] = await Promise.all([
-        getCurrentProfile(),
+      const profile = await getCurrentProfile();
+      // Reconcile time-based debuffs before listing so the user always sees
+      // a fresh picture, even before the daily cron exists.
+      if (profile) {
+        try {
+          await refreshDebuffs(profile.id);
+        } catch (e) {
+          // Non-fatal — fall back to whatever's already on file.
+          console.warn('refreshDebuffs failed', e);
+        }
+      }
+      const [factions, campaigns, activeQuests, debuffs] = await Promise.all([
         listFactions(),
         listCampaigns('active'),
         getActiveQuestCount(),
+        listActiveDebuffs(),
       ]);
-      setData({ profile, factions, campaigns, activeQuests });
+      setData({ profile, factions, campaigns, activeQuests, debuffs });
     } catch (e) {
       setError(errorMessage(e));
     }
@@ -88,6 +106,25 @@ export default function CharacterSheet() {
     }
   };
 
+  const onRest = async () => {
+    setActionError(null);
+    setBusy(true);
+    try {
+      const result = await restUser();
+      await refresh();
+      await showInfoMessage(
+        result.clearedCount > 0 ? 'You rest' : 'You rest, but nothing was old enough',
+        result.clearedCount > 0
+          ? `${result.clearedCount} stale debuff${result.clearedCount === 1 ? '' : 's'} dispelled. Next rest available after ${formatRestDate(result.nextRestAvailableAt)}.`
+          : `Debuffs older than 14 days are cleared on rest. Next rest available after ${formatRestDate(result.nextRestAvailableAt)}.`,
+      );
+    } catch (e) {
+      setActionError(errorMessage(e));
+    } finally {
+      setBusy(false);
+    }
+  };
+
   if (error) {
     return (
       <View className="flex-1 items-center justify-center bg-stone-950 px-6">
@@ -103,7 +140,12 @@ export default function CharacterSheet() {
     );
   }
 
-  const { profile, factions, campaigns, activeQuests } = data;
+  const { profile, factions, campaigns, activeQuests, debuffs } = data;
+  const restCooldownMs = 7 * 24 * 60 * 60 * 1000;
+  const restAvailableAt = profile?.last_rest_at
+    ? new Date(profile.last_rest_at).getTime() + restCooldownMs
+    : 0;
+  const restOnCooldown = Date.now() < restAvailableAt;
   const totalXp = profile?.total_xp ?? 0;
   const { level, currentLevelXp, nextLevelXp } = calculateLevel(totalXp);
   const atMaxLevel = nextLevelXp === 0;
@@ -154,6 +196,55 @@ export default function CharacterSheet() {
           Active quests
         </Text>
         <Text className="font-display-bold text-2xl text-stone-100">{activeQuests}</Text>
+      </View>
+
+      {/* Debuffs — visible whenever any are active. Rest button always
+          renders but disables on cooldown. */}
+      <View className="mb-2 flex-row items-baseline justify-between">
+        <Text className="font-display text-xs uppercase tracking-widest text-stone-300">
+          Debuffs
+        </Text>
+        <Pressable
+          onPress={onRest}
+          disabled={busy || restOnCooldown}
+          className={`rounded-md border px-3 py-1.5 ${
+            busy || restOnCooldown
+              ? 'border-stone-800 bg-stone-900'
+              : 'border-amber-700 bg-amber-900/40 active:bg-amber-900/60'
+          }`}
+        >
+          <Text
+            className={`font-body-medium text-xs uppercase tracking-widest ${
+              busy || restOnCooldown ? 'text-stone-500' : 'text-amber-200'
+            }`}
+          >
+            {restOnCooldown
+              ? `Rest avail. ${formatRestDate(new Date(restAvailableAt).toISOString())}`
+              : '+rest'}
+          </Text>
+        </Pressable>
+      </View>
+      <View className="mb-8 gap-2">
+        {debuffs.length === 0 ? (
+          <Text className="font-body italic text-stone-500">
+            No debuffs. Keep tending the Tome.
+          </Text>
+        ) : (
+          debuffs.map((d) => (
+            <View
+              key={d.id}
+              className="rounded-md border border-red-900/40 bg-stone-900 px-4 py-3"
+            >
+              <View className="flex-row items-baseline justify-between">
+                <Text className="font-body-medium text-base text-stone-100">{d.name}</Text>
+                <Text className="font-body text-xs text-red-300">{d.xp_modifier_pct}%</Text>
+              </View>
+              {d.effect_description ? (
+                <Text className="font-body text-xs text-stone-400">{d.effect_description}</Text>
+              ) : null}
+            </View>
+          ))
+        )}
       </View>
 
       {/* Factions */}
@@ -387,6 +478,12 @@ export default function CharacterSheet() {
       </Text>
     </ScrollView>
   );
+}
+
+function formatRestDate(iso: string): string {
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return iso;
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
 // ---- Inline editors --------------------------------------------------------

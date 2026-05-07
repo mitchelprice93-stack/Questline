@@ -91,12 +91,14 @@ export async function createQuest(input: CreateQuestInput): Promise<Quest> {
 
 export interface CompleteQuestResult {
   newTotalXp: number;
-  /** Total XP awarded by this completion (base reward + any milestone bonus). */
+  /** Total XP awarded by this completion (base after debuffs + milestone bonus). */
   xpChange: number;
   /** New streak count for recurring quests; 0 for one-shot completions. */
   newStreak: number;
   /** Bonus XP awarded for hitting a streak milestone (7/30/100). 0 otherwise. */
   milestoneBonus: number;
+  /** Net debuff percentage applied to the base reward (e.g. -10 for cobwebs). */
+  debuffPct: number;
 }
 
 export async function completeQuest(questId: string): Promise<CompleteQuestResult> {
@@ -110,6 +112,7 @@ export async function completeQuest(questId: string): Promise<CompleteQuestResul
     xpChange: Number(row.xp_change),
     newStreak: Number(row.new_streak ?? 0),
     milestoneBonus: Number(row.milestone_bonus ?? 0),
+    debuffPct: Number(row.debuff_pct ?? 0),
   };
 }
 

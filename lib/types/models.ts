@@ -45,6 +45,8 @@ export interface Profile {
   level: number;
   total_xp: number;
   difficulty: Difficulty;
+  /** Last time the user invoked +rest. Drives the 7-day cooldown. */
+  last_rest_at: string | null;
   created_at: string;
 }
 

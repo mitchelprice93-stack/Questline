@@ -265,14 +265,14 @@ Test file: `lib/engine/xp.test.ts`. Use Jest. Cover edge cases: zero XP, negativ
 - [x] Streak rewards: bonus XP at 7-day, 30-day, 100-day milestones
 
 ## 4.2 Debuff Engine
-- [ ] Background job (Supabase scheduled function) runs daily
-- [ ] Detects neglected quests:
+- [~] Background job runs daily — deferred to pg_cron once SDK 4.4 lazy-refresh proves out; today refresh_debuffs_for is invoked on character-sheet load
+- [x] Detects neglected quests:
   - 3 days untouched → "Cobwebs of Procrastination" (−10% XP next completion)
   - 7 days untouched → "Curse of the Idle Blade" (XP halved)
   - Abandoned quest → "Mark of the Forsaken" (−5% next quest, 1-quest duration)
-- [ ] Debuffs visible on character sheet
-- [ ] `+rest` command (button + chat command) clears debuffs older than 14 days, once per week
-- [ ] Difficulty scaling: Master/Legendary stack debuffs
+- [x] Debuffs visible on character sheet
+- [x] `+rest` button clears debuffs older than 14 days, once per week
+- [x] Difficulty scaling: Master/Legendary stack debuffs (sum of pcts); Apprentice/Adept apply only the worst
 
 ## 4.3 Push Notifications
 - [ ] Expo Push notifications setup
