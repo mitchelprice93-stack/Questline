@@ -32,6 +32,8 @@ export interface Quest {
   completed_at: string | null;
   /** For recurring quests: timestamp of the most recent successful completion. */
   last_completed_at: string | null;
+  /** Set when the quest was abandoned. */
+  abandoned_at: string | null;
   created_at: string;
 }
 

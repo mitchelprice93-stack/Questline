@@ -18,6 +18,10 @@ import type {
 } from './types/models';
 import type { QuestTier } from './engine/xp';
 
+// Re-export the pure filter so existing call sites (and the Quest Board
+// screen) can keep importing from one place.
+export { applyQuestFilters, type QuestFilters, type TimeRange } from './quest-filters';
+
 export interface CreateQuestInput {
   title: string;
   description: string | null;
@@ -31,11 +35,21 @@ export interface CreateQuestInput {
 }
 
 export async function listQuests(status: QuestStatus = 'active'): Promise<Quest[]> {
+  // Sort by the timestamp that matches the lifecycle stage so the most
+  // recently-relevant rows come first. NULLs (e.g. legacy quests with no
+  // abandoned_at) sort last.
+  const orderColumn =
+    status === 'completed'
+      ? 'completed_at'
+      : status === 'abandoned'
+        ? 'abandoned_at'
+        : 'created_at';
+
   const { data, error } = await supabase
     .from('quests')
     .select('*')
     .eq('status', status)
-    .order('created_at', { ascending: false });
+    .order(orderColumn, { ascending: false, nullsFirst: false });
   if (error) throw asError(error);
   return (data ?? []) as Quest[];
 }

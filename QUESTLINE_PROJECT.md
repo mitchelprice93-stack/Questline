@@ -283,10 +283,10 @@ Test file: `lib/engine/xp.test.ts`. Use Jest. Cover edge cases: zero XP, negativ
 - [ ] Permission request shown during onboarding with clear value prop
 
 ## 4.4 Quest Log & History
-- [ ] Active quests view (default Quest Board)
-- [ ] Completed quests log (with completion dates, XP earned)
-- [ ] Abandoned quests log
-- [ ] Search and filter by faction, tier, date range
+- [x] Active quests view (default Quest Board)
+- [x] Completed quests log (with completion dates, XP earned)
+- [x] Abandoned quests log
+- [x] Search and filter by faction, tier, date range
 
 ## 4.5 Settings
 - [ ] Difficulty toggle (Apprentice / Adept / Master / Legendary) — irreversible mid-campaign without confirmation
