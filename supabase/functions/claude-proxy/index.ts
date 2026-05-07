@@ -123,6 +123,35 @@ const QUEST_GENERATION_SCHEMA = {
       description: 'Optional in-voice warnings about scope or risk. Empty array if none.',
       items: { type: 'string' },
     },
+    granted_buff: {
+      type: 'object',
+      additionalProperties: false,
+      description: 'A boon the chronicler earns if they meet the quest condition.',
+      properties: {
+        name: {
+          type: 'string',
+          description: "In-voice name, e.g. \"Sage's Insight\", \"Adept's Stride\".",
+        },
+        description: {
+          type: 'string',
+          description: 'One in-voice sentence describing what the chronicler feels when it lands.',
+        },
+        pct: {
+          type: 'integer',
+          minimum: 5,
+          maximum: 30,
+          description:
+            'XP bonus on the next completion. Scale with effort: trivial 5, minor 6-8, standard 9-12, major 13-18, legendary 19-25.',
+        },
+        condition: {
+          type: 'string',
+          enum: ['on_complete', 'on_time', 'all_objectives'],
+          description:
+            "Use 'on_time' if the quest has time pressure, 'all_objectives' if it has a multi-step checklist, 'on_complete' otherwise.",
+        },
+      },
+      required: ['name', 'description', 'pct', 'condition'],
+    },
   },
   required: [
     'title',
@@ -131,6 +160,7 @@ const QUEST_GENERATION_SCHEMA = {
     'classification',
     'suggested_tier',
     'tactical_warnings',
+    'granted_buff',
   ],
 };
 
@@ -211,7 +241,12 @@ function buildUserMessage(req: ProxyRequest): { content: string; schema: unknown
           `Tier reflects effort — trivial (a few minutes), minor, standard, major, legendary (multi-day or harder). ` +
           `Classification is daily/side/main/legendary based on cadence. ` +
           `Objectives are an in-order checklist of concrete steps; start with completed=false on every entry. ` +
-          `Tactical warnings are short in-voice notes on scope, dependencies, or risk — leave the array empty if there's nothing useful to say.`,
+          `Tactical warnings are short in-voice notes on scope, dependencies, or risk — leave the array empty if there's nothing useful to say. ` +
+          `Always design a granted_buff: an in-voice name (something a chronicler might whisper, ` +
+          `e.g. "Sage's Insight", "Adept's Stride", "The Quill's Favor"), a single sentence of flavor for the description, ` +
+          `a pct that scales with the quest's tier, and a condition that fits the work — ` +
+          `'on_time' for deadline-pressured endeavors, 'all_objectives' when there's a meaningful checklist, ` +
+          `'on_complete' for simple commitments. The buff should feel earned but not punishing to miss.`,
         schema: QUEST_GENERATION_SCHEMA,
       };
   }

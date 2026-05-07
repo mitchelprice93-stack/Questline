@@ -8,7 +8,18 @@
 import { callClaudeProxy, ClaudeProxyError } from './ai';
 import type { QuestTier } from './engine/xp';
 import { getActiveQuestCount, getCurrentProfile, listFactions } from './profile';
-import type { QuestClassification, QuestObjective } from './types/models';
+import type {
+  GrantedBuffCondition,
+  QuestClassification,
+  QuestObjective,
+} from './types/models';
+
+export interface GeneratedBuff {
+  name: string;
+  description: string;
+  pct: number;
+  condition: GrantedBuffCondition;
+}
 
 export interface QuestGenerationPayload {
   /** The chronicler's plain-language description of the endeavor. */
@@ -29,6 +40,8 @@ export interface GeneratedQuest {
   classification: QuestClassification;
   suggested_tier: QuestTier;
   tactical_warnings: string[];
+  /** A boon the chronicler earns if they meet the buff's condition on completion. */
+  granted_buff: GeneratedBuff;
   /** True when the AI call failed and we fell back to a stub. */
   fromFallback: boolean;
 }
@@ -84,6 +97,14 @@ function templatedFallback(input: string): GeneratedQuest {
     classification: 'side',
     suggested_tier: 'standard',
     tactical_warnings: ['The Archivist was silent — refine this quest as you see fit.'],
+    // Generic buff so even fallback quests carry a small boon — the user
+    // can edit or remove it on the review screen.
+    granted_buff: {
+      name: "Wanderer's Stride",
+      description: 'A small surge of momentum carries into the next deed.',
+      pct: 5,
+      condition: 'on_complete',
+    },
     fromFallback: true,
   };
 }
@@ -108,6 +129,7 @@ export async function generateQuest(input: string): Promise<GeneratedQuest> {
         classification: QuestClassification;
         suggested_tier: QuestTier;
         tactical_warnings: string[];
+        granted_buff: GeneratedBuff;
       }>('quest_generation', payload),
       AI_TIMEOUT_MS,
       'quest_generation',

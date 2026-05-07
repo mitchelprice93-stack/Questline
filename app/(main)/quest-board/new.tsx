@@ -59,6 +59,15 @@ export default function NewQuest() {
       setTier(generated.suggested_tier);
       setClassification(generated.classification);
       setObjectives(generated.objectives);
+      // Prefill the buff editor from the AI's design — user can tweak or
+      // remove on review.
+      setBuff({
+        enabled: true,
+        name: generated.granted_buff.name,
+        description: generated.granted_buff.description,
+        pct: String(generated.granted_buff.pct),
+        condition: generated.granted_buff.condition,
+      });
       setPhase('review');
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
