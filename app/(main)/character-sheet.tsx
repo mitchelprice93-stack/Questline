@@ -202,30 +202,38 @@ export default function CharacterSheet() {
       </View>
 
       {/* Buffs — earned by completing quests under their granted-buff
-          conditions. Stack across the next completion (regardless of
-          difficulty). Hidden when none are active. */}
+          conditions. Persist for a tier-scaled lifetime; stack while
+          active. Hidden when none are active. */}
       {buffs.length > 0 ? (
         <>
           <Text className="mb-2 font-display text-xs uppercase tracking-widest text-stone-300">
             Buffs
           </Text>
           <View className="mb-8 gap-2">
-            {buffs.map((b) => (
-              <View
-                key={b.id}
-                className="rounded-md border border-emerald-900/40 bg-stone-900 px-4 py-3"
-              >
-                <View className="flex-row items-baseline justify-between">
-                  <Text className="font-body-medium text-base text-stone-100">{b.name}</Text>
-                  <Text className="font-body text-xs text-emerald-300">
-                    +{b.xp_modifier_pct}%
-                  </Text>
+            {buffs.map((b) => {
+              const remaining = formatBuffRemaining(b.expires_at);
+              return (
+                <View
+                  key={b.id}
+                  className="rounded-md border border-emerald-900/40 bg-stone-900 px-4 py-3"
+                >
+                  <View className="flex-row items-baseline justify-between">
+                    <Text className="font-body-medium text-base text-stone-100">{b.name}</Text>
+                    <Text className="font-body text-xs text-emerald-300">
+                      +{b.xp_modifier_pct}%
+                    </Text>
+                  </View>
+                  {b.effect_description ? (
+                    <Text className="font-body text-xs text-stone-400">
+                      {b.effect_description}
+                    </Text>
+                  ) : null}
+                  {remaining ? (
+                    <Text className="mt-1 font-body text-xs text-stone-500">{remaining}</Text>
+                  ) : null}
                 </View>
-                {b.effect_description ? (
-                  <Text className="font-body text-xs text-stone-400">{b.effect_description}</Text>
-                ) : null}
-              </View>
-            ))}
+              );
+            })}
           </View>
         </>
       ) : null}
@@ -516,6 +524,24 @@ function formatRestDate(iso: string): string {
   const d = new Date(iso);
   if (isNaN(d.getTime())) return iso;
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+
+/**
+ * "Lasts 2 days", "Lasts 6 hours", "Expiring soon". Returns null if the
+ * timestamp can't be parsed. Buff entries with no expires_at (legacy or
+ * "next completion" flavor) just don't render this line.
+ */
+function formatBuffRemaining(iso: string | null): string | null {
+  if (!iso) return null;
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return null;
+  const ms = d.getTime() - Date.now();
+  if (ms <= 0) return 'Expiring now';
+  const hours = ms / (1000 * 60 * 60);
+  if (hours < 1) return 'Lasts < 1 hour';
+  if (hours < 24) return `Lasts ${Math.round(hours)} hour${Math.round(hours) === 1 ? '' : 's'}`;
+  const days = Math.round(hours / 24);
+  return `Lasts ${days} day${days === 1 ? '' : 's'}`;
 }
 
 // ---- Inline editors --------------------------------------------------------

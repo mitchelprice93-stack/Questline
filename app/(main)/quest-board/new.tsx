@@ -240,7 +240,7 @@ export default function NewQuest() {
 
       <Text className="mb-2 font-body text-sm text-stone-300">Granted buff (optional)</Text>
       <View className="mb-6">
-        <BuffEditor draft={buff} onChange={setBuff} disabled={submitting} />
+        <BuffEditor draft={buff} onChange={setBuff} questTier={tier} disabled={submitting} />
       </View>
 
       <Text className="mb-2 font-body text-sm text-stone-300">Deadline (optional)</Text>

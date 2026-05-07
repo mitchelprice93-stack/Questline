@@ -36,6 +36,24 @@ export function streakBonusFor(streak: number): number {
   return STREAK_BONUSES[streak] ?? 0;
 }
 
+/**
+ * Lifetime, in days, of a buff earned by completing a quest of this tier.
+ * Mirrors the buff_duration_for_tier SQL function — the SQL is canonical;
+ * the client values are duplicated so the UI can render "lasts X days"
+ * without an extra round-trip. Keep these two in sync.
+ */
+export const BUFF_DURATION_DAYS_BY_TIER: Record<QuestTier, number> = {
+  trivial: 1,
+  minor: 2,
+  standard: 4,
+  major: 7,
+  legendary: 14,
+};
+
+export function buffDurationDaysForTier(tier: QuestTier): number {
+  return BUFF_DURATION_DAYS_BY_TIER[tier];
+}
+
 const TIER_XP: Record<QuestTier, number> = {
   trivial: 100,
   minor: 500,

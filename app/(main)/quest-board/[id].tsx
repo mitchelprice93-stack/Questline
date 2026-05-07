@@ -14,7 +14,12 @@ import {
   urgencyClasses,
 } from '../../../lib/dates';
 import { confirmDestructive, showInfoMessage } from '../../../lib/dialogs';
-import { calculateLevel, xpForTier, type QuestTier } from '../../../lib/engine/xp';
+import {
+  buffDurationDaysForTier,
+  calculateLevel,
+  xpForTier,
+  type QuestTier,
+} from '../../../lib/engine/xp';
 import {
   abandonQuest,
   completeQuest,
@@ -348,6 +353,7 @@ export default function QuestDetail() {
           <BuffEditor
             draft={editBuff}
             onChange={setEditBuff}
+            questTier={editTier}
             disabled={busy === 'save-edits'}
           />
         </View>
@@ -452,6 +458,8 @@ export default function QuestDetail() {
               : quest.granted_buff_condition === 'all_objectives'
                 ? 'Earned if every objective box is checked.'
                 : 'Earned on completion.'}
+            {' '}Lasts {buffDurationDaysForTier(quest.tier)} day
+            {buffDurationDaysForTier(quest.tier) === 1 ? '' : 's'} once earned.
           </Text>
         </View>
       ) : null}

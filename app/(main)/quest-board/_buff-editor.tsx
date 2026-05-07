@@ -4,6 +4,7 @@
 
 import { Pressable, Text, TextInput, View } from 'react-native';
 
+import { buffDurationDaysForTier, type QuestTier } from '../../../lib/engine/xp';
 import type { GrantedBuffCondition } from '../../../lib/types/models';
 
 export interface BuffDraft {
@@ -75,13 +76,17 @@ export function buffDraftToPayload(draft: BuffDraft): {
 interface Props {
   draft: BuffDraft;
   onChange: (next: BuffDraft) => void;
+  /** Tier of the parent quest. Drives the lifetime line shown to the user
+   *  so they understand the "harder quest = longer buff" trade-off. */
+  questTier: QuestTier;
   disabled?: boolean;
 }
 
-export function BuffEditor({ draft, onChange, disabled }: Props) {
+export function BuffEditor({ draft, onChange, questTier, disabled }: Props) {
   const update = (partial: Partial<BuffDraft>) => onChange({ ...draft, ...partial });
 
   const conditionHelp = CONDITIONS.find((c) => c.key === draft.condition)?.help ?? '';
+  const durationDays = buffDurationDaysForTier(questTier);
 
   if (!draft.enabled) {
     return (
@@ -177,7 +182,11 @@ export function BuffEditor({ draft, onChange, disabled }: Props) {
           );
         })}
       </View>
-      <Text className="font-body text-xs text-stone-500">{conditionHelp}</Text>
+      <Text className="mb-2 font-body text-xs text-stone-500">{conditionHelp}</Text>
+      <Text className="font-body text-xs text-amber-400/80">
+        Lasts {durationDays} day{durationDays === 1 ? '' : 's'} once earned ·
+        scales with quest tier ({questTier}).
+      </Text>
     </View>
   );
 }

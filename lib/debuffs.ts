@@ -14,6 +14,7 @@ export interface ActiveModifier {
   xp_modifier_pct: number;
   source_kind: string | null;
   quest_id: string | null;
+  expires_at: string | null;
   created_at: string;
 }
 
@@ -33,7 +34,9 @@ export async function refreshDebuffs(userId: string): Promise<void> {
 async function listModifiers(type: 'buff' | 'debuff'): Promise<ActiveModifier[]> {
   const { data, error } = await supabase
     .from('modifiers')
-    .select('id, type, name, effect_description, xp_modifier_pct, source_kind, quest_id, created_at')
+    .select(
+      'id, type, name, effect_description, xp_modifier_pct, source_kind, quest_id, expires_at, created_at',
+    )
     .eq('type', type)
     .is('consumed_at', null)
     .order('created_at', { ascending: false });

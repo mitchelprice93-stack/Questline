@@ -2,6 +2,8 @@ import {
   applyBuffsAndDebuffs,
   applyDifficultyModifier,
   assessStartingLevel,
+  BUFF_DURATION_DAYS_BY_TIER,
+  buffDurationDaysForTier,
   calculateLevel,
   LEVEL_THRESHOLDS,
   MAX_LEVEL,
@@ -219,5 +221,26 @@ describe('streakBonusFor', () => {
   test('table matches the SQL constants in complete_quest', () => {
     // If you change these, also update 20260503000000_recurring_quests.sql
     expect(STREAK_BONUSES).toEqual({ 7: 250, 30: 1500, 100: 5000 });
+  });
+});
+
+describe('buffDurationDaysForTier', () => {
+  test('returns the spec values per tier', () => {
+    expect(buffDurationDaysForTier('trivial')).toBe(1);
+    expect(buffDurationDaysForTier('minor')).toBe(2);
+    expect(buffDurationDaysForTier('standard')).toBe(4);
+    expect(buffDurationDaysForTier('major')).toBe(7);
+    expect(buffDurationDaysForTier('legendary')).toBe(14);
+  });
+
+  test('table matches the SQL constants in buff_duration_for_tier', () => {
+    // If you change these, also update 20260507000001_buff_duration.sql
+    expect(BUFF_DURATION_DAYS_BY_TIER).toEqual({
+      trivial: 1,
+      minor: 2,
+      standard: 4,
+      major: 7,
+      legendary: 14,
+    });
   });
 });
