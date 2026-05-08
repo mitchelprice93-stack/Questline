@@ -22,6 +22,7 @@ import {
 import { confirmDestructive, showInfoMessage } from '../../lib/dialogs';
 import { calculateLevel, type Difficulty } from '../../lib/engine/xp';
 import { errorMessage } from '../../lib/errors';
+import { ParchmentScreen } from '../../lib/parchment';
 import {
   getActiveQuestCount,
   getCurrentProfile,
@@ -131,16 +132,20 @@ export default function CharacterSheet() {
 
   if (error) {
     return (
-      <View className="flex-1 items-center justify-center  px-6">
-        <Text className="font-body text-red-400">{error}</Text>
-      </View>
+      <ParchmentScreen>
+        <View className="flex-1 items-center justify-center px-6">
+          <Text className="font-body text-red-700">{error}</Text>
+        </View>
+      </ParchmentScreen>
     );
   }
   if (!data) {
     return (
-      <View className="flex-1 items-center justify-center ">
-        <ActivityIndicator color="#a8a29e" />
-      </View>
+      <ParchmentScreen>
+        <View className="flex-1 items-center justify-center">
+          <ActivityIndicator color="#92400e" />
+        </View>
+      </ParchmentScreen>
     );
   }
 
@@ -162,7 +167,8 @@ export default function CharacterSheet() {
   const showCampaignDraft = editingCampaignId === DRAFT_ID;
 
   return (
-    <ScrollView className="flex-1 " contentContainerClassName="px-6 pt-16 pb-12">
+    <ParchmentScreen>
+      <ScrollView className="flex-1" contentContainerClassName="px-6 pt-16 pb-12">
       <Text className="mb-1 font-display text-3xl text-stone-900">{displayName}</Text>
       {profile?.character_title ? (
         <Text className="mb-6 font-display text-amber-300">{profile.character_title}</Text>
@@ -523,7 +529,8 @@ export default function CharacterSheet() {
       <Text className="font-body text-xs text-stone-500">
         XP modifier: apprentice 0.75× · adept 1.0× · master 1.25× · legendary 1.5×
       </Text>
-    </ScrollView>
+      </ScrollView>
+    </ParchmentScreen>
   );
 }
 

@@ -2,17 +2,11 @@ import { Tabs } from 'expo-router';
 import { View } from 'react-native';
 
 import { AmbientAudioRoot } from '../../lib/ambient-audio';
-import { ParchmentBackground } from '../../lib/parchment';
 import { playSfx } from '../../lib/sfx';
 
 export default function MainLayout() {
   return (
-    // Vellum fallback color — if expo-image is slow to decode the parchment
-    // PNG, the user sees warm beige instead of pure white during load.
-    <View className="flex-1 bg-amber-50">
-      {/* Parchment canvas behind everything else in (main). Each screen
-          renders with a transparent root so this shows through. */}
-      <ParchmentBackground />
+    <View className="flex-1">
       {/* Ambient music bed — only mounts inside the main app, not during
           the cinematic or onboarding (which have their own audio). */}
       <AmbientAudioRoot />
@@ -26,10 +20,6 @@ export default function MainLayout() {
             backgroundColor: '#3f2e1d', // dark sepia, like leather binding
             borderTopColor: '#78350f', // amber-900
           },
-          // Without this the scene container renders an opaque default
-          // background that covers our parchment. Transparent here lets
-          // the canvas show through every tab.
-          sceneStyle: { backgroundColor: 'transparent' },
         }}
         screenListeners={{
           tabPress: () => playSfx('tab_switch'),

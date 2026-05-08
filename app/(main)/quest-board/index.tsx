@@ -10,6 +10,7 @@ import {
   urgencyClasses,
 } from '../../../lib/dates';
 import { type QuestTier } from '../../../lib/engine/xp';
+import { ParchmentScreen } from '../../../lib/parchment';
 import { listFactions } from '../../../lib/profile';
 import {
   applyQuestFilters,
@@ -112,7 +113,8 @@ export default function QuestBoard() {
   };
 
   return (
-    <View className="flex-1 px-6 pt-16">
+    <ParchmentScreen>
+      <View className="flex-1 px-6 pt-16">
       <View className="mb-4 flex-row items-center justify-between">
         <View className="flex-1">
           <Text className="font-display text-3xl text-stone-900">Quest Board</Text>
@@ -271,7 +273,8 @@ export default function QuestBoard() {
           renderItem={({ item }) => <QuestRow quest={item} status={status} />}
         />
       )}
-    </View>
+      </View>
+    </ParchmentScreen>
   );
 }
 

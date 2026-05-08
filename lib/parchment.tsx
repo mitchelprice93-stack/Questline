@@ -6,27 +6,45 @@
 // cosmetic — no network, no permissions.
 
 import { Image } from 'expo-image';
+import type { ReactNode } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 const BG = require('../assets/ui/parchment-bg.png');
 const FRAME = require('../assets/ui/parchment-frame.png');
 
-/**
- * Mount once in the (main) layout, behind the Tabs. Each screen renders
- * with a transparent root so this canvas shows through; tab bar and
- * absolutely-positioned overlays sit above it.
- */
+/** Absolute-fill stack of parchment-bg + parchment-frame. Used as the
+ *  first child of every (main) screen's root View. */
 export function ParchmentBackground() {
   return (
     <View pointerEvents="none" style={StyleSheet.absoluteFillObject}>
       <Image source={BG} contentFit="cover" style={StyleSheet.absoluteFillObject} />
-      {/* Frame on top at reduced opacity — adds the burnt-edge
-          framing without darkening the center too much. */}
       <Image
         source={FRAME}
         contentFit="cover"
         style={[StyleSheet.absoluteFillObject, { opacity: 0.55 }]}
       />
+    </View>
+  );
+}
+
+/**
+ * Wrap a screen's content with a parchment canvas behind it. Each (main)
+ * screen draws its own copy — that way scenes can stay opaque (no tab
+ * cross-fade overlap), but the canvas reliably shows through every time.
+ *
+ * Use as the outermost element of any screen that wants the parchment look:
+ *
+ *   return (
+ *     <ParchmentScreen>
+ *       <ScrollView ...>...</ScrollView>
+ *     </ParchmentScreen>
+ *   );
+ */
+export function ParchmentScreen({ children }: { children: ReactNode }) {
+  return (
+    <View className="flex-1 bg-amber-50">
+      <ParchmentBackground />
+      {children}
     </View>
   );
 }

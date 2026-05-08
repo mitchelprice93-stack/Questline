@@ -8,6 +8,7 @@ import { useAudioMuted } from '../../lib/audio-prefs';
 import { shareChronicle } from '../../lib/chronicle';
 import { confirmDestructive, showInfoMessage } from '../../lib/dialogs';
 import { errorMessage } from '../../lib/errors';
+import { ParchmentScreen } from '../../lib/parchment';
 import { FREE_TIER_QUEST_CAP } from '../../lib/subscription';
 import {
   getCheckInTime,
@@ -126,7 +127,8 @@ export default function Settings() {
   };
 
   return (
-    <ScrollView className="flex-1 " contentContainerClassName="px-6 pt-16 pb-12">
+    <ParchmentScreen>
+      <ScrollView className="flex-1" contentContainerClassName="px-6 pt-16 pb-12">
       <Text className="mb-6 font-display text-3xl text-stone-900">Settings</Text>
 
       {/* Account */}
@@ -369,7 +371,8 @@ export default function Settings() {
           />
         </View>
       </Pressable>
-    </ScrollView>
+      </ScrollView>
+    </ParchmentScreen>
   );
 }
 

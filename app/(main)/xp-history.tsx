@@ -3,6 +3,7 @@ import { useCallback, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, Text, View } from 'react-native';
 
 import { errorMessage } from '../../lib/errors';
+import { ParchmentScreen } from '../../lib/parchment';
 import { describeXpLogReason, listXpLog, type XpLogEntry } from '../../lib/xp-log';
 
 export default function XpHistory() {
@@ -31,7 +32,8 @@ export default function XpHistory() {
   const total = rows?.reduce((sum, r) => sum + r.xp_change, 0) ?? 0;
 
   return (
-    <View className="flex-1  px-6 pt-16">
+    <ParchmentScreen>
+      <View className="flex-1 px-6 pt-16">
       <View className="mb-2 flex-row items-baseline justify-between">
         <Text className="font-display text-3xl text-stone-900">XP History</Text>
         <Pressable onPress={() => router.back()} className="active:opacity-60">
@@ -60,7 +62,8 @@ export default function XpHistory() {
           renderItem={({ item }) => <XpRow row={item} />}
         />
       )}
-    </View>
+      </View>
+    </ParchmentScreen>
   );
 }
 

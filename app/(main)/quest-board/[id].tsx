@@ -21,6 +21,7 @@ import {
   type QuestTier,
 } from '../../../lib/engine/xp';
 import { generateLevelUpNarration } from '../../../lib/level-up';
+import { ParchmentScreen } from '../../../lib/parchment';
 import { playSfx } from '../../../lib/sfx';
 import {
   abandonQuest,
@@ -295,23 +296,28 @@ export default function QuestDetail() {
 
   if (loadError) {
     return (
-      <View className="flex-1 items-center justify-center  px-6">
-        <Text className="font-body text-red-400">{loadError}</Text>
-      </View>
+      <ParchmentScreen>
+        <View className="flex-1 items-center justify-center px-6">
+          <Text className="font-body text-red-700">{loadError}</Text>
+        </View>
+      </ParchmentScreen>
     );
   }
   if (!quest) {
     return (
-      <View className="flex-1 items-center justify-center ">
-        <ActivityIndicator color="#a8a29e" />
-      </View>
+      <ParchmentScreen>
+        <View className="flex-1 items-center justify-center">
+          <ActivityIndicator color="#78350f" />
+        </View>
+      </ParchmentScreen>
     );
   }
 
   if (editMode) {
     const canSave = editTitle.trim().length > 0 && busy !== 'save-edits';
     return (
-      <ScrollView className="flex-1 " contentContainerClassName="px-6 pt-16 pb-12">
+      <ParchmentScreen>
+        <ScrollView className="flex-1" contentContainerClassName="px-6 pt-16 pb-12">
         <Pressable onPress={onCancelEdit} className="mb-3 self-start active:opacity-60">
           <Text className="font-body text-sm text-amber-400">← Cancel edit</Text>
         </Pressable>
@@ -433,7 +439,8 @@ export default function QuestDetail() {
             <Text className="text-center font-body text-stone-700">Cancel</Text>
           </Pressable>
         </View>
-      </ScrollView>
+        </ScrollView>
+      </ParchmentScreen>
     );
   }
 
@@ -448,7 +455,8 @@ export default function QuestDetail() {
         ? `Abandoned ${formatLifecycleDate(quest.abandoned_at)}`
         : null;
   return (
-    <ScrollView className="flex-1 " contentContainerClassName="px-6 pt-16 pb-12">
+    <ParchmentScreen>
+      <ScrollView className="flex-1" contentContainerClassName="px-6 pt-16 pb-12">
       <Pressable onPress={goBack} className="mb-3 self-start active:opacity-60">
         <Text className="font-body text-sm text-amber-400">← Quest Board</Text>
       </Pressable>
@@ -635,7 +643,8 @@ export default function QuestDetail() {
           </Text>
         </Pressable>
       )}
-    </ScrollView>
+      </ScrollView>
+    </ParchmentScreen>
   );
 }
 

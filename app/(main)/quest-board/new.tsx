@@ -5,6 +5,7 @@ import { ActivityIndicator, Pressable, ScrollView, Text, TextInput, View } from 
 import { parseDeadline } from '../../../lib/dates';
 import { xpForTier, type QuestTier } from '../../../lib/engine/xp';
 import { errorMessage } from '../../../lib/errors';
+import { ParchmentScreen } from '../../../lib/parchment';
 import { generateQuest, type GeneratedQuest } from '../../../lib/quest-generation';
 import { createQuest } from '../../../lib/quests';
 import { playSfx, startLoopSfx, stopLoopSfx } from '../../../lib/sfx';
@@ -136,18 +137,21 @@ export default function NewQuest() {
 
   if (phase === 'loading') {
     return (
-      <View className="flex-1 items-center justify-center  px-6">
-        <ActivityIndicator color="#f59e0b" size="large" />
-        <Text className="mt-6 font-display text-xl text-stone-900">
-          The Archivist considers your request…
-        </Text>
-      </View>
+      <ParchmentScreen>
+        <View className="flex-1 items-center justify-center px-6">
+          <ActivityIndicator color="#92400e" size="large" />
+          <Text className="mt-6 font-display text-xl text-stone-900">
+            The Archivist considers your request…
+          </Text>
+        </View>
+      </ParchmentScreen>
     );
   }
 
   if (phase === 'input') {
     return (
-      <ScrollView className="flex-1 " contentContainerClassName="px-6 pt-16 pb-12">
+      <ParchmentScreen>
+        <ScrollView className="flex-1" contentContainerClassName="px-6 pt-16 pb-12">
         <Text className="mb-1 font-display text-3xl text-stone-900">New endeavor</Text>
         <Text className="mb-6 font-body text-stone-700">
           Tell the Archivist what you need to do, in plain language. They will forge it into a quest
@@ -176,7 +180,8 @@ export default function NewQuest() {
             Forge with the Archivist
           </Text>
         </Pressable>
-      </ScrollView>
+        </ScrollView>
+      </ParchmentScreen>
     );
   }
 
@@ -184,7 +189,8 @@ export default function NewQuest() {
   if (!draft) return null;
 
   return (
-    <ScrollView className="flex-1 " contentContainerClassName="px-6 pt-16 pb-12">
+    <ParchmentScreen>
+      <ScrollView className="flex-1" contentContainerClassName="px-6 pt-16 pb-12">
       <Text className="mb-1 font-display text-xs uppercase tracking-widest text-amber-400">
         {draft.fromFallback ? 'Templated draft' : 'The Archivist offers'}
       </Text>
@@ -307,7 +313,8 @@ export default function NewQuest() {
       >
         <Text className="text-center font-body text-sm text-stone-500">Discard and start over</Text>
       </Pressable>
-    </ScrollView>
+      </ScrollView>
+    </ParchmentScreen>
   );
 }
 
