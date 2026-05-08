@@ -319,14 +319,14 @@ export default function QuestDetail() {
       <ParchmentScreen>
         <ScrollView className="flex-1" contentContainerClassName="px-6 pt-20 pb-12">
         <Pressable onPress={onCancelEdit} className="mb-3 self-start active:opacity-60">
-          <Text className="font-body text-base text-amber-800">← Cancel edit</Text>
+          <Text className="font-body text-xl text-amber-800">← Cancel edit</Text>
         </Pressable>
-        <Text className="mb-1 font-display text-sm uppercase tracking-widest text-amber-800">
+        <Text className="mb-1 font-display text-lg uppercase tracking-widest text-amber-800">
           Editing quest
         </Text>
         <Text className="mb-6 font-display text-4xl text-stone-900">{quest.title}</Text>
 
-        <Text className="mb-2 font-body text-base text-stone-700">Title</Text>
+        <Text className="mb-2 font-body text-xl text-stone-700">Title</Text>
         <TextInput
           value={editTitle}
           onChangeText={setEditTitle}
@@ -334,7 +334,7 @@ export default function QuestDetail() {
           className="mb-4 rounded-md border border-stone-700 bg-amber-50/40 px-4 py-3 font-body text-stone-900"
         />
 
-        <Text className="mb-2 font-body text-base text-stone-700">Description</Text>
+        <Text className="mb-2 font-body text-xl text-stone-700">Description</Text>
         <TextInput
           value={editDescription}
           onChangeText={setEditDescription}
@@ -344,7 +344,7 @@ export default function QuestDetail() {
           className="mb-4 min-h-[112px] rounded-md border border-stone-700 bg-amber-50/40 px-4 py-3 font-body text-stone-900"
         />
 
-        <Text className="mb-2 font-body text-base text-stone-700">
+        <Text className="mb-2 font-body text-xl text-stone-700">
           Tier · grants {xpForTier(editTier)} XP
         </Text>
         <View className="mb-4 flex-row flex-wrap gap-2">
@@ -353,7 +353,7 @@ export default function QuestDetail() {
           ))}
         </View>
 
-        <Text className="mb-2 font-body text-base text-stone-700">Classification</Text>
+        <Text className="mb-2 font-body text-xl text-stone-700">Classification</Text>
         <View className="mb-4 flex-row flex-wrap gap-2">
           {CLASSIFICATIONS.map((c) => (
             <Chip
@@ -365,7 +365,7 @@ export default function QuestDetail() {
           ))}
         </View>
 
-        <Text className="mb-2 font-body text-base text-stone-700">Recurrence</Text>
+        <Text className="mb-2 font-body text-xl text-stone-700">Recurrence</Text>
         <View className="mb-1 flex-row flex-wrap gap-2">
           {RECURRENCES.map((r) => (
             <Chip
@@ -376,7 +376,7 @@ export default function QuestDetail() {
             />
           ))}
         </View>
-        <Text className="mb-4 font-body text-sm text-stone-500">
+        <Text className="mb-4 font-body text-lg text-stone-500">
           {editRecurrence === 'none'
             ? 'A one-time quest. Completes once and goes to the log.'
             : editRecurrence === 'daily'
@@ -384,7 +384,7 @@ export default function QuestDetail() {
               : 'Resets each week. Streak grows on consecutive weeks.'}
         </Text>
 
-        <Text className="mb-2 font-body text-base text-stone-700">Objectives</Text>
+        <Text className="mb-2 font-body text-xl text-stone-700">Objectives</Text>
         <View className="mb-6">
           <ObjectivesEditor
             objectives={editObjectives}
@@ -393,7 +393,7 @@ export default function QuestDetail() {
           />
         </View>
 
-        <Text className="mb-2 font-body text-base text-stone-700">Granted buff (optional)</Text>
+        <Text className="mb-2 font-body text-xl text-stone-700">Granted buff (optional)</Text>
         <View className="mb-6">
           <BuffEditor
             draft={editBuff}
@@ -403,7 +403,7 @@ export default function QuestDetail() {
           />
         </View>
 
-        <Text className="mb-2 font-body text-base text-stone-700">Deadline (optional)</Text>
+        <Text className="mb-2 font-body text-xl text-stone-700">Deadline (optional)</Text>
         <TextInput
           value={editDeadline}
           onChangeText={setEditDeadline}
@@ -413,12 +413,12 @@ export default function QuestDetail() {
           className="mb-1 rounded-md border border-stone-700 bg-amber-50/40 px-4 py-3 font-body text-stone-900"
           editable={busy !== 'save-edits'}
         />
-        <Text className="mb-6 font-body text-sm text-stone-500">
+        <Text className="mb-6 font-body text-lg text-stone-500">
           Plain language is fine — the Tome reads dates loosely. Leave blank to remove.
         </Text>
 
         {actionError ? (
-          <Text className="mb-4 font-body text-base text-red-700">{actionError}</Text>
+          <Text className="mb-4 font-body text-xl text-red-700">{actionError}</Text>
         ) : null}
 
         <View className="flex-row gap-3">
@@ -427,7 +427,7 @@ export default function QuestDetail() {
             disabled={!canSave}
             className={`flex-1 rounded-md px-4 py-3 ${canSave ? 'bg-amber-600 active:bg-amber-700' : 'bg-amber-100/40'}`}
           >
-            <Text className="text-center font-display text-lg text-stone-900">
+            <Text className="text-center font-display text-2xl text-stone-900">
               {busy === 'save-edits' ? 'Saving…' : 'Save changes'}
             </Text>
           </Pressable>
@@ -458,19 +458,19 @@ export default function QuestDetail() {
     <ParchmentScreen>
       <ScrollView className="flex-1" contentContainerClassName="px-6 pt-20 pb-12">
       <Pressable onPress={goBack} className="mb-3 self-start active:opacity-60">
-        <Text className="font-body text-base text-amber-800">← Quest Board</Text>
+        <Text className="font-body text-xl text-amber-800">← Quest Board</Text>
       </Pressable>
       <Text className="mb-1 font-display text-4xl text-stone-900">{quest.title}</Text>
       <View className="mb-6 flex-row gap-3">
-        <Text className="font-display text-sm uppercase tracking-widest text-amber-800">
+        <Text className="font-display text-lg uppercase tracking-widest text-amber-800">
           {quest.tier}
         </Text>
-        <Text className="font-body text-sm text-stone-500">·</Text>
-        <Text className="font-display text-sm uppercase tracking-widest text-stone-700">
+        <Text className="font-body text-lg text-stone-500">·</Text>
+        <Text className="font-display text-lg uppercase tracking-widest text-stone-700">
           {quest.classification}
         </Text>
-        <Text className="font-body text-sm text-stone-500">·</Text>
-        <Text className="font-body text-sm text-stone-700">{quest.xp_reward} XP</Text>
+        <Text className="font-body text-lg text-stone-500">·</Text>
+        <Text className="font-body text-lg text-stone-700">{quest.xp_reward} XP</Text>
       </View>
 
       {lifecycleStamp ? (
@@ -482,29 +482,29 @@ export default function QuestDetail() {
           }`}
         >
           <Text
-            className={`font-display text-sm uppercase tracking-widest ${
+            className={`font-display text-lg uppercase tracking-widest ${
               quest.status === 'completed' ? 'text-emerald-800' : 'text-stone-700'
             }`}
           >
             {quest.status === 'completed' ? 'Inscribed in the Tome' : 'Set aside'}
           </Text>
-          <Text className="mt-1 font-body text-base text-stone-700">{lifecycleStamp}</Text>
+          <Text className="mt-1 font-body text-xl text-stone-700">{lifecycleStamp}</Text>
         </View>
       ) : null}
 
       {quest.recurrence ? (
         <View className="mb-6 rounded-md border border-amber-900/50 bg-amber-50/40 p-4">
-          <Text className="font-display text-sm uppercase tracking-widest text-amber-800">
+          <Text className="font-display text-lg uppercase tracking-widest text-amber-800">
             {quest.recurrence === 'daily' ? 'Daily quest' : 'Weekly quest'}
           </Text>
           <View className="mt-1 flex-row items-baseline justify-between">
-            <Text className="font-body text-base text-stone-700">
+            <Text className="font-body text-xl text-stone-700">
               {quest.streak_count > 0
                 ? `Streak · ${quest.streak_count} ${quest.recurrence === 'daily' ? 'days' : 'weeks'}`
                 : 'No streak yet — complete to start one'}
             </Text>
             {cooldownLabel ? (
-              <Text className="font-body text-sm text-stone-700">{cooldownLabel}</Text>
+              <Text className="font-body text-lg text-stone-700">{cooldownLabel}</Text>
             ) : null}
           </View>
         </View>
@@ -513,22 +513,22 @@ export default function QuestDetail() {
       {quest.granted_buff_name && quest.granted_buff_pct !== null ? (
         <View className="mb-6 rounded-md border border-emerald-900/50 bg-amber-50/40 p-4">
           <View className="flex-row items-baseline justify-between">
-            <Text className="font-display text-sm uppercase tracking-widest text-emerald-800">
+            <Text className="font-display text-lg uppercase tracking-widest text-emerald-800">
               Granted buff
             </Text>
-            <Text className="font-body text-sm text-emerald-800">
+            <Text className="font-body text-lg text-emerald-800">
               +{quest.granted_buff_pct}%
             </Text>
           </View>
-          <Text className="mt-1 font-body-medium text-lg text-stone-900">
+          <Text className="mt-1 font-body-medium text-2xl text-stone-900">
             {quest.granted_buff_name}
           </Text>
           {quest.granted_buff_description ? (
-            <Text className="mt-0.5 font-body text-sm text-stone-700">
+            <Text className="mt-0.5 font-body text-lg text-stone-700">
               {quest.granted_buff_description}
             </Text>
           ) : null}
-          <Text className="mt-2 font-body text-sm text-stone-500">
+          <Text className="mt-2 font-body text-lg text-stone-500">
             {quest.granted_buff_condition === 'on_time'
               ? 'Earned if you finish before the deadline.'
               : quest.granted_buff_condition === 'all_objectives'
@@ -552,13 +552,13 @@ export default function QuestDetail() {
             const palette = urgency ? urgencyClasses[urgency] : urgencyClasses.normal;
             return (
               <View className={`mb-6 rounded-md border bg-amber-50/40 p-4 ${palette.border}`}>
-                <Text className="font-display text-sm uppercase tracking-widest text-stone-500">
+                <Text className="font-display text-lg uppercase tracking-widest text-stone-500">
                   Deadline
                 </Text>
                 <Text className="mt-1 font-body text-stone-800">
                   {formatDeadline(quest.deadline)}
                 </Text>
-                <Text className={`mt-1 font-body text-sm ${palette.text}`}>
+                <Text className={`mt-1 font-body text-lg ${palette.text}`}>
                   {formatDeadlineRelative(quest.deadline)}
                 </Text>
               </View>
@@ -568,7 +568,7 @@ export default function QuestDetail() {
 
       {quest.objectives.length > 0 ? (
         <View className="mb-6">
-          <Text className="mb-2 font-display text-sm uppercase tracking-widest text-stone-500">
+          <Text className="mb-2 font-display text-lg uppercase tracking-widest text-stone-500">
             Objectives
           </Text>
           {quest.objectives.map((obj, idx) => (
@@ -594,7 +594,7 @@ export default function QuestDetail() {
       ) : null}
 
       {actionError ? (
-        <Text className="mb-4 font-body text-base text-red-700">{actionError}</Text>
+        <Text className="mb-4 font-body text-xl text-red-700">{actionError}</Text>
       ) : null}
 
       {isActive ? (
@@ -606,7 +606,7 @@ export default function QuestDetail() {
               busy !== null || onCooldown ? 'bg-amber-100/40' : 'bg-amber-600 active:bg-amber-700'
             }`}
           >
-            <Text className="text-center font-display text-lg text-stone-900">
+            <Text className="text-center font-display text-2xl text-stone-900">
               {busy === 'complete'
                 ? 'Completing…'
                 : onCooldown
@@ -620,7 +620,7 @@ export default function QuestDetail() {
             disabled={busy !== null}
             className="mb-3 rounded-md border border-stone-700 bg-amber-50/40 px-4 py-3 active:bg-amber-100/60"
           >
-            <Text className="text-center font-body text-lg text-stone-800">Edit quest</Text>
+            <Text className="text-center font-body text-2xl text-stone-800">Edit quest</Text>
           </Pressable>
 
           <Pressable
@@ -628,7 +628,7 @@ export default function QuestDetail() {
             disabled={busy !== null}
             className="rounded-md border border-stone-700 bg-amber-50/40 px-4 py-3 active:bg-amber-100/60"
           >
-            <Text className="text-center font-body text-lg text-stone-700">
+            <Text className="text-center font-body text-2xl text-stone-700">
               {busy === 'abandon' ? 'Abandoning…' : 'Abandon quest'}
             </Text>
           </Pressable>
@@ -638,7 +638,7 @@ export default function QuestDetail() {
           onPress={goBack}
           className="rounded-md bg-amber-600 px-4 py-3 active:bg-amber-700"
         >
-          <Text className="text-center font-display text-lg text-stone-900">
+          <Text className="text-center font-display text-2xl text-stone-900">
             Return to Quest Board
           </Text>
         </Pressable>
@@ -669,7 +669,7 @@ function Chip({
       className={`rounded-full border px-3 py-1.5 ${selected ? 'border-amber-500 bg-amber-600/20' : 'border-stone-700 bg-amber-50/40'}`}
     >
       <Text
-        className={`font-body-medium text-base capitalize ${selected ? 'text-amber-800' : 'text-stone-700'}`}
+        className={`font-body-medium text-xl capitalize ${selected ? 'text-amber-800' : 'text-stone-700'}`}
       >
         {label}
       </Text>
@@ -743,7 +743,7 @@ function LevelUpTakeover({
     <View className="flex-1 items-center justify-center bg-stone-950 px-6">
       <Animated.View entering={FadeIn.duration(400)} className="absolute inset-0 bg-amber-950/10" />
       <Animated.View entering={stagger(0)}>
-        <Text className="mb-2 text-center font-display text-sm uppercase tracking-[0.4em] text-amber-400">
+        <Text className="mb-2 text-center font-display text-lg uppercase tracking-[0.4em] text-amber-400">
           A new threshold
         </Text>
       </Animated.View>
@@ -764,7 +764,7 @@ function LevelUpTakeover({
       </Animated.View>
       {milestoneBonus && milestoneBonus > 0 && newStreak ? (
         <Animated.View entering={stagger(4)}>
-          <Text className="mb-6 text-center font-display text-sm uppercase tracking-[0.3em] text-amber-300">
+          <Text className="mb-6 text-center font-display text-lg uppercase tracking-[0.3em] text-amber-300">
             {newStreak}-streak milestone · +{milestoneBonus} bonus XP
           </Text>
         </Animated.View>
@@ -797,7 +797,7 @@ function LevelUpTakeover({
           onPress={onContinue}
           className="rounded-md bg-amber-600 px-4 py-3 active:bg-amber-700"
         >
-          <Text className="text-center font-display text-lg text-stone-100">
+          <Text className="text-center font-display text-2xl text-stone-100">
             Continue your chronicle
           </Text>
         </Pressable>

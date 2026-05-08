@@ -19,15 +19,14 @@ export default function MainLayout() {
           tabBarStyle: {
             backgroundColor: '#3f2e1d', // dark sepia, like leather binding
             borderTopColor: '#78350f', // amber-900
-            // Bump the bar height — middle of the screen has plenty of room
-            // and the larger target feels more game-like.
-            height: 78,
-            paddingTop: 10,
-            paddingBottom: 14,
+            // Bigger bar to fit the larger Cinzel label.
+            height: 92,
+            paddingTop: 12,
+            paddingBottom: 16,
           },
           tabBarLabelStyle: {
             fontFamily: 'Cinzel_400Regular',
-            fontSize: 15,
+            fontSize: 19,
             textTransform: 'uppercase',
             letterSpacing: 1.5,
             marginTop: 2,
