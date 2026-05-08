@@ -21,6 +21,7 @@ import {
   type QuestTier,
 } from '../../../lib/engine/xp';
 import { generateLevelUpNarration } from '../../../lib/level-up';
+import { playSfx } from '../../../lib/sfx';
 import {
   abandonQuest,
   completeQuest,
@@ -135,8 +136,13 @@ export default function QuestDetail() {
       const buffLine = result.buffGranted
         ? ` · earned: ${result.buffGranted}`
         : '';
+      // SFX: completion bell first, then any earned beats stack underneath.
+      playSfx('quest_complete');
+      if (result.buffGranted) playSfx('buff_earned');
+      if (result.milestoneBonus > 0) playSfx('streak_milestone');
       if (newLevel > oldLevel) {
         refetchProfile();
+        // Level-up sting plays on takeover mount (see LevelUpTakeover).
         setLevelUp({
           oldLevel,
           newLevel,
@@ -167,6 +173,7 @@ export default function QuestDetail() {
         router.back();
       }
     } catch (e) {
+      playSfx('error');
       setActionError(e instanceof Error ? e.message : String(e));
       setBusy(null);
     }
@@ -180,6 +187,7 @@ export default function QuestDetail() {
     );
     setQuest({ ...quest, objectives: newObjectives });
     setActionError(null);
+    playSfx('objective_check');
     try {
       await updateQuestObjectives(quest.id, newObjectives);
     } catch (e) {
@@ -199,8 +207,11 @@ export default function QuestDetail() {
     setActionError(null);
     try {
       await abandonQuest(quest.id);
+      // The Mark of the Forsaken just landed — match it with the audio cue.
+      playSfx('debuff_applied');
       router.back();
     } catch (e) {
+      playSfx('error');
       setActionError(e instanceof Error ? e.message : String(e));
       setBusy(null);
     }
@@ -239,6 +250,7 @@ export default function QuestDetail() {
     if (editDeadline.trim()) {
       const parsed = parseDeadline(editDeadline);
       if (!parsed) {
+        playSfx('error');
         setActionError(
           `Couldn't read "${editDeadline.trim()}" as a date. Try something like "May 15, 2026", "5/15/26", or "next Friday".`,
         );
@@ -261,10 +273,12 @@ export default function QuestDetail() {
           .map((o) => ({ ...o, text: o.text.trim() }))
           .filter((o) => o.text.length > 0),
       });
+      playSfx('quest_create'); // same ceremonial scratch as forge-time
       setQuest(updated);
       setEditMode(false);
       setBusy(null);
     } catch (e) {
+      playSfx('error');
       setActionError(e instanceof Error ? e.message : String(e));
       setBusy(null);
     }
@@ -667,6 +681,11 @@ function LevelUpTakeover({
   const { profile } = useAuth();
   const stagger = (n: number) => FadeInDown.delay(300 + n * 350).duration(700);
   const [narration, setNarration] = useState<string | null>(null);
+
+  // Play the level-up sting once on mount — independent of the AI call.
+  useEffect(() => {
+    playSfx('level_up_sting');
+  }, []);
 
   // Fetch the AI narration in parallel with the staggered reveal. By the time
   // the user has read past level + delta the narration is usually back; if

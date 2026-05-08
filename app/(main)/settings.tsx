@@ -8,6 +8,7 @@ import { useAudioMuted } from '../../lib/audio-prefs';
 import { shareChronicle } from '../../lib/chronicle';
 import { confirmDestructive, showInfoMessage } from '../../lib/dialogs';
 import { errorMessage } from '../../lib/errors';
+import { playSfx } from '../../lib/sfx';
 import { FREE_TIER_QUEST_CAP } from '../../lib/subscription';
 import {
   getCheckInTime,
@@ -351,13 +352,19 @@ export default function Settings() {
       {/* Audio */}
       <SectionHeader>Audio</SectionHeader>
       <Pressable
-        onPress={() => void setMuted(!muted)}
+        onPress={() => {
+          // Play the toggle sound BEFORE flipping mute, otherwise the
+          // toggle-off sound itself gets muted before it can play.
+          playSfx(muted ? 'toggle_on' : 'toggle_off');
+          void setMuted(!muted);
+        }}
         className="mb-3 flex-row items-center justify-between rounded-md border border-stone-700 bg-stone-900 px-4 py-3 active:bg-stone-800"
       >
         <View className="flex-1 pr-3">
-          <Text className="font-body text-base text-stone-200">Mute cinematic audio</Text>
+          <Text className="font-body text-base text-stone-200">Mute all audio</Text>
           <Text className="mt-0.5 font-body text-xs text-stone-500">
-            Affects the opening intro and ambient holding loop. Replay to hear changes.
+            Silences the cinematic, ambient bed, and UI sound effects. Settings is the only screen
+            that still chimes on toggle.
           </Text>
         </View>
         <View

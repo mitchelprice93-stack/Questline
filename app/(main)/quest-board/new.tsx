@@ -7,6 +7,7 @@ import { xpForTier, type QuestTier } from '../../../lib/engine/xp';
 import { errorMessage } from '../../../lib/errors';
 import { generateQuest, type GeneratedQuest } from '../../../lib/quest-generation';
 import { createQuest } from '../../../lib/quests';
+import { playSfx, startLoopSfx, stopLoopSfx } from '../../../lib/sfx';
 import { isQuestCapError, questCapMessage } from '../../../lib/subscription';
 import type {
   QuestClassification,
@@ -53,8 +54,11 @@ export default function NewQuest() {
     if (!input.trim()) return;
     setPhase('loading');
     setError(null);
+    // Looped quill scratch under the spinner — stops on response.
+    startLoopSfx('quill_scratch');
     try {
       const generated = await generateQuest(input);
+      stopLoopSfx('quill_scratch');
       setDraft(generated);
       setTitle(generated.title);
       setDescription(generated.description);
@@ -72,6 +76,8 @@ export default function NewQuest() {
       });
       setPhase('review');
     } catch (e) {
+      stopLoopSfx('quill_scratch');
+      playSfx('error');
       setError(e instanceof Error ? e.message : String(e));
       setPhase('input');
     }
@@ -93,6 +99,7 @@ export default function NewQuest() {
     if (deadlineRaw.trim()) {
       const parsed = parseDeadline(deadlineRaw);
       if (!parsed) {
+        playSfx('error');
         setError(
           `Couldn't read "${deadlineRaw.trim()}" as a date. Try something like "May 15, 2026", "5/15/26", or "next Friday".`,
         );
@@ -115,8 +122,11 @@ export default function NewQuest() {
           .map((o) => ({ ...o, text: o.text.trim() }))
           .filter((o) => o.text.length > 0),
       });
+      // The Tome inscribes a new entry — ceremonial scratch.
+      playSfx('quest_create');
       router.back();
     } catch (e) {
+      playSfx('error');
       // Quest cap is a soft, recoverable rejection — show the in-voice
       // copy instead of the raw Postgres exception text.
       setError(isQuestCapError(e) ? questCapMessage() : errorMessage(e));

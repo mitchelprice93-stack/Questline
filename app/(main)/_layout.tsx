@@ -2,6 +2,7 @@ import { Tabs } from 'expo-router';
 import { View } from 'react-native';
 
 import { AmbientAudioRoot } from '../../lib/ambient-audio';
+import { playSfx } from '../../lib/sfx';
 
 export default function MainLayout() {
   return (
@@ -18,6 +19,9 @@ export default function MainLayout() {
             backgroundColor: '#0c0a09', // stone-950
             borderTopColor: '#292524', // stone-800
           },
+        }}
+        screenListeners={{
+          tabPress: () => playSfx('tab_switch'),
         }}
       >
         <Tabs.Screen name="quest-board" options={{ title: 'Quests' }} />

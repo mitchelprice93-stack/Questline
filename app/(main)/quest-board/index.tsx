@@ -17,6 +17,7 @@ import {
   type QuestFilters,
   type TimeRange,
 } from '../../../lib/quests';
+import { playSfx } from '../../../lib/sfx';
 import { FREE_TIER_QUEST_CAP } from '../../../lib/subscription';
 import type { Faction, Quest, QuestStatus } from '../../../lib/types/models';
 
@@ -122,7 +123,10 @@ export default function QuestBoard() {
           ) : null}
         </View>
         <Link href="/quest-board/new" asChild>
-          <Pressable className="rounded-md bg-amber-600 px-3 py-2 active:bg-amber-700">
+          <Pressable
+            onPress={() => playSfx('button_tap')}
+            className="rounded-md bg-amber-600 px-3 py-2 active:bg-amber-700"
+          >
             <Text className="font-body-medium text-sm text-stone-100">+ New</Text>
           </Pressable>
         </Link>
@@ -135,7 +139,10 @@ export default function QuestBoard() {
           return (
             <Pressable
               key={tab.key}
-              onPress={() => setStatus(tab.key)}
+              onPress={() => {
+                if (status !== tab.key) playSfx('tab_switch');
+                setStatus(tab.key);
+              }}
               className={`flex-1 rounded-md border px-2 py-2 ${
                 selected
                   ? 'border-amber-600 bg-amber-900/40'
