@@ -9,19 +9,22 @@ import { Image } from 'expo-image';
 import type { ReactNode } from 'react';
 import { StyleSheet, View } from 'react-native';
 
-const BG = require('../assets/ui/parchment-bg.png');
+// Single-layer parchment — the frame asset already carries the parchment
+// center plus burnt edges, so we don't need parchment-bg as a separate
+// canvas. (parchment-bg.png is kept on disk for archival but isn't
+// imported.) Scaled 1.05 to crop the heavy black burnt corners slightly
+// and let the page breathe a touch wider on screen.
 const FRAME = require('../assets/ui/parchment-frame.png');
 
-/** Absolute-fill stack of parchment-bg + parchment-frame. Used as the
- *  first child of every (main) screen's root View. */
+/** Absolute-fill parchment frame. Used as the first child of every
+ *  (main) screen's root View. */
 export function ParchmentBackground() {
   return (
     <View pointerEvents="none" style={StyleSheet.absoluteFillObject}>
-      <Image source={BG} contentFit="cover" style={StyleSheet.absoluteFillObject} />
       <Image
         source={FRAME}
         contentFit="cover"
-        style={[StyleSheet.absoluteFillObject, { opacity: 0.55 }]}
+        style={[StyleSheet.absoluteFillObject, { transform: [{ scale: 1.05 }] }]}
       />
     </View>
   );
