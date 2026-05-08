@@ -9,10 +9,12 @@
 // stores Expo push tokens server-side and dispatches via an edge function.
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import Constants from 'expo-constants';
 import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
 
 import { errorMessage } from './errors';
+import { supabase } from './supabase';
 
 // AsyncStorage keys.
 const KEY_QUEST_NOTIFICATIONS = 'questline.notifications.questIds'; // map quest_id -> [scheduledIds]
@@ -52,11 +54,62 @@ export async function requestPermission(): Promise<PermissionStatus> {
   if (!isNative) return 'unsupported';
   try {
     const { status } = await Notifications.requestPermissionsAsync();
-    if (status === 'granted') return 'granted';
+    if (status === 'granted') {
+      // Best-effort: register the device for remote push so the daily
+      // debuff cron can find a token to dispatch to. Non-fatal if the
+      // token fetch or upsert fails.
+      void registerPushTokenForCurrentUser();
+      return 'granted';
+    }
     if (status === 'denied') return 'denied';
     return 'undetermined';
   } catch {
     return 'unsupported';
+  }
+}
+
+// ---- Remote push token registration ----------------------------------------
+
+/**
+ * Fetch this device's Expo push token and upsert it into the push_tokens
+ * table. Called on permission grant and on session change. No-op on web.
+ *
+ * Expo's push system requires a `projectId` from app.json. If that's
+ * missing (e.g. local dev without EAS-linked project) we silently skip
+ * registration — local notifications still work.
+ */
+export async function registerPushTokenForCurrentUser(): Promise<void> {
+  if (!isNative) return;
+  try {
+    const status = await getPermissionStatus();
+    if (status !== 'granted') return;
+
+    const projectId =
+      Constants.expoConfig?.extra?.eas?.projectId ??
+      Constants.easConfig?.projectId;
+    if (!projectId) {
+      console.warn(
+        '[push] no EAS projectId; skipping push token registration. ' +
+          'Run `eas init` and add the projectId to app.json once available.',
+      );
+      return;
+    }
+
+    const tokenResponse = await Notifications.getExpoPushTokenAsync({ projectId });
+    const expoToken = tokenResponse.data;
+    if (!expoToken) return;
+
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) return;
+
+    await supabase
+      .from('push_tokens')
+      .upsert({ user_id: user.id, expo_token: expoToken, updated_at: new Date().toISOString() });
+  } catch (e) {
+    // Swallow — push registration failure shouldn't disrupt the app.
+    console.warn('[push] registerPushTokenForCurrentUser failed', errorMessage(e));
   }
 }
 

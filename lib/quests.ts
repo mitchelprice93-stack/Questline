@@ -208,7 +208,10 @@ export interface UpdateQuestInput {
  */
 export async function updateQuest(questId: string, input: UpdateQuestInput): Promise<Quest> {
   const xp_reward = xpForTier(input.tier);
-  const patch: Record<string, unknown> = {
+  // Cast the patch via unknown so supabase-js accepts our partial shape.
+  // Generated types want a strict per-column shape; with grantedBuff
+  // optional the spread becomes Record<string, unknown> from TS's view.
+  const patch = {
     title: input.title,
     description: input.description,
     tier: input.tier,
@@ -217,10 +220,8 @@ export async function updateQuest(questId: string, input: UpdateQuestInput): Pro
     deadline: input.deadline,
     objectives: input.objectives,
     recurrence: input.recurrence,
+    ...(input.grantedBuff !== undefined ? buffColumns(input.grantedBuff) : {}),
   };
-  if (input.grantedBuff !== undefined) {
-    Object.assign(patch, buffColumns(input.grantedBuff));
-  }
   const { data, error } = await supabase
     .from('quests')
     .update(patch)
@@ -228,9 +229,10 @@ export async function updateQuest(questId: string, input: UpdateQuestInput): Pro
     .select()
     .single();
   if (error) throw asError(error);
-  const quest = data as Quest;
-  // Re-sync deadline reminders to whatever the new deadline says (or
-  // cancel them if the deadline was cleared).
+  // The DB column 'objectives' is jsonb (typed Json by generated types);
+  // we narrow to QuestObjective[] via unknown since the schema check
+  // constrains the structure server-side.
+  const quest = data as unknown as Quest;
   void scheduleDeadlineReminders(quest.id, quest.title, quest.deadline);
   return quest;
 }

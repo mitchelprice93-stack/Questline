@@ -12,7 +12,8 @@
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\"",
     "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,md}\"",
     "test": "jest",
-    "test:watch": "jest --watch"
+    "test:watch": "jest --watch",
+    "gen-types": "supabase gen types typescript --linked > lib/types/database.ts.tmp && grep -v \"^Initialising\\|^A new version of Supabase CLI\\|^We recommend\\|^$\" lib/types/database.ts.tmp > lib/types/database.ts && rm lib/types/database.ts.tmp"
   },
   "jest": {
     "preset": "jest-expo",

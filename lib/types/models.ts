@@ -12,6 +12,10 @@ export type GrantedBuffCondition = 'on_complete' | 'on_time' | 'all_objectives';
 export interface QuestObjective {
   text: string;
   completed: boolean;
+  // Index signature lets QuestObjective[] flow through supabase-js's Json
+  // typing without a manual cast. The fields above are the only meaningful
+  // ones at runtime; this just satisfies the structural check.
+  [key: string]: string | boolean | undefined;
 }
 
 export interface Quest {

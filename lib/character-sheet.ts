@@ -38,7 +38,7 @@ export async function updateFaction(
   id: string,
   patch: { name?: string; real_world_domain?: string },
 ): Promise<Faction> {
-  const trimmed: Record<string, string> = {};
+  const trimmed: { name?: string; real_world_domain?: string } = {};
   if (patch.name !== undefined) trimmed.name = patch.name.trim();
   if (patch.real_world_domain !== undefined)
     trimmed.real_world_domain = patch.real_world_domain.trim();
@@ -96,7 +96,13 @@ export async function updateCampaign(
     status?: Campaign['status'];
   },
 ): Promise<Campaign> {
-  const next: Record<string, unknown> = {};
+  const next: {
+    arc_name?: string;
+    real_world_goal?: string;
+    faction_id?: string | null;
+    progress_pct?: number;
+    status?: Campaign['status'];
+  } = {};
   if (patch.arc_name !== undefined) next.arc_name = patch.arc_name.trim();
   if (patch.real_world_goal !== undefined) next.real_world_goal = patch.real_world_goal.trim();
   if (patch.faction_id !== undefined) next.faction_id = patch.faction_id;

@@ -30,11 +30,14 @@ export interface CharacterCreationInput {
 interface AIFaction {
   name: string;
   real_world_domain: string;
+  // Index signature satisfies the supabase-js Json type at the RPC boundary.
+  [key: string]: string | undefined;
 }
 
 interface AICampaign {
   arc_name: string;
   real_world_goal: string;
+  [key: string]: string | undefined;
 }
 
 export interface CharacterSheetResult {

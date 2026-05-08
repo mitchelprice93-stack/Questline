@@ -3,6 +3,7 @@ import { useRouter, useSegments } from 'expo-router';
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react';
 
 import { hasSeenCinematic, markCinematicSeen as markSeenAsync } from './cinematic';
+import { registerPushTokenForCurrentUser } from './notifications';
 import { clearQuestCache } from './offline';
 import { getCurrentProfile } from './profile';
 import { getSubscriptionStatus, type SubscriptionStatus } from './subscription';
@@ -122,6 +123,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return;
     }
     refetchSubscription();
+    // Refresh the push token on every fresh session so it's never stale.
+    // No-op on web / without notification permission.
+    void registerPushTokenForCurrentUser();
   }, [session?.user.id, loading, refetchSubscription]);
 
   const value: AuthContextValue = {
