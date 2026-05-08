@@ -216,6 +216,13 @@ export default function QuestDetail() {
     setActionError(null);
   };
 
+  // router.back() throws when there's no history (deep link, browser refresh).
+  // Fall through to a quest-board push so the user is never trapped.
+  const goBack = () => {
+    if (router.canGoBack()) router.back();
+    else router.replace('/quest-board');
+  };
+
   const onSaveEdits = async () => {
     if (!quest) return;
     let deadlineIso: string | null = null;
@@ -276,6 +283,9 @@ export default function QuestDetail() {
     const canSave = editTitle.trim().length > 0 && busy !== 'save-edits';
     return (
       <ScrollView className="flex-1 bg-stone-950" contentContainerClassName="px-6 pt-16 pb-12">
+        <Pressable onPress={onCancelEdit} className="mb-3 self-start active:opacity-60">
+          <Text className="font-body text-sm text-amber-400">← Cancel edit</Text>
+        </Pressable>
         <Text className="mb-1 font-display text-xs uppercase tracking-widest text-amber-400">
           Editing quest
         </Text>
@@ -401,8 +411,18 @@ export default function QuestDetail() {
   // View mode — read-only display + actions.
   const onCooldown = isCompletedThisPeriod(quest.recurrence, quest.last_completed_at);
   const cooldownLabel = recurrenceStatusLabel(quest.recurrence, quest.last_completed_at);
+  const isActive = quest.status === 'active';
+  const lifecycleStamp =
+    quest.status === 'completed' && quest.completed_at
+      ? `Completed ${formatLifecycleDate(quest.completed_at)}`
+      : quest.status === 'abandoned' && quest.abandoned_at
+        ? `Abandoned ${formatLifecycleDate(quest.abandoned_at)}`
+        : null;
   return (
     <ScrollView className="flex-1 bg-stone-950" contentContainerClassName="px-6 pt-16 pb-12">
+      <Pressable onPress={goBack} className="mb-3 self-start active:opacity-60">
+        <Text className="font-body text-sm text-amber-400">← Quest Board</Text>
+      </Pressable>
       <Text className="mb-1 font-display text-3xl text-stone-100">{quest.title}</Text>
       <View className="mb-6 flex-row gap-3">
         <Text className="font-display text-xs uppercase tracking-widest text-amber-400">
@@ -415,6 +435,25 @@ export default function QuestDetail() {
         <Text className="font-body text-xs text-stone-500">·</Text>
         <Text className="font-body text-xs text-stone-300">{quest.xp_reward} XP</Text>
       </View>
+
+      {lifecycleStamp ? (
+        <View
+          className={`mb-6 rounded-md border px-4 py-3 ${
+            quest.status === 'completed'
+              ? 'border-emerald-900/40 bg-stone-900'
+              : 'border-stone-700 bg-stone-900'
+          }`}
+        >
+          <Text
+            className={`font-display text-xs uppercase tracking-widest ${
+              quest.status === 'completed' ? 'text-emerald-300' : 'text-stone-400'
+            }`}
+          >
+            {quest.status === 'completed' ? 'Inscribed in the Tome' : 'Set aside'}
+          </Text>
+          <Text className="mt-1 font-body text-sm text-stone-300">{lifecycleStamp}</Text>
+        </View>
+      ) : null}
 
       {quest.recurrence ? (
         <View className="mb-6 rounded-md border border-amber-900/50 bg-stone-900 p-4">
@@ -499,7 +538,7 @@ export default function QuestDetail() {
             <Pressable
               key={idx}
               onPress={() => toggleObjective(idx)}
-              disabled={busy !== null}
+              disabled={busy !== null || !isActive}
               className="py-1.5 active:opacity-60"
             >
               <Text
@@ -521,41 +560,60 @@ export default function QuestDetail() {
         <Text className="mb-4 font-body text-sm text-red-400">{actionError}</Text>
       ) : null}
 
-      <Pressable
-        onPress={onComplete}
-        disabled={busy !== null || onCooldown}
-        className={`mb-3 rounded-md px-4 py-3 ${
-          busy !== null || onCooldown ? 'bg-stone-800' : 'bg-amber-600 active:bg-amber-700'
-        }`}
-      >
-        <Text className="text-center font-display text-base text-stone-100">
-          {busy === 'complete'
-            ? 'Completing…'
-            : onCooldown
-              ? cooldownLabel ?? 'Already done this period'
-              : 'Mark complete'}
-        </Text>
-      </Pressable>
+      {isActive ? (
+        <>
+          <Pressable
+            onPress={onComplete}
+            disabled={busy !== null || onCooldown}
+            className={`mb-3 rounded-md px-4 py-3 ${
+              busy !== null || onCooldown ? 'bg-stone-800' : 'bg-amber-600 active:bg-amber-700'
+            }`}
+          >
+            <Text className="text-center font-display text-base text-stone-100">
+              {busy === 'complete'
+                ? 'Completing…'
+                : onCooldown
+                  ? cooldownLabel ?? 'Already done this period'
+                  : 'Mark complete'}
+            </Text>
+          </Pressable>
 
-      <Pressable
-        onPress={onEnterEdit}
-        disabled={busy !== null}
-        className="mb-3 rounded-md border border-stone-700 bg-stone-900 px-4 py-3 active:bg-stone-800"
-      >
-        <Text className="text-center font-body text-base text-stone-200">Edit quest</Text>
-      </Pressable>
+          <Pressable
+            onPress={onEnterEdit}
+            disabled={busy !== null}
+            className="mb-3 rounded-md border border-stone-700 bg-stone-900 px-4 py-3 active:bg-stone-800"
+          >
+            <Text className="text-center font-body text-base text-stone-200">Edit quest</Text>
+          </Pressable>
 
-      <Pressable
-        onPress={onAbandon}
-        disabled={busy !== null}
-        className="rounded-md border border-stone-700 bg-stone-900 px-4 py-3 active:bg-stone-800"
-      >
-        <Text className="text-center font-body text-base text-stone-300">
-          {busy === 'abandon' ? 'Abandoning…' : 'Abandon quest'}
-        </Text>
-      </Pressable>
+          <Pressable
+            onPress={onAbandon}
+            disabled={busy !== null}
+            className="rounded-md border border-stone-700 bg-stone-900 px-4 py-3 active:bg-stone-800"
+          >
+            <Text className="text-center font-body text-base text-stone-300">
+              {busy === 'abandon' ? 'Abandoning…' : 'Abandon quest'}
+            </Text>
+          </Pressable>
+        </>
+      ) : (
+        <Pressable
+          onPress={goBack}
+          className="rounded-md bg-amber-600 px-4 py-3 active:bg-amber-700"
+        >
+          <Text className="text-center font-display text-base text-stone-100">
+            Return to Quest Board
+          </Text>
+        </Pressable>
+      )}
     </ScrollView>
   );
+}
+
+function formatLifecycleDate(iso: string): string {
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return iso;
+  return d.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
 }
 
 function Chip({
