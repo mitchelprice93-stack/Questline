@@ -1,37 +1,35 @@
-// Ambient music loop. Mounted once at the app root; reads the existing
-// audio-mute pref so a single toggle controls cinematic + ambient.
+// Ambient music loop. Mounted once at the (main) layout root. Reads the
+// existing audio-mute pref so the Settings toggle controls cinematic +
+// SFX + ambient with one switch.
 //
-// The underlying mp3 lives at assets/audio/ambient-loop.mp3 — currently
-// a 5-second silent placeholder, swap it out with the commissioned track
-// from prompts/parchment-ui-brief.md and no code change is needed.
-//
-// Re-uses expo-video (which we already have installed) to play audio-only
-// content. No additional native dep needed.
+// Uses expo-audio (the purpose-built audio player) rather than expo-video
+// because the mp3 may carry embedded album art / ID3 tags that make
+// expo-video unhappy treating the file as video. expo-audio handles
+// audio-only sources natively.
 
-import { useVideoPlayer, VideoView } from 'expo-video';
+import { useAudioPlayer } from 'expo-audio';
 import { useEffect } from 'react';
-import { StyleSheet, View } from 'react-native';
 
 import { useAudioMuted } from './audio-prefs';
 
 const AMBIENT_SOURCE = require('../assets/audio/ambient-loop.mp3');
 
 /**
- * Mount this once near the app root. Renders a tiny invisible VideoView
- * (expo-video requires a view element to actually play) and quietly loops
- * the ambient bed. The view has zero size and pointerEvents=none so it
- * doesn't intercept anything.
+ * Mount this once near the (main) layout root. Plays the ambient bed at
+ * 35% volume on a seamless loop. Respects the audio-mute pref. Renders
+ * nothing — the player is purely audio.
  */
 export function AmbientAudioRoot() {
-  const player = useVideoPlayer(AMBIENT_SOURCE, (p) => {
-    p.loop = true;
-    p.volume = 0.35; // sit under everything else
-    // Don't autoplay — browsers block autoplay-with-audio without a user
-    // gesture. The cinematic and various button taps satisfy that gate; we
-    // start playback once the mute pref says we should.
-  });
-
+  const player = useAudioPlayer(AMBIENT_SOURCE);
   const [muted] = useAudioMuted();
+
+  useEffect(() => {
+    // Configure once on mount. expo-audio's player has stable identity per
+    // source, so setting these on every render is wasteful — bind in a
+    // mount effect instead.
+    player.loop = true;
+    player.volume = 0.35;
+  }, [player]);
 
   useEffect(() => {
     if (muted) {
@@ -39,19 +37,17 @@ export function AmbientAudioRoot() {
       player.muted = true;
     } else {
       player.muted = false;
-      // play() is idempotent — calling it on a playing player is a no-op.
-      // On web it'll silently fail until a user gesture has unblocked the
-      // audio context; subsequent calls succeed automatically.
-      player.play();
+      // Browsers and iOS will silently reject play() until a user gesture
+      // has unblocked the audio context. By the time the user reaches the
+      // (main) layout they've definitely tapped through onboarding /
+      // cinematic, so this should always be a clear path.
+      try {
+        player.play();
+      } catch (e) {
+        console.warn('[ambient] play failed', e);
+      }
     }
   }, [player, muted]);
 
-  return (
-    <View
-      pointerEvents="none"
-      style={[StyleSheet.absoluteFillObject, { width: 0, height: 0, opacity: 0 }]}
-    >
-      <VideoView player={player} style={{ width: 0, height: 0 }} nativeControls={false} />
-    </View>
-  );
+  return null;
 }
