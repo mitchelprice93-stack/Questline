@@ -739,21 +739,22 @@ function LevelUpTakeover({
         <View className="mb-6" />
       )}
 
-      {/* The Archivist's commentary. Fades in once the AI returns; falls
-          back to a templated line if the call fails so the slot is never
-          empty. */}
-      {narration ? (
-        <Animated.View
-          entering={FadeIn.duration(900)}
-          className="mb-10 max-w-md"
-        >
-          <Text className="text-center font-body italic leading-relaxed text-stone-200">
-            “{narration}”
+      {/* The Archivist's commentary. Shows a loading line while the AI
+          call is in flight, then fades the narration in over it.
+          Templated fallback fires on error so the slot is never empty. */}
+      <View className="mb-10 max-w-md">
+        {narration ? (
+          <Animated.View entering={FadeIn.duration(900)}>
+            <Text className="text-center font-body italic leading-relaxed text-stone-200">
+              “{narration}”
+            </Text>
+          </Animated.View>
+        ) : (
+          <Text className="text-center font-body italic text-stone-600">
+            The Archivist takes up the quill…
           </Text>
-        </Animated.View>
-      ) : (
-        <View className="mb-10 h-12" />
-      )}
+        )}
+      </View>
 
       <Animated.View
         entering={stagger(milestoneBonus && milestoneBonus > 0 ? 5 : 4)}

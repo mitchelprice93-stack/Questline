@@ -64,7 +64,9 @@ function fallbackNarration(ctx: LevelUpContext): string {
 /**
  * Generate a short Archivist commentary for the level-up takeover. Returns
  * a fallback line on timeout / rate-limit / error so the UI never has to
- * branch on failure.
+ * branch on failure. Logs the raw response to console for debugging — if
+ * the takeover keeps showing fallback copy when it shouldn't, that log
+ * tells us what came back.
  */
 export async function generateLevelUpNarration(ctx: LevelUpContext): Promise<string> {
   try {
@@ -73,13 +75,16 @@ export async function generateLevelUpNarration(ctx: LevelUpContext): Promise<str
       TIMEOUT_MS,
       'level_up_narration',
     );
+    console.log('[level-up] response', result.data);
     const text = result.data?.narration?.trim();
-    return text && text.length > 0 ? text : fallbackNarration(ctx);
+    if (text && text.length > 0) return text;
+    console.warn('[level-up] empty narration, using fallback');
+    return fallbackNarration(ctx);
   } catch (e) {
     if (e instanceof ClaudeProxyError && e.isRateLimited()) {
-      console.warn('level_up_narration rate-limited; using fallback', e.message);
+      console.warn('[level-up] rate-limited; using fallback', e.message);
     } else {
-      console.warn('level_up_narration failed; using fallback', e);
+      console.warn('[level-up] call failed; using fallback', e);
     }
     return fallbackNarration(ctx);
   }

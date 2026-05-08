@@ -126,3 +126,102 @@ surface. Type colors will warm up — current `text-stone-100` becomes a
 charcoal ink (`#1f1a17`-ish) for body, with the existing amber accents
 unchanged. The actual restyle is a code task that happens after the
 textures land; this brief is just the assets it depends on.
+
+---
+
+## Appendix A — Generator-ready prompts
+
+Drop these straight into Midjourney, DALL-E, Stable Diffusion (the
+recommended target is Midjourney v6 or DALL-E 3 — both handle the
+warm-ink-on-vellum style well). For music, Suno v4 or Udio.
+
+### A.1 · Parchment background — image prompt
+
+> Aged vellum parchment background, full-page texture, warm ivory base
+> color shifting toward soft amber at the corners, faint horizontal
+> creases, subtle ink ghosting from previous pages, quill-scratch
+> marks at the very edges, occasional small tea-colored stains, no
+> writing or symbols, no torn edges (those go on a separate layer),
+> hand-painted look, painterly watercolor texture, low saturation,
+> high resolution scan quality. Style references: Skyrim spell-tome
+> page, Dungeons & Dragons player handbook page, Marauder's Map
+> middle section. **Aspect ratio 9:19.5, resolution 2400×5200,
+> opaque (no transparency).** Center 80% must remain visually quiet
+> — keep detail at edges and corners. **No text, no characters, no
+> illustrations, no figures, no maps, no symbols.**
+
+Negative prompt (Stable Diffusion only):
+
+> text, letters, words, characters, drawings, figures, faces,
+> symbols, runes, maps, diagrams, illustrations, modern paper, white
+> printer paper, blue tint, green tint, glossy, plastic, photo
+> reference of real paper sheet on a desk
+
+Output format: PNG, 2400 × 5200 minimum, no alpha channel.
+
+### A.2 · Parchment fringe overlay — image prompt
+
+> Torn and burned parchment edge, ragged irregular border, scorched
+> brown burn marks fading to charcoal black at the very edge,
+> hand-torn fibers, some areas slightly more burnt than others,
+> asymmetric, organic — as if a single sheet was ripped from a
+> larger document and singed by a candle. The border band is heavy
+> in the corners and lighter along the long edges. **The center of
+> the frame is fully transparent — only the edge of the page is
+> visible.** Style: hand-painted, watercolor and ink, painterly,
+> Skyrim journal aesthetic. **Aspect ratio 9:19.5, resolution
+> 2400×5200, transparent center (alpha PNG).** Edge band 60-120 px
+> wide on the 2400-wide canvas. **No paper texture in the center —
+> just the torn edge.**
+
+Negative prompt (Stable Diffusion only):
+
+> filled center, paper texture, full sheet, complete document, text,
+> writing, ink, white background, solid color background, frame
+> shape, picture frame, ornamental border, gold leaf, decoration
+
+Output format: PNG with alpha, 2400 × 5200 minimum. Center 99%
+transparent.
+
+### A.3 · Ambient music loop — generator prompt
+
+For Suno v4 or Udio. Paste this as the description / lyrics-free
+instrumental prompt:
+
+> Ambient library music, dark medieval fantasy, restricted-section-
+> at-midnight atmosphere. Sustained legato strings, distant solo
+> cello, soft choir pad with no discernible vocals, very subtle wind
+> through wooden rafters, occasional faint page turn or quill
+> scratch. No melody to speak of — atmospheric texture only.
+> Tempo 50-60 BPM but rhythmless. Heavily compressed dynamic range,
+> quiet baseline that never builds to a climax. No percussion. No
+> drums. No discernible chord progression — just slow harmonic
+> drift. Wordless. Two to three minutes long, designed to loop
+> seamlessly.
+
+Settings to choose where available:
+
+- **Instrumental only**: ON
+- **Length**: 2:30 minimum (Suno default 2:00 might be too short for
+  comfortable looping)
+- **Style**: ambient, drone, soundscape, dark fantasy
+- **Mood**: contemplative, mysterious, library, calm
+
+Post-generation processing (whoever masters):
+
+- Normalize to **−23 to −20 LUFS integrated**
+- Trim head and tail to a zero-crossing for clean loop seam
+- Export as 192 kbps stereo MP3 at 44.1 kHz
+
+Drop the final file at `assets/audio/ambient-loop.mp3` to replace the
+current 5-second silent placeholder. The wiring is already in place
+— no code change is needed once the file is there.
+
+### A.4 · (Future, optional) Hero upgrade cinematic — image prompt
+
+Not needed today. When we wire the Hero subscription cinematic, the
+art prompt would be the same Archivist sanctum from `cinematic-brief.md`
+but with **the Tome glowing brighter, gold leaf catching the candle
+flame, a hand reaching across the frame from below to lay coins on
+the desk** — a moment of formal acknowledgment. We'll commission
+that separately.
