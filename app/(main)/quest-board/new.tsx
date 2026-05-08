@@ -151,8 +151,8 @@ export default function NewQuest() {
   if (phase === 'input') {
     return (
       <ParchmentScreen>
-        <ScrollView className="flex-1" contentContainerClassName="px-6 pt-16 pb-12">
-        <Text className="mb-1 font-display text-3xl text-stone-900">New endeavor</Text>
+        <ScrollView className="flex-1" contentContainerClassName="px-6 pt-20 pb-12">
+        <Text className="mb-1 font-display text-4xl text-stone-900">New endeavor</Text>
         <Text className="mb-6 font-body text-stone-700">
           Tell the Archivist what you need to do, in plain language. They will forge it into a quest
           for the Tome.
@@ -190,11 +190,11 @@ export default function NewQuest() {
 
   return (
     <ParchmentScreen>
-      <ScrollView className="flex-1" contentContainerClassName="px-6 pt-16 pb-12">
+      <ScrollView className="flex-1" contentContainerClassName="px-6 pt-20 pb-12">
       <Text className="mb-1 font-display text-xs uppercase tracking-widest text-amber-800">
         {draft.fromFallback ? 'Templated draft' : 'The Archivist offers'}
       </Text>
-      <Text className="mb-6 font-display text-3xl text-stone-900">Review the quest</Text>
+      <Text className="mb-6 font-display text-4xl text-stone-900">Review the quest</Text>
 
       {draft.tactical_warnings.length > 0 ? (
         <View className="mb-6 rounded-md border border-amber-900/40 bg-amber-950/20 p-4">

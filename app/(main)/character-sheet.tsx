@@ -168,8 +168,8 @@ export default function CharacterSheet() {
 
   return (
     <ParchmentScreen>
-      <ScrollView className="flex-1" contentContainerClassName="px-6 pt-16 pb-12">
-      <Text className="mb-1 font-display text-3xl text-stone-900">{displayName}</Text>
+      <ScrollView className="flex-1" contentContainerClassName="px-6 pt-20 pb-12">
+      <Text className="mb-1 font-display text-4xl text-stone-900">{displayName}</Text>
       {profile?.character_title ? (
         <Text className="mb-6 font-display text-amber-800">{profile.character_title}</Text>
       ) : (

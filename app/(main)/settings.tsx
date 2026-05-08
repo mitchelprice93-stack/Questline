@@ -128,8 +128,8 @@ export default function Settings() {
 
   return (
     <ParchmentScreen>
-      <ScrollView className="flex-1" contentContainerClassName="px-6 pt-16 pb-12">
-      <Text className="mb-6 font-display text-3xl text-stone-900">Settings</Text>
+      <ScrollView className="flex-1" contentContainerClassName="px-6 pt-20 pb-12">
+      <Text className="mb-6 font-display text-4xl text-stone-900">Settings</Text>
 
       {/* Account */}
       <SectionHeader>Account</SectionHeader>

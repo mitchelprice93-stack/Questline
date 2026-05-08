@@ -114,10 +114,10 @@ export default function QuestBoard() {
 
   return (
     <ParchmentScreen>
-      <View className="flex-1 px-6 pt-16">
+      <View className="flex-1 px-6 pt-20">
       <View className="mb-4 flex-row items-center justify-between">
         <View className="flex-1">
-          <Text className="font-display text-3xl text-stone-900">Quest Board</Text>
+          <Text className="font-display text-4xl text-stone-900">Quest Board</Text>
           {subscription?.tier === 'free' && activeQuestCount !== null ? (
             <Text className="mt-0.5 font-body text-xs text-stone-500">
               {activeQuestCount} / {FREE_TIER_QUEST_CAP} active · free tier

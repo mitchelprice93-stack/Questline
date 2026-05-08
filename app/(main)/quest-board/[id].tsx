@@ -317,14 +317,14 @@ export default function QuestDetail() {
     const canSave = editTitle.trim().length > 0 && busy !== 'save-edits';
     return (
       <ParchmentScreen>
-        <ScrollView className="flex-1" contentContainerClassName="px-6 pt-16 pb-12">
+        <ScrollView className="flex-1" contentContainerClassName="px-6 pt-20 pb-12">
         <Pressable onPress={onCancelEdit} className="mb-3 self-start active:opacity-60">
           <Text className="font-body text-sm text-amber-800">← Cancel edit</Text>
         </Pressable>
         <Text className="mb-1 font-display text-xs uppercase tracking-widest text-amber-800">
           Editing quest
         </Text>
-        <Text className="mb-6 font-display text-3xl text-stone-900">{quest.title}</Text>
+        <Text className="mb-6 font-display text-4xl text-stone-900">{quest.title}</Text>
 
         <Text className="mb-2 font-body text-sm text-stone-700">Title</Text>
         <TextInput
@@ -456,11 +456,11 @@ export default function QuestDetail() {
         : null;
   return (
     <ParchmentScreen>
-      <ScrollView className="flex-1" contentContainerClassName="px-6 pt-16 pb-12">
+      <ScrollView className="flex-1" contentContainerClassName="px-6 pt-20 pb-12">
       <Pressable onPress={goBack} className="mb-3 self-start active:opacity-60">
         <Text className="font-body text-sm text-amber-800">← Quest Board</Text>
       </Pressable>
-      <Text className="mb-1 font-display text-3xl text-stone-900">{quest.title}</Text>
+      <Text className="mb-1 font-display text-4xl text-stone-900">{quest.title}</Text>
       <View className="mb-6 flex-row gap-3">
         <Text className="font-display text-xs uppercase tracking-widest text-amber-800">
           {quest.tier}

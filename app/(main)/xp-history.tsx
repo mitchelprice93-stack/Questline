@@ -33,9 +33,9 @@ export default function XpHistory() {
 
   return (
     <ParchmentScreen>
-      <View className="flex-1 px-6 pt-16">
+      <View className="flex-1 px-6 pt-20">
       <View className="mb-2 flex-row items-baseline justify-between">
-        <Text className="font-display text-3xl text-stone-900">XP History</Text>
+        <Text className="font-display text-4xl text-stone-900">XP History</Text>
         <Pressable onPress={() => router.back()} className="active:opacity-60">
           <Text className="font-body text-sm text-amber-800">Back</Text>
         </Pressable>
