@@ -4,8 +4,10 @@ import { ActivityIndicator, Pressable, ScrollView, Text, TextInput, View } from 
 
 import { parseDeadline } from '../../../lib/dates';
 import { xpForTier, type QuestTier } from '../../../lib/engine/xp';
+import { errorMessage } from '../../../lib/errors';
 import { generateQuest, type GeneratedQuest } from '../../../lib/quest-generation';
 import { createQuest } from '../../../lib/quests';
+import { isQuestCapError, questCapMessage } from '../../../lib/subscription';
 import type {
   QuestClassification,
   QuestObjective,
@@ -115,7 +117,9 @@ export default function NewQuest() {
       });
       router.back();
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      // Quest cap is a soft, recoverable rejection — show the in-voice
+      // copy instead of the raw Postgres exception text.
+      setError(isQuestCapError(e) ? questCapMessage() : errorMessage(e));
       setSubmitting(false);
     }
   };

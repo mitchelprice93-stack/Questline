@@ -8,6 +8,7 @@ import { useAudioMuted } from '../../lib/audio-prefs';
 import { shareChronicle } from '../../lib/chronicle';
 import { confirmDestructive, showInfoMessage } from '../../lib/dialogs';
 import { errorMessage } from '../../lib/errors';
+import { FREE_TIER_QUEST_CAP } from '../../lib/subscription';
 import {
   getCheckInTime,
   getPermissionStatus,
@@ -25,7 +26,7 @@ const CHECK_IN_OPTIONS: { key: 'off' | string; label: string }[] = [
 ];
 
 export default function Settings() {
-  const { session, signOut } = useAuth();
+  const { session, signOut, subscription } = useAuth();
   const router = useRouter();
 
   const [muted, setMuted] = useAudioMuted();
@@ -244,6 +245,44 @@ export default function Settings() {
           Replay opening cinematic
         </Text>
       </Pressable>
+
+      {/* Subscription */}
+      <SectionHeader>Subscription</SectionHeader>
+      <View
+        className={`mb-3 rounded-md border px-4 py-3 ${
+          subscription?.tier === 'hero'
+            ? 'border-amber-700/60 bg-amber-900/30'
+            : 'border-stone-700 bg-stone-900'
+        }`}
+      >
+        <Text
+          className={`font-display text-xs uppercase tracking-widest ${
+            subscription?.tier === 'hero' ? 'text-amber-200' : 'text-stone-400'
+          }`}
+        >
+          {subscription?.tier === 'hero' ? 'Hero · pledged to the Archivist' : 'Free chronicler'}
+        </Text>
+        <Text className="mt-1 font-body text-sm text-stone-300">
+          {subscription?.tier === 'hero'
+            ? 'No cap on active quests. The Tome opens fully.'
+            : `Up to ${FREE_TIER_QUEST_CAP} active quests at once.`}
+        </Text>
+      </View>
+      {subscription?.tier === 'free' ? (
+        <Pressable
+          disabled
+          className="mb-8 rounded-md border border-amber-700/40 bg-amber-900/10 px-4 py-3"
+        >
+          <Text className="text-center font-body text-sm text-amber-300">
+            Pledge your oath to the Archivist · $3/month
+          </Text>
+          <Text className="mt-1 text-center font-body text-xs text-stone-500">
+            (Available once the gates open — RevenueCat integration in progress.)
+          </Text>
+        </Pressable>
+      ) : (
+        <View className="mb-8" />
+      )}
 
       {/* Notifications */}
       <SectionHeader>Notifications</SectionHeader>

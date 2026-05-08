@@ -314,9 +314,10 @@ Test file: `lib/engine/xp.test.ts`. Use Jest. Cover edge cases: zero XP, negativ
 
 ## 5.1 RevenueCat Integration
 - [ ] Configure products in App Store Connect and Google Play Console
-- [ ] Subscription tiers:
-  - **Free** — character creation, max 5 active quests, basic narrative, no recurring quests
-  - **Hero** ($4.99/mo or $39/yr) — unlimited quests, recurring quests, debuff system, custom factions, voiceover, export
+- [ ] Subscription tiers (revised — simpler than original spec):
+  - **Free** — full character creation + cinematic + every mechanic. Capped at 5 active quests at any one time.
+  - **Hero** ($3/mo) — uncaps active-quest count; everything else identical.
+- [x] Quest-cap enforcement (server-side trigger) — gates inserts of `status='active'` quests when free-tier user already has 5 active
 - [ ] Paywall screen (designed to feel in-world — "Pledge your oath to the Archivist")
 - [ ] Free trial: 7 days
 - [ ] Restore purchases flow

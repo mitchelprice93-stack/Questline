@@ -4,6 +4,7 @@ import { createContext, useCallback, useContext, useEffect, useState, type React
 
 import { hasSeenCinematic, markCinematicSeen as markSeenAsync } from './cinematic';
 import { getCurrentProfile } from './profile';
+import { getSubscriptionStatus, type SubscriptionStatus } from './subscription';
 import { supabase } from './supabase';
 import type { Profile } from './types/models';
 
@@ -16,11 +17,15 @@ interface AuthContextValue {
   profileLoading: boolean;
   /** null until the first cinematic-seen check resolves, then true/false. */
   cinematicSeen: boolean | null;
+  /** null until the first subscription fetch resolves. */
+  subscription: SubscriptionStatus | null;
   signIn: (email: string, password: string) => Promise<{ error: AuthError | null }>;
   signUp: (email: string, password: string) => Promise<{ error: AuthError | null }>;
   signOut: () => Promise<{ error: AuthError | null }>;
   /** Re-fetch the profile (call after character creation, settings updates, etc.). */
   refetchProfile: () => Promise<void>;
+  /** Re-fetch subscription status (call after a paywall purchase or webhook update). */
+  refetchSubscription: () => Promise<void>;
   /** Mark the cinematic as seen for the current user (persists + updates state). */
   markCinematicSeen: () => Promise<void>;
 }
@@ -33,6 +38,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [profileLoading, setProfileLoading] = useState(true);
   const [cinematicSeen, setCinematicSeen] = useState<boolean | null>(null);
+  const [subscription, setSubscription] = useState<SubscriptionStatus | null>(null);
 
   const refetchProfile = useCallback(async () => {
     setProfileLoading(true);
@@ -44,6 +50,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setProfile(null);
     } finally {
       setProfileLoading(false);
+    }
+  }, []);
+
+  const refetchSubscription = useCallback(async () => {
+    try {
+      const s = await getSubscriptionStatus();
+      setSubscription(s);
+    } catch (e) {
+      console.warn('refetchSubscription failed', e);
+      // Default to free on error so the cap still applies.
+      setSubscription({ tier: 'free', status: null, expires_at: null });
     }
   }, []);
 
@@ -62,14 +79,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setLoading(false);
     });
 
-    const { data: subscription } = supabase.auth.onAuthStateChange((_event, newSession) => {
+    // Renamed from `subscription` to avoid clashing with the
+    // `subscription` state variable below (RevenueCat tier).
+    const { data: authSub } = supabase.auth.onAuthStateChange((_event, newSession) => {
       setSession(newSession);
       setLoading(false);
     });
 
     return () => {
       mounted = false;
-      subscription.subscription.unsubscribe();
+      authSub.subscription.unsubscribe();
     };
   }, []);
 
@@ -94,12 +113,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     hasSeenCinematic(session.user.id).then(setCinematicSeen);
   }, [session?.user.id, loading]);
 
+  // Refetch subscription whenever the session changes.
+  useEffect(() => {
+    if (loading) return;
+    if (!session) {
+      setSubscription(null);
+      return;
+    }
+    refetchSubscription();
+  }, [session?.user.id, loading, refetchSubscription]);
+
   const value: AuthContextValue = {
     session,
     profile,
     loading,
     profileLoading,
     cinematicSeen,
+    subscription,
     signIn: async (email, password) => {
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       return { error };
@@ -113,6 +143,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return { error };
     },
     refetchProfile,
+    refetchSubscription,
     markCinematicSeen,
   };
 

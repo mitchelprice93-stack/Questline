@@ -2,6 +2,7 @@ import { Link, useFocusEffect } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, Text, TextInput, View } from 'react-native';
 
+import { useAuth } from '../../../lib/auth';
 import {
   deadlineUrgency,
   formatDeadlineRelative,
@@ -16,6 +17,7 @@ import {
   type QuestFilters,
   type TimeRange,
 } from '../../../lib/quests';
+import { FREE_TIER_QUEST_CAP } from '../../../lib/subscription';
 import type { Faction, Quest, QuestStatus } from '../../../lib/types/models';
 
 const STATUS_TABS: { key: QuestStatus; label: string }[] = [
@@ -40,8 +42,10 @@ const TIME_RANGE_OPTIONS: { key: TimeRange; label: string }[] = [
 ];
 
 export default function QuestBoard() {
+  const { subscription } = useAuth();
   const [status, setStatus] = useState<QuestStatus>('active');
   const [quests, setQuests] = useState<Quest[] | null>(null);
+  const [activeQuestCount, setActiveQuestCount] = useState<number | null>(null);
   const [factions, setFactions] = useState<Faction[]>([]);
   const [error, setError] = useState<string | null>(null);
 
@@ -55,16 +59,19 @@ export default function QuestBoard() {
 
   // Refetch when the active tab changes — simpler than caching three lists
   // and the dataset is small enough that the round-trip is unnoticeable.
+  // Also pull the active count separately so the cap indicator stays accurate
+  // across tab switches (the visible list might be Completed).
   useFocusEffect(
     useCallback(() => {
       let cancelled = false;
       setError(null);
       setQuests(null);
-      Promise.all([listQuests(status), listFactions()])
-        .then(([rows, fx]) => {
+      Promise.all([listQuests(status), listFactions(), listQuests('active')])
+        .then(([rows, fx, active]) => {
           if (cancelled) return;
           setQuests(rows);
           setFactions(fx);
+          setActiveQuestCount(active.length);
         })
         .catch((e: unknown) => {
           if (!cancelled) setError(e instanceof Error ? e.message : String(e));
@@ -106,7 +113,14 @@ export default function QuestBoard() {
   return (
     <View className="flex-1 bg-stone-950 px-6 pt-16">
       <View className="mb-4 flex-row items-center justify-between">
-        <Text className="font-display text-3xl text-stone-100">Quest Board</Text>
+        <View className="flex-1">
+          <Text className="font-display text-3xl text-stone-100">Quest Board</Text>
+          {subscription?.tier === 'free' && activeQuestCount !== null ? (
+            <Text className="mt-0.5 font-body text-xs text-stone-500">
+              {activeQuestCount} / {FREE_TIER_QUEST_CAP} active · free tier
+            </Text>
+          ) : null}
+        </View>
         <Link href="/quest-board/new" asChild>
           <Pressable className="rounded-md bg-amber-600 px-3 py-2 active:bg-amber-700">
             <Text className="font-body-medium text-sm text-stone-100">+ New</Text>
