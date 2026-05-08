@@ -41,7 +41,7 @@ const DAILY_COST_CEILING_USD = 0.5;
 const QUEST_GENERATION_DAILY_LIMIT = 50;
 
 interface ProxyRequest {
-  endpoint: 'character_creation' | 'quest_generation';
+  endpoint: 'character_creation' | 'quest_generation' | 'level_up_narration';
   payload: unknown;
 }
 
@@ -164,6 +164,23 @@ const QUEST_GENERATION_SCHEMA = {
   ],
 };
 
+// Level-up narration — short Archivist commentary on what crossed the
+// threshold. Two to three sentences, voiced over the takeover (text now,
+// ElevenLabs audio when 3.4 lands). Schema is intentionally minimal so the
+// model spends its tokens on the narration rather than structure.
+const LEVEL_UP_NARRATION_SCHEMA = {
+  type: 'object',
+  additionalProperties: false,
+  properties: {
+    narration: {
+      type: 'string',
+      description:
+        'Two or three sentences in the Archivist\'s voice describing what crossed the threshold. Speak directly to the chronicler.',
+    },
+  },
+  required: ['narration'],
+};
+
 function corsHeaders(): Record<string, string> {
   return {
     'Access-Control-Allow-Origin': '*',
@@ -233,6 +250,17 @@ function buildUserMessage(req: ProxyRequest): { content: string; schema: unknown
           `first_quest_hook is one or two sentences pointing at the next obvious endeavor.`,
         schema: CHARACTER_CREATION_SCHEMA,
       };
+    case 'level_up_narration':
+      return {
+        content:
+          `The chronicler has crossed a threshold. Context:\n\n${JSON.stringify(req.payload, null, 2)}\n\n` +
+          `Compose two or three sentences acknowledging the level gained, the deed that tipped them over, ` +
+          `and (if relevant) the streak or buff in play. Speak to the chronicler directly. ` +
+          `Match the gravitas to the level: warm and lightly proud at low levels, weightier as the numbers climb. ` +
+          `Do not announce the level number explicitly — the takeover screen already shows it. ` +
+          `Return JSON matching the supplied schema with a single 'narration' field.`,
+        schema: LEVEL_UP_NARRATION_SCHEMA,
+      };
     case 'quest_generation':
       return {
         content:
@@ -253,11 +281,12 @@ function buildUserMessage(req: ProxyRequest): { content: string; schema: unknown
 }
 
 function pickModel(endpoint: ProxyRequest['endpoint']): keyof typeof PRICING {
-  // Both Phase 2.1 endpoints want narrative; route to Sonnet. Future cheap
-  // parsing/classification endpoints can route to Haiku.
+  // Narrative endpoints route to Sonnet for voice quality. Cheap classification
+  // endpoints (none yet) would route to Haiku.
   switch (endpoint) {
     case 'character_creation':
     case 'quest_generation':
+    case 'level_up_narration':
       return 'claude-sonnet-4-6';
   }
 }
@@ -273,6 +302,10 @@ const ENDPOINT_INFERENCE: Record<ProxyRequest['endpoint'], EndpointInferenceConf
   // Decomposition task fired up to 50x/day. Disabled thinking keeps it snappy
   // on Sonnet 4.6 — the schema does the structural work.
   quest_generation: { thinking: { type: 'disabled' }, max_tokens: 2048 },
+  // Short narrative, fires only on a level-up — relatively rare. Keep
+  // thinking off for snappy display; cap tokens tight since output is
+  // 2-3 sentences.
+  level_up_narration: { thinking: { type: 'disabled' }, max_tokens: 512 },
 };
 
 function calculateCostUsd(
@@ -313,7 +346,10 @@ Deno.serve(async (req) => {
   } catch {
     return jsonResponse({ error: 'Body must be JSON' }, 400);
   }
-  if (!body.endpoint || !['character_creation', 'quest_generation'].includes(body.endpoint)) {
+  if (
+    !body.endpoint ||
+    !['character_creation', 'quest_generation', 'level_up_narration'].includes(body.endpoint)
+  ) {
     return jsonResponse({ error: 'Invalid or missing endpoint' }, 400);
   }
   if (body.payload === undefined || body.payload === null) {

@@ -20,7 +20,10 @@ export interface ClaudeProxyResult<T> {
   usage: ClaudeProxyUsage;
 }
 
-export type ClaudeProxyEndpoint = 'character_creation' | 'quest_generation';
+export type ClaudeProxyEndpoint =
+  | 'character_creation'
+  | 'quest_generation'
+  | 'level_up_narration';
 
 export class ClaudeProxyError extends Error {
   constructor(

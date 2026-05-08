@@ -20,6 +20,7 @@ import {
   xpForTier,
   type QuestTier,
 } from '../../../lib/engine/xp';
+import { generateLevelUpNarration } from '../../../lib/level-up';
 import {
   abandonQuest,
   completeQuest,
@@ -63,6 +64,12 @@ interface LevelUpState {
   milestoneBonus?: number;
   /** Streak after this completion (for recurring quests). */
   newStreak?: number;
+  /** Triggering quest title — passed into the AI narration. */
+  triggeringQuestTitle: string;
+  /** Tier of the triggering quest. */
+  triggeringQuestTier: QuestTier;
+  /** Buff name granted by this completion, if any. */
+  buffGranted: string | null;
 }
 
 export default function QuestDetail() {
@@ -137,6 +144,9 @@ export default function QuestDetail() {
           xpChange: result.xpChange,
           milestoneBonus: result.milestoneBonus,
           newStreak: result.newStreak,
+          triggeringQuestTitle: quest.title,
+          triggeringQuestTier: quest.tier,
+          buffGranted: result.buffGranted,
         });
       } else if (quest.recurrence) {
         // Recurring: stay on the page so the user can see the streak update.
@@ -649,9 +659,53 @@ function LevelUpTakeover({
   xpChange,
   milestoneBonus,
   newStreak,
+  triggeringQuestTitle,
+  triggeringQuestTier,
+  buffGranted,
   onContinue,
 }: LevelUpState & { onContinue: () => void }) {
+  const { profile } = useAuth();
   const stagger = (n: number) => FadeInDown.delay(300 + n * 350).duration(700);
+  const [narration, setNarration] = useState<string | null>(null);
+
+  // Fetch the AI narration in parallel with the staggered reveal. By the time
+  // the user has read past level + delta the narration is usually back; if
+  // the network is slow we just let it land when it lands without blocking
+  // anything else on screen.
+  useEffect(() => {
+    let cancelled = false;
+    void generateLevelUpNarration({
+      character_name: profile?.character_name ?? 'Wanderer',
+      character_title: profile?.character_title ?? null,
+      old_level: oldLevel,
+      new_level: newLevel,
+      triggering_quest_title: triggeringQuestTitle,
+      triggering_quest_tier: triggeringQuestTier,
+      xp_change: xpChange,
+      new_total_xp: newTotalXp,
+      new_streak: newStreak ?? 0,
+      milestone_bonus: milestoneBonus ?? 0,
+      buff_granted: buffGranted,
+    }).then((text) => {
+      if (!cancelled) setNarration(text);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    oldLevel,
+    newLevel,
+    xpChange,
+    newTotalXp,
+    newStreak,
+    milestoneBonus,
+    triggeringQuestTitle,
+    triggeringQuestTier,
+    buffGranted,
+    profile?.character_name,
+    profile?.character_title,
+  ]);
+
   return (
     <View className="flex-1 items-center justify-center bg-stone-950 px-6">
       <Animated.View entering={FadeIn.duration(400)} className="absolute inset-0 bg-amber-950/10" />
@@ -677,13 +731,30 @@ function LevelUpTakeover({
       </Animated.View>
       {milestoneBonus && milestoneBonus > 0 && newStreak ? (
         <Animated.View entering={stagger(4)}>
-          <Text className="mb-12 text-center font-display text-xs uppercase tracking-[0.3em] text-amber-300">
+          <Text className="mb-6 text-center font-display text-xs uppercase tracking-[0.3em] text-amber-300">
             {newStreak}-streak milestone · +{milestoneBonus} bonus XP
           </Text>
         </Animated.View>
       ) : (
-        <View className="mb-12" />
+        <View className="mb-6" />
       )}
+
+      {/* The Archivist's commentary. Fades in once the AI returns; falls
+          back to a templated line if the call fails so the slot is never
+          empty. */}
+      {narration ? (
+        <Animated.View
+          entering={FadeIn.duration(900)}
+          className="mb-10 max-w-md"
+        >
+          <Text className="text-center font-body italic leading-relaxed text-stone-200">
+            “{narration}”
+          </Text>
+        </Animated.View>
+      ) : (
+        <View className="mb-10 h-12" />
+      )}
+
       <Animated.View
         entering={stagger(milestoneBonus && milestoneBonus > 0 ? 5 : 4)}
         className="w-full"
