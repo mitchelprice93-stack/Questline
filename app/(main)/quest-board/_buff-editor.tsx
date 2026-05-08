@@ -95,10 +95,10 @@ export function BuffEditor({ draft, onChange, questTier, disabled }: Props) {
         disabled={disabled}
         className="rounded-md border border-dashed border-amber-700/50 px-4 py-3 active:bg-amber-50/40"
       >
-        <Text className="text-center font-body text-sm text-amber-800">
+        <Text className="text-center font-body text-base text-amber-800">
           + Attach a granted buff
         </Text>
-        <Text className="mt-0.5 text-center font-body text-xs text-stone-500">
+        <Text className="mt-0.5 text-center font-body text-sm text-stone-500">
           A reward beyond XP — applies to the next completion if its condition is met.
         </Text>
       </Pressable>
@@ -108,7 +108,7 @@ export function BuffEditor({ draft, onChange, questTier, disabled }: Props) {
   return (
     <View className="rounded-md border border-amber-900/50 bg-amber-50/40 p-3">
       <View className="mb-2 flex-row items-baseline justify-between">
-        <Text className="font-display text-xs uppercase tracking-widest text-amber-800">
+        <Text className="font-display text-sm uppercase tracking-widest text-amber-800">
           Granted buff
         </Text>
         <Pressable
@@ -116,11 +116,11 @@ export function BuffEditor({ draft, onChange, questTier, disabled }: Props) {
           disabled={disabled}
           className="active:opacity-60"
         >
-          <Text className="font-body text-xs text-stone-700">Remove</Text>
+          <Text className="font-body text-sm text-stone-700">Remove</Text>
         </Pressable>
       </View>
 
-      <Text className="mb-1 font-display text-[10px] uppercase tracking-widest text-stone-500">
+      <Text className="mb-1 font-display text-xs uppercase tracking-widest text-stone-500">
         Name
       </Text>
       <TextInput
@@ -132,7 +132,7 @@ export function BuffEditor({ draft, onChange, questTier, disabled }: Props) {
         className="mb-3 rounded-md border border-stone-700 bg-amber-50/60 px-3 py-2 font-body text-stone-900"
       />
 
-      <Text className="mb-1 font-display text-[10px] uppercase tracking-widest text-stone-500">
+      <Text className="mb-1 font-display text-xs uppercase tracking-widest text-stone-500">
         Effect description
       </Text>
       <TextInput
@@ -145,7 +145,7 @@ export function BuffEditor({ draft, onChange, questTier, disabled }: Props) {
         className="mb-3 rounded-md border border-stone-700 bg-amber-50/60 px-3 py-2 font-body text-stone-900"
       />
 
-      <Text className="mb-1 font-display text-[10px] uppercase tracking-widest text-stone-500">
+      <Text className="mb-1 font-display text-xs uppercase tracking-widest text-stone-500">
         XP bonus on next completion (%)
       </Text>
       <TextInput
@@ -156,7 +156,7 @@ export function BuffEditor({ draft, onChange, questTier, disabled }: Props) {
         className="mb-3 rounded-md border border-stone-700 bg-amber-50/60 px-3 py-2 font-body text-stone-900"
       />
 
-      <Text className="mb-1 font-display text-[10px] uppercase tracking-widest text-stone-500">
+      <Text className="mb-1 font-display text-xs uppercase tracking-widest text-stone-500">
         Condition
       </Text>
       <View className="mb-1 flex-row flex-wrap gap-2">
@@ -172,7 +172,7 @@ export function BuffEditor({ draft, onChange, questTier, disabled }: Props) {
               }`}
             >
               <Text
-                className={`font-body-medium text-xs ${
+                className={`font-body-medium text-sm ${
                   selected ? 'text-amber-800' : 'text-stone-700'
                 }`}
               >
@@ -182,8 +182,8 @@ export function BuffEditor({ draft, onChange, questTier, disabled }: Props) {
           );
         })}
       </View>
-      <Text className="mb-2 font-body text-xs text-stone-500">{conditionHelp}</Text>
-      <Text className="font-body text-xs text-amber-800/80">
+      <Text className="mb-2 font-body text-sm text-stone-500">{conditionHelp}</Text>
+      <Text className="font-body text-sm text-amber-800/80">
         Lasts {durationDays} day{durationDays === 1 ? '' : 's'} once earned ·
         scales with quest tier ({questTier}).
       </Text>

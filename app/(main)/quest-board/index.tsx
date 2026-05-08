@@ -119,14 +119,14 @@ export default function QuestBoard() {
         <View className="flex-1">
           <Text className="font-display text-4xl text-stone-900">Quest Board</Text>
           {subscription?.tier === 'free' && activeQuestCount !== null ? (
-            <Text className="mt-0.5 font-body text-xs text-stone-500">
+            <Text className="mt-0.5 font-body text-sm text-stone-500">
               {activeQuestCount} / {FREE_TIER_QUEST_CAP} active · free tier
             </Text>
           ) : null}
         </View>
         <Link href="/quest-board/new" asChild>
           <Pressable className="rounded-md bg-amber-600 px-3 py-2 active:bg-amber-700">
-            <Text className="font-body-medium text-sm text-stone-900">+ New</Text>
+            <Text className="font-body-medium text-base text-stone-900">+ New</Text>
           </Pressable>
         </Link>
       </View>
@@ -149,7 +149,7 @@ export default function QuestBoard() {
               }`}
             >
               <Text
-                className={`text-center font-body-medium text-xs uppercase tracking-widest ${
+                className={`text-center font-body-medium text-sm uppercase tracking-widest ${
                   selected ? 'text-amber-800' : 'text-stone-700'
                 }`}
               >
@@ -176,7 +176,7 @@ export default function QuestBoard() {
           }`}
         >
           <Text
-            className={`font-body-medium text-sm ${
+            className={`font-body-medium text-base ${
               activeFilterCount > 0 ? 'text-amber-800' : 'text-stone-700'
             }`}
           >
@@ -245,14 +245,14 @@ export default function QuestBoard() {
 
           {activeFilterCount > 0 ? (
             <Pressable onPress={onClearFilters} className="mt-1 self-end px-2 py-1 active:opacity-60">
-              <Text className="font-body text-xs text-amber-800">Clear filters</Text>
+              <Text className="font-body text-sm text-amber-800">Clear filters</Text>
             </Pressable>
           ) : null}
         </View>
       ) : null}
 
       {error ? (
-        <Text className="mb-4 font-body text-sm text-red-700">{error}</Text>
+        <Text className="mb-4 font-body text-base text-red-700">{error}</Text>
       ) : quests === null || filtered === null ? (
         <ActivityIndicator className="mt-8" color="#a8a29e" />
       ) : filtered.length === 0 ? (
@@ -306,7 +306,7 @@ function FilterChip({
       }`}
     >
       <Text
-        className={`font-body-medium text-xs capitalize ${
+        className={`font-body-medium text-sm capitalize ${
           selected ? 'text-amber-800' : 'text-stone-700'
         }`}
       >
@@ -350,25 +350,25 @@ function QuestRow({ quest, status }: { quest: Quest; status: QuestStatus }) {
         className={`rounded-md border bg-amber-50/40 p-4 active:bg-amber-100/60 ${palette.border}`}
       >
         <View className="flex-row items-center justify-between">
-          <Text className="flex-1 font-display text-base text-stone-900" numberOfLines={1}>
+          <Text className="flex-1 font-display text-lg text-stone-900" numberOfLines={1}>
             {quest.title}
           </Text>
-          <Text className="ml-3 font-display text-xs uppercase tracking-widest text-amber-800">
+          <Text className="ml-3 font-display text-sm uppercase tracking-widest text-amber-800">
             {quest.tier}
           </Text>
         </View>
         <View className="mt-1 flex-row items-center justify-between">
-          <Text className="font-display text-xs uppercase tracking-widest text-stone-700">
+          <Text className="font-display text-sm uppercase tracking-widest text-stone-700">
             {metaLine}
           </Text>
-          <Text className="font-body text-xs text-stone-700">{quest.xp_reward} XP</Text>
+          <Text className="font-body text-sm text-stone-700">{quest.xp_reward} XP</Text>
         </View>
         {lifecycleLine ? (
-          <Text className="mt-2 font-body text-xs text-stone-500">{lifecycleLine}</Text>
+          <Text className="mt-2 font-body text-sm text-stone-500">{lifecycleLine}</Text>
         ) : cooldownLabel ? (
-          <Text className="mt-2 font-body text-sm text-stone-500">{cooldownLabel}</Text>
+          <Text className="mt-2 font-body text-base text-stone-500">{cooldownLabel}</Text>
         ) : relative ? (
-          <Text className={`mt-2 font-body text-sm ${palette.text}`}>{relative}</Text>
+          <Text className={`mt-2 font-body text-base ${palette.text}`}>{relative}</Text>
         ) : null}
       </Pressable>
     </Link>

@@ -135,7 +135,7 @@ export default function Settings() {
       <SectionHeader>Account</SectionHeader>
       {session?.user.email ? (
         <View className="mb-3">
-          <Text className="mb-1 font-display text-xs uppercase tracking-widest text-stone-500">
+          <Text className="mb-1 font-display text-sm uppercase tracking-widest text-stone-500">
             Signed in as
           </Text>
           <Text className="font-body text-stone-800">{session.user.email}</Text>
@@ -144,7 +144,7 @@ export default function Settings() {
 
       {emailEditing ? (
         <View className="mb-3 rounded-md border border-amber-900/50 bg-amber-50/40 p-3">
-          <Text className="mb-1 font-display text-[10px] uppercase tracking-widest text-stone-500">
+          <Text className="mb-1 font-display text-xs uppercase tracking-widest text-stone-500">
             New email address
           </Text>
           <TextInput
@@ -158,7 +158,7 @@ export default function Settings() {
             className="mb-3 rounded-md border border-stone-700  px-3 py-2 font-body text-stone-900"
           />
           {emailError ? (
-            <Text className="mb-2 font-body text-sm text-red-700">{emailError}</Text>
+            <Text className="mb-2 font-body text-base text-red-700">{emailError}</Text>
           ) : null}
           <View className="flex-row gap-2">
             <Pressable
@@ -170,7 +170,7 @@ export default function Settings() {
                   : 'bg-amber-600 active:bg-amber-700'
               }`}
             >
-              <Text className="text-center font-body-medium text-sm text-stone-900">
+              <Text className="text-center font-body-medium text-base text-stone-900">
                 {emailBusy ? 'Sending…' : 'Send confirmation'}
               </Text>
             </Pressable>
@@ -183,7 +183,7 @@ export default function Settings() {
               disabled={emailBusy}
               className="rounded-md border border-stone-700 bg-amber-50/40 px-3 py-2 active:bg-amber-100/60"
             >
-              <Text className="font-body text-sm text-stone-700">Cancel</Text>
+              <Text className="font-body text-base text-stone-700">Cancel</Text>
             </Pressable>
           </View>
         </View>
@@ -192,7 +192,7 @@ export default function Settings() {
           onPress={() => setEmailEditing(true)}
           className="mb-3 rounded-md border border-stone-700 bg-amber-50/40 px-4 py-3 active:bg-amber-100/60"
         >
-          <Text className="text-center font-body text-base text-stone-800">Change email</Text>
+          <Text className="text-center font-body text-lg text-stone-800">Change email</Text>
         </Pressable>
       )}
 
@@ -203,19 +203,19 @@ export default function Settings() {
           passwordBusy ? 'bg-amber-100/40' : 'bg-amber-50/40 active:bg-amber-100/60'
         }`}
       >
-        <Text className="text-center font-body text-base text-stone-800">
+        <Text className="text-center font-body text-lg text-stone-800">
           {passwordBusy ? 'Sending…' : 'Send password reset email'}
         </Text>
       </Pressable>
       {passwordError ? (
-        <Text className="mb-3 font-body text-sm text-red-700">{passwordError}</Text>
+        <Text className="mb-3 font-body text-base text-red-700">{passwordError}</Text>
       ) : null}
 
       <Pressable
         onPress={() => signOut()}
         className="mb-8 rounded-md border border-stone-700 bg-amber-50/40 px-4 py-3 active:bg-amber-100/60"
       >
-        <Text className="text-center font-body text-base text-stone-900">Sign out</Text>
+        <Text className="text-center font-body text-lg text-stone-900">Sign out</Text>
       </Pressable>
 
       {/* Chronicle */}
@@ -227,23 +227,23 @@ export default function Settings() {
           exporting ? 'bg-amber-100/40' : 'bg-amber-50/40 active:bg-amber-100/60'
         }`}
       >
-        <Text className="text-center font-body text-base text-stone-800">
+        <Text className="text-center font-body text-lg text-stone-800">
           {exporting ? 'The scribes are at work…' : 'Transcribe the Tome'}
         </Text>
       </Pressable>
-      <Text className="-mt-1 mb-3 font-body text-xs text-stone-500">
+      <Text className="-mt-1 mb-3 font-body text-sm text-stone-500">
         Take a written copy of your chronicle — character, factions, campaigns,
         and every quest the Tome remembers.
       </Text>
       {exportError ? (
-        <Text className="mb-3 font-body text-sm text-red-700">{exportError}</Text>
+        <Text className="mb-3 font-body text-base text-red-700">{exportError}</Text>
       ) : null}
 
       <Pressable
         onPress={() => router.push('/cinematic')}
         className="mb-8 rounded-md border border-stone-700 bg-amber-50/40 px-4 py-3 active:bg-amber-100/60"
       >
-        <Text className="text-center font-body text-base text-stone-800">
+        <Text className="text-center font-body text-lg text-stone-800">
           Replay opening cinematic
         </Text>
       </Pressable>
@@ -258,13 +258,13 @@ export default function Settings() {
         }`}
       >
         <Text
-          className={`font-display text-xs uppercase tracking-widest ${
+          className={`font-display text-sm uppercase tracking-widest ${
             subscription?.tier === 'hero' ? 'text-amber-800' : 'text-stone-700'
           }`}
         >
           {subscription?.tier === 'hero' ? 'Hero · pledged to the Archivist' : 'Free chronicler'}
         </Text>
-        <Text className="mt-1 font-body text-sm text-stone-700">
+        <Text className="mt-1 font-body text-base text-stone-700">
           {subscription?.tier === 'hero'
             ? 'No cap on active quests. The Tome opens fully.'
             : `Up to ${FREE_TIER_QUEST_CAP} active quests at once.`}
@@ -275,10 +275,10 @@ export default function Settings() {
           disabled
           className="mb-8 rounded-md border border-amber-700/40 bg-amber-900/10 px-4 py-3"
         >
-          <Text className="text-center font-body text-sm text-amber-800">
+          <Text className="text-center font-body text-base text-amber-800">
             Pledge your oath to the Archivist · $3/month
           </Text>
-          <Text className="mt-1 text-center font-body text-xs text-stone-500">
+          <Text className="mt-1 text-center font-body text-sm text-stone-500">
             (Available once the gates open — RevenueCat integration in progress.)
           </Text>
         </Pressable>
@@ -290,7 +290,7 @@ export default function Settings() {
       <SectionHeader>Notifications</SectionHeader>
       {permissionStatus === 'unsupported' ? (
         <View className="mb-3 rounded-md border border-stone-800 bg-amber-50/40 px-4 py-3">
-          <Text className="font-body text-sm text-stone-700">
+          <Text className="font-body text-base text-stone-700">
             Local notifications aren&apos;t available on this platform. Open Questline on iOS or
             Android to schedule deadline reminders and the daily check-in.
           </Text>
@@ -303,7 +303,7 @@ export default function Settings() {
             notifBusy ? 'bg-amber-100/40' : 'bg-amber-50/40 active:bg-amber-100/60'
           }`}
         >
-          <Text className="text-center font-body text-base text-stone-800">
+          <Text className="text-center font-body text-lg text-stone-800">
             {notifBusy
               ? 'Asking the device…'
               : permissionStatus === 'denied'
@@ -314,12 +314,12 @@ export default function Settings() {
       ) : (
         <>
           <View className="mb-3 rounded-md border border-stone-800 bg-amber-50/40 px-4 py-3">
-            <Text className="font-body text-sm text-stone-700">
+            <Text className="font-body text-base text-stone-700">
               Deadline reminders are scheduled automatically when you set a deadline (24h and 1h
               before).
             </Text>
           </View>
-          <Text className="mb-1 font-display text-[10px] uppercase tracking-widest text-stone-500">
+          <Text className="mb-1 font-display text-xs uppercase tracking-widest text-stone-500">
             Daily check-in
           </Text>
           <View className="mb-8 flex-row flex-wrap gap-2">
@@ -337,7 +337,7 @@ export default function Settings() {
                   }`}
                 >
                   <Text
-                    className={`font-body-medium text-sm ${
+                    className={`font-body-medium text-base ${
                       selected ? 'text-amber-800' : 'text-stone-700'
                     }`}
                   >
@@ -357,8 +357,8 @@ export default function Settings() {
         className="mb-3 flex-row items-center justify-between rounded-md border border-stone-700 bg-amber-50/40 px-4 py-3 active:bg-amber-100/60"
       >
         <View className="flex-1 pr-3">
-          <Text className="font-body text-base text-stone-800">Mute all audio</Text>
-          <Text className="mt-0.5 font-body text-xs text-stone-500">
+          <Text className="font-body text-lg text-stone-800">Mute all audio</Text>
+          <Text className="mt-0.5 font-body text-sm text-stone-500">
             Silences the cinematic, ambient bed, and UI sound effects. Settings is the only screen
             that still chimes on toggle.
           </Text>
@@ -378,7 +378,7 @@ export default function Settings() {
 
 function SectionHeader({ children }: { children: string }) {
   return (
-    <Text className="mb-3 font-display text-xs uppercase tracking-[0.3em] text-amber-800">
+    <Text className="mb-3 font-display text-sm uppercase tracking-[0.3em] text-amber-800">
       {children}
     </Text>
   );

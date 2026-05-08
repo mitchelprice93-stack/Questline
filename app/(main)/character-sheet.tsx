@@ -178,14 +178,14 @@ export default function CharacterSheet() {
 
       {actionError ? (
         <View className="mb-4 rounded-md border border-red-900 bg-red-950 px-4 py-3">
-          <Text className="font-body text-sm text-red-700">{actionError}</Text>
+          <Text className="font-body text-base text-red-700">{actionError}</Text>
         </View>
       ) : null}
 
       {/* Level + XP bar */}
       <View className="mb-8 rounded-md border border-stone-800 bg-amber-50/40 p-4">
         <View className="mb-2 flex-row items-baseline justify-between">
-          <Text className="font-display text-xs uppercase tracking-widest text-stone-700">
+          <Text className="font-display text-sm uppercase tracking-widest text-stone-700">
             Level
           </Text>
           <Text className="font-display-bold text-2xl text-stone-900">{level}</Text>
@@ -193,7 +193,7 @@ export default function CharacterSheet() {
         <View className="mb-1 h-2 overflow-hidden rounded-full bg-amber-100/40">
           <View className="h-2 rounded-full bg-amber-500" style={{ width: `${progressPct}%` }} />
         </View>
-        <Text className="font-body text-xs text-stone-500">
+        <Text className="font-body text-sm text-stone-500">
           {atMaxLevel
             ? `${totalXp.toLocaleString()} XP · max level reached`
             : `${currentLevelXp.toLocaleString()} / ${nextLevelXp.toLocaleString()} XP into this level · ${totalXp.toLocaleString()} total`}
@@ -202,13 +202,13 @@ export default function CharacterSheet() {
           onPress={() => router.push('/xp-history')}
           className="mt-3 active:opacity-60"
         >
-          <Text className="font-body text-xs text-amber-800">View XP history →</Text>
+          <Text className="font-body text-sm text-amber-800">View XP history →</Text>
         </Pressable>
       </View>
 
       {/* Active quests */}
       <View className="mb-8 rounded-md border border-stone-800 bg-amber-50/40 p-4">
-        <Text className="mb-1 font-display text-xs uppercase tracking-widest text-stone-700">
+        <Text className="mb-1 font-display text-sm uppercase tracking-widest text-stone-700">
           Active quests
         </Text>
         <Text className="font-display-bold text-2xl text-stone-900">{activeQuests}</Text>
@@ -219,7 +219,7 @@ export default function CharacterSheet() {
           active. Hidden when none are active. */}
       {buffs.length > 0 ? (
         <>
-          <Text className="mb-2 font-display text-xs uppercase tracking-widest text-stone-700">
+          <Text className="mb-2 font-display text-sm uppercase tracking-widest text-stone-700">
             Buffs
           </Text>
           <View className="mb-8 gap-2">
@@ -231,18 +231,18 @@ export default function CharacterSheet() {
                   className="rounded-md border border-emerald-900/40 bg-amber-50/40 px-4 py-3"
                 >
                   <View className="flex-row items-baseline justify-between">
-                    <Text className="font-body-medium text-base text-stone-900">{b.name}</Text>
-                    <Text className="font-body text-xs text-emerald-800">
+                    <Text className="font-body-medium text-lg text-stone-900">{b.name}</Text>
+                    <Text className="font-body text-sm text-emerald-800">
                       +{b.xp_modifier_pct}%
                     </Text>
                   </View>
                   {b.effect_description ? (
-                    <Text className="font-body text-xs text-stone-700">
+                    <Text className="font-body text-sm text-stone-700">
                       {b.effect_description}
                     </Text>
                   ) : null}
                   {remaining ? (
-                    <Text className="mt-1 font-body text-xs text-stone-500">{remaining}</Text>
+                    <Text className="mt-1 font-body text-sm text-stone-500">{remaining}</Text>
                   ) : null}
                 </View>
               );
@@ -254,7 +254,7 @@ export default function CharacterSheet() {
       {/* Debuffs — visible whenever any are active. Rest button always
           renders but disables on cooldown. */}
       <View className="mb-2 flex-row items-baseline justify-between">
-        <Text className="font-display text-xs uppercase tracking-widest text-stone-700">
+        <Text className="font-display text-sm uppercase tracking-widest text-stone-700">
           Debuffs
         </Text>
         <Pressable
@@ -267,7 +267,7 @@ export default function CharacterSheet() {
           }`}
         >
           <Text
-            className={`font-body-medium text-xs uppercase tracking-widest ${
+            className={`font-body-medium text-sm uppercase tracking-widest ${
               busy || restOnCooldown ? 'text-stone-500' : 'text-amber-800'
             }`}
           >
@@ -289,11 +289,11 @@ export default function CharacterSheet() {
               className="rounded-md border border-red-900/40 bg-amber-50/40 px-4 py-3"
             >
               <View className="flex-row items-baseline justify-between">
-                <Text className="font-body-medium text-base text-stone-900">{d.name}</Text>
-                <Text className="font-body text-xs text-red-700">{d.xp_modifier_pct}%</Text>
+                <Text className="font-body-medium text-lg text-stone-900">{d.name}</Text>
+                <Text className="font-body text-sm text-red-700">{d.xp_modifier_pct}%</Text>
               </View>
               {d.effect_description ? (
-                <Text className="font-body text-xs text-stone-700">{d.effect_description}</Text>
+                <Text className="font-body text-sm text-stone-700">{d.effect_description}</Text>
               ) : null}
             </View>
           ))
@@ -302,12 +302,12 @@ export default function CharacterSheet() {
 
       {/* Factions */}
       <View className="mb-2 flex-row items-baseline justify-between">
-        <Text className="font-display text-xs uppercase tracking-widest text-stone-700">
+        <Text className="font-display text-sm uppercase tracking-widest text-stone-700">
           Factions
         </Text>
         {!showFactionDraft && editingFactionId === null ? (
           <Pressable onPress={() => setEditingFactionId(DRAFT_ID)} className="active:opacity-60">
-            <Text className="font-body text-xs text-amber-800">+ Add</Text>
+            <Text className="font-body text-sm text-amber-800">+ Add</Text>
           </Pressable>
         ) : null}
       </View>
@@ -363,8 +363,8 @@ export default function CharacterSheet() {
               disabled={editingFactionId !== null}
               className="rounded-md border border-stone-800 bg-amber-50/40 px-4 py-3 active:bg-amber-100/60"
             >
-              <Text className="font-body-medium text-base text-stone-900">{f.name}</Text>
-              <Text className="font-body text-xs text-stone-500">{f.real_world_domain}</Text>
+              <Text className="font-body-medium text-lg text-stone-900">{f.name}</Text>
+              <Text className="font-body text-sm text-stone-500">{f.real_world_domain}</Text>
             </Pressable>
           ),
         )}
@@ -396,12 +396,12 @@ export default function CharacterSheet() {
 
       {/* Campaigns */}
       <View className="mb-2 flex-row items-baseline justify-between">
-        <Text className="font-display text-xs uppercase tracking-widest text-stone-700">
+        <Text className="font-display text-sm uppercase tracking-widest text-stone-700">
           Campaigns
         </Text>
         {!showCampaignDraft && editingCampaignId === null ? (
           <Pressable onPress={() => setEditingCampaignId(DRAFT_ID)} className="active:opacity-60">
-            <Text className="font-body text-xs text-amber-800">+ Add</Text>
+            <Text className="font-body text-sm text-amber-800">+ Add</Text>
           </Pressable>
         ) : null}
       </View>
@@ -457,8 +457,8 @@ export default function CharacterSheet() {
               disabled={editingCampaignId !== null}
               className="rounded-md border border-stone-800 bg-amber-50/40 px-4 py-3 active:bg-amber-100/60"
             >
-              <Text className="font-body-medium text-base text-stone-900">{c.arc_name}</Text>
-              <Text className="font-body text-xs text-stone-500">{c.real_world_goal}</Text>
+              <Text className="font-body-medium text-lg text-stone-900">{c.arc_name}</Text>
+              <Text className="font-body text-sm text-stone-500">{c.real_world_goal}</Text>
               {c.progress_pct > 0 ? (
                 <View className="mt-2 h-1 overflow-hidden rounded-full bg-amber-100/40">
                   <View
@@ -498,7 +498,7 @@ export default function CharacterSheet() {
 
       {/* Difficulty — segmented control. Tapping persists immediately and
           refetches the profile so XP-modifier changes go live everywhere. */}
-      <Text className="mb-2 font-display text-xs uppercase tracking-widest text-stone-700">
+      <Text className="mb-2 font-display text-sm uppercase tracking-widest text-stone-700">
         Difficulty
       </Text>
       <View className="mb-2 flex-row gap-2">
@@ -516,7 +516,7 @@ export default function CharacterSheet() {
               }`}
             >
               <Text
-                className={`text-center font-body-medium text-xs uppercase tracking-widest ${
+                className={`text-center font-body-medium text-sm uppercase tracking-widest ${
                   selected ? 'text-amber-800' : 'text-stone-700'
                 }`}
               >
@@ -526,7 +526,7 @@ export default function CharacterSheet() {
           );
         })}
       </View>
-      <Text className="font-body text-xs text-stone-500">
+      <Text className="font-body text-sm text-stone-500">
         XP modifier: apprentice 0.75× · adept 1.0× · master 1.25× · legendary 1.5×
       </Text>
       </ScrollView>
@@ -575,7 +575,7 @@ function FactionEditor({ initial, busy, onSave, onCancel, onDelete }: FactionEdi
 
   return (
     <View className="rounded-md border border-amber-900/50 bg-amber-50/40 p-3">
-      <Text className="mb-1 font-display text-[10px] uppercase tracking-widest text-stone-500">
+      <Text className="mb-1 font-display text-xs uppercase tracking-widest text-stone-500">
         Faction name
       </Text>
       <TextInput
@@ -586,7 +586,7 @@ function FactionEditor({ initial, busy, onSave, onCancel, onDelete }: FactionEdi
         editable={!busy}
         className="mb-3 rounded-md border border-stone-700  px-3 py-2 font-body text-stone-900"
       />
-      <Text className="mb-1 font-display text-[10px] uppercase tracking-widest text-stone-500">
+      <Text className="mb-1 font-display text-xs uppercase tracking-widest text-stone-500">
         Real-world domain
       </Text>
       <TextInput
@@ -606,7 +606,7 @@ function FactionEditor({ initial, busy, onSave, onCancel, onDelete }: FactionEdi
             canSave ? 'bg-amber-600 active:bg-amber-700' : 'bg-amber-100/40'
           }`}
         >
-          <Text className="text-center font-body-medium text-sm text-stone-900">
+          <Text className="text-center font-body-medium text-base text-stone-900">
             {initial ? 'Save' : 'Create'}
           </Text>
         </Pressable>
@@ -615,7 +615,7 @@ function FactionEditor({ initial, busy, onSave, onCancel, onDelete }: FactionEdi
           disabled={busy}
           className="rounded-md border border-stone-700 bg-amber-50/40 px-3 py-2 active:bg-amber-100/60"
         >
-          <Text className="text-center font-body text-sm text-stone-700">Cancel</Text>
+          <Text className="text-center font-body text-base text-stone-700">Cancel</Text>
         </Pressable>
         {onDelete ? (
           <Pressable
@@ -623,7 +623,7 @@ function FactionEditor({ initial, busy, onSave, onCancel, onDelete }: FactionEdi
             disabled={busy}
             className="rounded-md border border-red-900 bg-amber-50/40 px-3 py-2 active:bg-red-950"
           >
-            <Text className="text-center font-body text-sm text-red-700">Delete</Text>
+            <Text className="text-center font-body text-base text-red-700">Delete</Text>
           </Pressable>
         ) : null}
       </View>
@@ -665,7 +665,7 @@ function CampaignEditor({ initial, busy, onSave, onCancel, onDelete }: CampaignE
 
   return (
     <View className="rounded-md border border-amber-900/50 bg-amber-50/40 p-3">
-      <Text className="mb-1 font-display text-[10px] uppercase tracking-widest text-stone-500">
+      <Text className="mb-1 font-display text-xs uppercase tracking-widest text-stone-500">
         Arc name
       </Text>
       <TextInput
@@ -676,7 +676,7 @@ function CampaignEditor({ initial, busy, onSave, onCancel, onDelete }: CampaignE
         editable={!busy}
         className="mb-3 rounded-md border border-stone-700  px-3 py-2 font-body text-stone-900"
       />
-      <Text className="mb-1 font-display text-[10px] uppercase tracking-widest text-stone-500">
+      <Text className="mb-1 font-display text-xs uppercase tracking-widest text-stone-500">
         Real-world goal
       </Text>
       <TextInput
@@ -690,7 +690,7 @@ function CampaignEditor({ initial, busy, onSave, onCancel, onDelete }: CampaignE
       />
       {initial ? (
         <>
-          <Text className="mb-1 font-display text-[10px] uppercase tracking-widest text-stone-500">
+          <Text className="mb-1 font-display text-xs uppercase tracking-widest text-stone-500">
             Progress %
           </Text>
           <TextInput
@@ -700,7 +700,7 @@ function CampaignEditor({ initial, busy, onSave, onCancel, onDelete }: CampaignE
             editable={!busy}
             className="mb-3 rounded-md border border-stone-700  px-3 py-2 font-body text-stone-900"
           />
-          <Text className="mb-1 font-display text-[10px] uppercase tracking-widest text-stone-500">
+          <Text className="mb-1 font-display text-xs uppercase tracking-widest text-stone-500">
             Status
           </Text>
           <View className="mb-3 flex-row gap-2">
@@ -718,7 +718,7 @@ function CampaignEditor({ initial, busy, onSave, onCancel, onDelete }: CampaignE
                   }`}
                 >
                   <Text
-                    className={`text-center font-body text-xs uppercase tracking-widest ${
+                    className={`text-center font-body text-sm uppercase tracking-widest ${
                       selected ? 'text-amber-800' : 'text-stone-700'
                     }`}
                   >
@@ -749,7 +749,7 @@ function CampaignEditor({ initial, busy, onSave, onCancel, onDelete }: CampaignE
             canSave ? 'bg-amber-600 active:bg-amber-700' : 'bg-amber-100/40'
           }`}
         >
-          <Text className="text-center font-body-medium text-sm text-stone-900">
+          <Text className="text-center font-body-medium text-base text-stone-900">
             {initial ? 'Save' : 'Create'}
           </Text>
         </Pressable>
@@ -758,7 +758,7 @@ function CampaignEditor({ initial, busy, onSave, onCancel, onDelete }: CampaignE
           disabled={busy}
           className="rounded-md border border-stone-700 bg-amber-50/40 px-3 py-2 active:bg-amber-100/60"
         >
-          <Text className="text-center font-body text-sm text-stone-700">Cancel</Text>
+          <Text className="text-center font-body text-base text-stone-700">Cancel</Text>
         </Pressable>
         {onDelete ? (
           <Pressable
@@ -766,7 +766,7 @@ function CampaignEditor({ initial, busy, onSave, onCancel, onDelete }: CampaignE
             disabled={busy}
             className="rounded-md border border-red-900 bg-amber-50/40 px-3 py-2 active:bg-red-950"
           >
-            <Text className="text-center font-body text-sm text-red-700">Delete</Text>
+            <Text className="text-center font-body text-base text-red-700">Delete</Text>
           </Pressable>
         ) : null}
       </View>

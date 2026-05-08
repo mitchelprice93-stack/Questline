@@ -158,7 +158,7 @@ export default function NewQuest() {
           for the Tome.
         </Text>
 
-        <Text className="mb-2 font-body text-sm text-stone-700">What&apos;s the endeavor?</Text>
+        <Text className="mb-2 font-body text-base text-stone-700">What&apos;s the endeavor?</Text>
         <TextInput
           value={input}
           onChangeText={setInput}
@@ -169,14 +169,14 @@ export default function NewQuest() {
           className="mb-4 min-h-[140px] rounded-md border border-stone-700 bg-amber-50/40 px-4 py-3 font-body text-stone-900"
         />
 
-        {error ? <Text className="mb-4 font-body text-sm text-red-700">{error}</Text> : null}
+        {error ? <Text className="mb-4 font-body text-base text-red-700">{error}</Text> : null}
 
         <Pressable
           onPress={onForge}
           disabled={!input.trim()}
           className={`rounded-md px-4 py-3 ${input.trim() ? 'bg-amber-600 active:bg-amber-700' : 'bg-amber-100/40'}`}
         >
-          <Text className="text-center font-display text-base text-stone-900">
+          <Text className="text-center font-display text-lg text-stone-900">
             Forge with the Archivist
           </Text>
         </Pressable>
@@ -191,25 +191,25 @@ export default function NewQuest() {
   return (
     <ParchmentScreen>
       <ScrollView className="flex-1" contentContainerClassName="px-6 pt-20 pb-12">
-      <Text className="mb-1 font-display text-xs uppercase tracking-widest text-amber-800">
+      <Text className="mb-1 font-display text-sm uppercase tracking-widest text-amber-800">
         {draft.fromFallback ? 'Templated draft' : 'The Archivist offers'}
       </Text>
       <Text className="mb-6 font-display text-4xl text-stone-900">Review the quest</Text>
 
       {draft.tactical_warnings.length > 0 ? (
         <View className="mb-6 rounded-md border border-amber-900/40 bg-amber-950/20 p-4">
-          <Text className="mb-1 font-display text-xs uppercase tracking-widest text-amber-800">
+          <Text className="mb-1 font-display text-sm uppercase tracking-widest text-amber-800">
             Tactical warnings
           </Text>
           {draft.tactical_warnings.map((w, i) => (
-            <Text key={i} className="font-body text-sm text-stone-700">
+            <Text key={i} className="font-body text-base text-stone-700">
               · {w}
             </Text>
           ))}
         </View>
       ) : null}
 
-      <Text className="mb-2 font-body text-sm text-stone-700">Title</Text>
+      <Text className="mb-2 font-body text-base text-stone-700">Title</Text>
       <TextInput
         value={title}
         onChangeText={setTitle}
@@ -217,7 +217,7 @@ export default function NewQuest() {
         className="mb-4 rounded-md border border-stone-700 bg-amber-50/40 px-4 py-3 font-body text-stone-900"
       />
 
-      <Text className="mb-2 font-body text-sm text-stone-700">Description</Text>
+      <Text className="mb-2 font-body text-base text-stone-700">Description</Text>
       <TextInput
         value={description}
         onChangeText={setDescription}
@@ -227,7 +227,7 @@ export default function NewQuest() {
         className="mb-4 min-h-[112px] rounded-md border border-stone-700 bg-amber-50/40 px-4 py-3 font-body text-stone-900"
       />
 
-      <Text className="mb-2 font-body text-sm text-stone-700">
+      <Text className="mb-2 font-body text-base text-stone-700">
         Tier · grants {xpForTier(tier)} XP
       </Text>
       <View className="mb-4 flex-row flex-wrap gap-2">
@@ -236,7 +236,7 @@ export default function NewQuest() {
         ))}
       </View>
 
-      <Text className="mb-2 font-body text-sm text-stone-700">Classification</Text>
+      <Text className="mb-2 font-body text-base text-stone-700">Classification</Text>
       <View className="mb-4 flex-row flex-wrap gap-2">
         {CLASSIFICATIONS.map((c) => (
           <Chip
@@ -248,13 +248,13 @@ export default function NewQuest() {
         ))}
       </View>
 
-      <Text className="mb-2 font-body text-sm text-stone-700">Recurrence</Text>
+      <Text className="mb-2 font-body text-base text-stone-700">Recurrence</Text>
       <View className="mb-1 flex-row flex-wrap gap-2">
         {RECURRENCES.map((r) => (
           <Chip key={r} label={r} selected={recurrence === r} onPress={() => setRecurrence(r)} />
         ))}
       </View>
-      <Text className="mb-4 font-body text-xs text-stone-500">
+      <Text className="mb-4 font-body text-sm text-stone-500">
         {recurrence === 'none'
           ? 'A one-time quest. Completes once and goes to the log.'
           : recurrence === 'daily'
@@ -263,16 +263,16 @@ export default function NewQuest() {
       </Text>
 
       <View className="mb-6">
-        <Text className="mb-2 font-body text-sm text-stone-700">Objectives</Text>
+        <Text className="mb-2 font-body text-base text-stone-700">Objectives</Text>
         <ObjectivesEditor objectives={objectives} onChange={setObjectives} disabled={submitting} />
       </View>
 
-      <Text className="mb-2 font-body text-sm text-stone-700">Granted buff (optional)</Text>
+      <Text className="mb-2 font-body text-base text-stone-700">Granted buff (optional)</Text>
       <View className="mb-6">
         <BuffEditor draft={buff} onChange={setBuff} questTier={tier} disabled={submitting} />
       </View>
 
-      <Text className="mb-2 font-body text-sm text-stone-700">Deadline (optional)</Text>
+      <Text className="mb-2 font-body text-base text-stone-700">Deadline (optional)</Text>
       <TextInput
         value={deadlineRaw}
         onChangeText={setDeadlineRaw}
@@ -282,11 +282,11 @@ export default function NewQuest() {
         className="mb-1 rounded-md border border-stone-700 bg-amber-50/40 px-4 py-3 font-body text-stone-900"
         editable={!submitting}
       />
-      <Text className="mb-6 font-body text-xs text-stone-500">
+      <Text className="mb-6 font-body text-sm text-stone-500">
         Plain language is fine — the Tome reads dates loosely.
       </Text>
 
-      {error ? <Text className="mb-4 font-body text-sm text-red-700">{error}</Text> : null}
+      {error ? <Text className="mb-4 font-body text-base text-red-700">{error}</Text> : null}
 
       <View className="mb-3 flex-row gap-3">
         <Pressable
@@ -294,7 +294,7 @@ export default function NewQuest() {
           disabled={submitting || !title.trim()}
           className={`flex-1 rounded-md px-4 py-3 ${submitting || !title.trim() ? 'bg-amber-100/40' : 'bg-amber-600 active:bg-amber-700'}`}
         >
-          <Text className="text-center font-display text-base text-stone-900">
+          <Text className="text-center font-display text-lg text-stone-900">
             {submitting ? 'Saving…' : 'Save quest'}
           </Text>
         </Pressable>
@@ -311,7 +311,7 @@ export default function NewQuest() {
         disabled={submitting}
         className="rounded-md px-4 py-3 active:bg-amber-50/40"
       >
-        <Text className="text-center font-body text-sm text-stone-500">Discard and start over</Text>
+        <Text className="text-center font-body text-base text-stone-500">Discard and start over</Text>
       </Pressable>
       </ScrollView>
     </ParchmentScreen>
@@ -333,7 +333,7 @@ function Chip({
       className={`rounded-full border px-3 py-1.5 ${selected ? 'border-amber-500 bg-amber-600/20' : 'border-stone-700 bg-amber-50/40'}`}
     >
       <Text
-        className={`font-body-medium text-sm capitalize ${selected ? 'text-amber-800' : 'text-stone-700'}`}
+        className={`font-body-medium text-base capitalize ${selected ? 'text-amber-800' : 'text-stone-700'}`}
       >
         {label}
       </Text>

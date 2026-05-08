@@ -27,7 +27,7 @@ export default function MainLayout() {
           },
           tabBarLabelStyle: {
             fontFamily: 'Cinzel_400Regular',
-            fontSize: 13,
+            fontSize: 15,
             textTransform: 'uppercase',
             letterSpacing: 1.5,
             marginTop: 2,

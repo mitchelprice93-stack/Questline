@@ -57,7 +57,7 @@ export function ObjectivesEditor({ objectives, onChange, disabled }: Props) {
         disabled={disabled}
         className="mt-1 rounded-md border border-dashed border-stone-700 px-3 py-2 active:bg-amber-50/40"
       >
-        <Text className="text-center font-body text-sm text-stone-700">+ Add objective</Text>
+        <Text className="text-center font-body text-base text-stone-700">+ Add objective</Text>
       </Pressable>
     </View>
   );

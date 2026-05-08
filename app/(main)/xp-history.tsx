@@ -37,16 +37,16 @@ export default function XpHistory() {
       <View className="mb-2 flex-row items-baseline justify-between">
         <Text className="font-display text-4xl text-stone-900">XP History</Text>
         <Pressable onPress={() => router.back()} className="active:opacity-60">
-          <Text className="font-body text-sm text-amber-800">Back</Text>
+          <Text className="font-body text-base text-amber-800">Back</Text>
         </Pressable>
       </View>
-      <Text className="mb-6 font-body text-xs text-stone-500">
+      <Text className="mb-6 font-body text-sm text-stone-500">
         Every line of XP the Tome has inscribed for you, newest first.
         {rows ? ` ${rows.length} entries · +${total.toLocaleString()} XP shown.` : ''}
       </Text>
 
       {error ? (
-        <Text className="font-body text-sm text-red-700">{error}</Text>
+        <Text className="font-body text-base text-red-700">{error}</Text>
       ) : rows === null ? (
         <ActivityIndicator className="mt-8" color="#a8a29e" />
       ) : rows.length === 0 ? (
@@ -75,15 +75,15 @@ function XpRow({ row }: { row: XpLogEntry }) {
   return (
     <View className={`rounded-md border ${swatch} bg-amber-50/40 px-4 py-3`}>
       <View className="flex-row items-baseline justify-between">
-        <Text className="flex-1 font-body text-sm text-stone-800" numberOfLines={2}>
+        <Text className="flex-1 font-body text-base text-stone-800" numberOfLines={2}>
           {describeXpLogReason(row.reason, row.quest_title)}
         </Text>
-        <Text className={`ml-3 font-body-medium text-sm ${xpColor}`}>
+        <Text className={`ml-3 font-body-medium text-base ${xpColor}`}>
           {sign}
           {row.xp_change.toLocaleString()} XP
         </Text>
       </View>
-      <Text className="mt-0.5 font-body text-xs text-stone-500">{formatRowDate(row.created_at)}</Text>
+      <Text className="mt-0.5 font-body text-sm text-stone-500">{formatRowDate(row.created_at)}</Text>
     </View>
   );
 }
