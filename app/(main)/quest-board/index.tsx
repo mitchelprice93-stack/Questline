@@ -123,10 +123,7 @@ export default function QuestBoard() {
           ) : null}
         </View>
         <Link href="/quest-board/new" asChild>
-          <Pressable
-            onPress={() => playSfx('button_tap')}
-            className="rounded-md bg-amber-600 px-3 py-2 active:bg-amber-700"
-          >
+          <Pressable className="rounded-md bg-amber-600 px-3 py-2 active:bg-amber-700">
             <Text className="font-body-medium text-sm text-stone-100">+ New</Text>
           </Pressable>
         </Link>

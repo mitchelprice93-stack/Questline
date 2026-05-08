@@ -137,7 +137,10 @@ export default function QuestDetail() {
         ? ` · earned: ${result.buffGranted}`
         : '';
       // SFX: completion bell first, then any earned beats stack underneath.
+      // A negative net modifier means a debuff just landed and was applied —
+      // play the debuff cue alongside completion so the user hears the cost.
       playSfx('quest_complete');
+      if (result.netModifierPct < 0) playSfx('debuff_applied');
       if (result.buffGranted) playSfx('buff_earned');
       if (result.milestoneBonus > 0) playSfx('streak_milestone');
       if (newLevel > oldLevel) {
@@ -208,8 +211,10 @@ export default function QuestDetail() {
     try {
       await abandonQuest(quest.id);
       // The Mark of the Forsaken just landed — match it with the audio cue.
+      // Hold the navigation back briefly so the SFX has time to start before
+      // the screen unmounts; otherwise on web the audio context can be cut.
       playSfx('debuff_applied');
-      router.back();
+      setTimeout(() => router.back(), 250);
     } catch (e) {
       playSfx('error');
       setActionError(e instanceof Error ? e.message : String(e));

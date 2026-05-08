@@ -270,10 +270,22 @@ function buildUserMessage(req: ProxyRequest): { content: string; schema: unknown
           `Classification is daily/side/main/legendary based on cadence. ` +
           `Objectives are an in-order checklist of concrete steps; start with completed=false on every entry. ` +
           `Tactical warnings are short in-voice notes on scope, dependencies, or risk — leave the array empty if there's nothing useful to say. ` +
-          `Always design a granted_buff: an in-voice name (something a chronicler might whisper, ` +
-          `e.g. "Sage's Insight", "Adept's Stride", "The Quill's Favor"), a single sentence of flavor for the description, ` +
-          `a pct that scales with the quest's tier, and a condition that fits the work — ` +
-          `'on_time' for deadline-pressured endeavors, 'all_objectives' when there's a meaningful checklist, ` +
+          `\n\n` +
+          `Design the granted_buff to FIT THIS SPECIFIC QUEST. The name must reflect the domain of work, not be generic. ` +
+          `Pull the imagery from the quest itself. Examples by domain:\n` +
+          `  - Programming / coding: "Compiler's Clarity", "Debugger's Eye", "Architect's Frame", "Refactorer's Edge"\n` +
+          `  - Writing / study: "Scholar's Recall", "The Quill's Favor", "Inkwell's Depth", "Lectern's Patience"\n` +
+          `  - Fitness / movement: "Forge's Strength", "Runner's Wind", "Striker's Rhythm", "Stonecutter's Endurance"\n` +
+          `  - Cleaning / domestic: "Hearthkeeper's Order", "Steward's Eye", "Mended Threshold"\n` +
+          `  - Errands / admin: "Courier's Pace", "Ledger's Balance", "Seal-Bearer's Diligence"\n` +
+          `  - Creative / art: "Muse's Whisper", "Brushwright's Hand", "Composer's Ear"\n` +
+          `  - Outdoor / yard work: "Loam's Blessing", "Grove-Tender's Grip"\n` +
+          `Only fall back to a generic name like "Wanderer's Stride" when the quest is so vague no domain is visible. ` +
+          `If the user mentions a faction in their input or active factions list, lean toward names that echo that faction. ` +
+          `\n\n` +
+          `Description: ONE sentence describing what the chronicler feels in the moment of receiving the buff. ` +
+          `pct scales with the quest's tier (trivial 5, minor 6-8, standard 9-12, major 13-18, legendary 19-25). ` +
+          `condition fits the work: 'on_time' for deadline-pressured endeavors, 'all_objectives' when the checklist matters, ` +
           `'on_complete' for simple commitments. The buff should feel earned but not punishing to miss.`,
         schema: QUEST_GENERATION_SCHEMA,
       };

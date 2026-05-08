@@ -8,7 +8,6 @@ import { useAudioMuted } from '../../lib/audio-prefs';
 import { shareChronicle } from '../../lib/chronicle';
 import { confirmDestructive, showInfoMessage } from '../../lib/dialogs';
 import { errorMessage } from '../../lib/errors';
-import { playSfx } from '../../lib/sfx';
 import { FREE_TIER_QUEST_CAP } from '../../lib/subscription';
 import {
   getCheckInTime,
@@ -352,12 +351,7 @@ export default function Settings() {
       {/* Audio */}
       <SectionHeader>Audio</SectionHeader>
       <Pressable
-        onPress={() => {
-          // Play the toggle sound BEFORE flipping mute, otherwise the
-          // toggle-off sound itself gets muted before it can play.
-          playSfx(muted ? 'toggle_on' : 'toggle_off');
-          void setMuted(!muted);
-        }}
+        onPress={() => void setMuted(!muted)}
         className="mb-3 flex-row items-center justify-between rounded-md border border-stone-700 bg-stone-900 px-4 py-3 active:bg-stone-800"
       >
         <View className="flex-1 pr-3">
