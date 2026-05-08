@@ -150,7 +150,7 @@ export default function QuestBoard() {
             >
               <Text
                 className={`text-center font-body-medium text-xs uppercase tracking-widest ${
-                  selected ? 'text-amber-200' : 'text-stone-700'
+                  selected ? 'text-amber-800' : 'text-stone-700'
                 }`}
               >
                 {tab.label}
@@ -177,7 +177,7 @@ export default function QuestBoard() {
         >
           <Text
             className={`font-body-medium text-sm ${
-              activeFilterCount > 0 ? 'text-amber-200' : 'text-stone-700'
+              activeFilterCount > 0 ? 'text-amber-800' : 'text-stone-700'
             }`}
           >
             Filters{activeFilterCount > 0 ? ` · ${activeFilterCount}` : ''}
@@ -245,14 +245,14 @@ export default function QuestBoard() {
 
           {activeFilterCount > 0 ? (
             <Pressable onPress={onClearFilters} className="mt-1 self-end px-2 py-1 active:opacity-60">
-              <Text className="font-body text-xs text-amber-400">Clear filters</Text>
+              <Text className="font-body text-xs text-amber-800">Clear filters</Text>
             </Pressable>
           ) : null}
         </View>
       ) : null}
 
       {error ? (
-        <Text className="mb-4 font-body text-sm text-red-400">{error}</Text>
+        <Text className="mb-4 font-body text-sm text-red-700">{error}</Text>
       ) : quests === null || filtered === null ? (
         <ActivityIndicator className="mt-8" color="#a8a29e" />
       ) : filtered.length === 0 ? (
@@ -307,7 +307,7 @@ function FilterChip({
     >
       <Text
         className={`font-body-medium text-xs capitalize ${
-          selected ? 'text-amber-300' : 'text-stone-700'
+          selected ? 'text-amber-800' : 'text-stone-700'
         }`}
       >
         {label}
@@ -353,7 +353,7 @@ function QuestRow({ quest, status }: { quest: Quest; status: QuestStatus }) {
           <Text className="flex-1 font-display text-base text-stone-900" numberOfLines={1}>
             {quest.title}
           </Text>
-          <Text className="ml-3 font-display text-xs uppercase tracking-widest text-amber-400">
+          <Text className="ml-3 font-display text-xs uppercase tracking-widest text-amber-800">
             {quest.tier}
           </Text>
         </View>

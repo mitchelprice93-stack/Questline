@@ -95,7 +95,7 @@ export function BuffEditor({ draft, onChange, questTier, disabled }: Props) {
         disabled={disabled}
         className="rounded-md border border-dashed border-amber-700/50 px-4 py-3 active:bg-amber-50/40"
       >
-        <Text className="text-center font-body text-sm text-amber-400">
+        <Text className="text-center font-body text-sm text-amber-800">
           + Attach a granted buff
         </Text>
         <Text className="mt-0.5 text-center font-body text-xs text-stone-500">
@@ -108,7 +108,7 @@ export function BuffEditor({ draft, onChange, questTier, disabled }: Props) {
   return (
     <View className="rounded-md border border-amber-900/50 bg-amber-50/40 p-3">
       <View className="mb-2 flex-row items-baseline justify-between">
-        <Text className="font-display text-xs uppercase tracking-widest text-amber-400">
+        <Text className="font-display text-xs uppercase tracking-widest text-amber-800">
           Granted buff
         </Text>
         <Pressable
@@ -173,7 +173,7 @@ export function BuffEditor({ draft, onChange, questTier, disabled }: Props) {
             >
               <Text
                 className={`font-body-medium text-xs ${
-                  selected ? 'text-amber-300' : 'text-stone-700'
+                  selected ? 'text-amber-800' : 'text-stone-700'
                 }`}
               >
                 {c.label}
@@ -183,7 +183,7 @@ export function BuffEditor({ draft, onChange, questTier, disabled }: Props) {
         })}
       </View>
       <Text className="mb-2 font-body text-xs text-stone-500">{conditionHelp}</Text>
-      <Text className="font-body text-xs text-amber-400/80">
+      <Text className="font-body text-xs text-amber-800/80">
         Lasts {durationDays} day{durationDays === 1 ? '' : 's'} once earned ·
         scales with quest tier ({questTier}).
       </Text>

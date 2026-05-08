@@ -169,7 +169,7 @@ export default function NewQuest() {
           className="mb-4 min-h-[140px] rounded-md border border-stone-700 bg-amber-50/40 px-4 py-3 font-body text-stone-900"
         />
 
-        {error ? <Text className="mb-4 font-body text-sm text-red-400">{error}</Text> : null}
+        {error ? <Text className="mb-4 font-body text-sm text-red-700">{error}</Text> : null}
 
         <Pressable
           onPress={onForge}
@@ -191,14 +191,14 @@ export default function NewQuest() {
   return (
     <ParchmentScreen>
       <ScrollView className="flex-1" contentContainerClassName="px-6 pt-16 pb-12">
-      <Text className="mb-1 font-display text-xs uppercase tracking-widest text-amber-400">
+      <Text className="mb-1 font-display text-xs uppercase tracking-widest text-amber-800">
         {draft.fromFallback ? 'Templated draft' : 'The Archivist offers'}
       </Text>
       <Text className="mb-6 font-display text-3xl text-stone-900">Review the quest</Text>
 
       {draft.tactical_warnings.length > 0 ? (
         <View className="mb-6 rounded-md border border-amber-900/40 bg-amber-950/20 p-4">
-          <Text className="mb-1 font-display text-xs uppercase tracking-widest text-amber-500">
+          <Text className="mb-1 font-display text-xs uppercase tracking-widest text-amber-800">
             Tactical warnings
           </Text>
           {draft.tactical_warnings.map((w, i) => (
@@ -286,7 +286,7 @@ export default function NewQuest() {
         Plain language is fine — the Tome reads dates loosely.
       </Text>
 
-      {error ? <Text className="mb-4 font-body text-sm text-red-400">{error}</Text> : null}
+      {error ? <Text className="mb-4 font-body text-sm text-red-700">{error}</Text> : null}
 
       <View className="mb-3 flex-row gap-3">
         <Pressable
@@ -333,7 +333,7 @@ function Chip({
       className={`rounded-full border px-3 py-1.5 ${selected ? 'border-amber-500 bg-amber-600/20' : 'border-stone-700 bg-amber-50/40'}`}
     >
       <Text
-        className={`font-body-medium text-sm capitalize ${selected ? 'text-amber-300' : 'text-stone-700'}`}
+        className={`font-body-medium text-sm capitalize ${selected ? 'text-amber-800' : 'text-stone-700'}`}
       >
         {label}
       </Text>

@@ -37,7 +37,7 @@ export default function XpHistory() {
       <View className="mb-2 flex-row items-baseline justify-between">
         <Text className="font-display text-3xl text-stone-900">XP History</Text>
         <Pressable onPress={() => router.back()} className="active:opacity-60">
-          <Text className="font-body text-sm text-amber-400">Back</Text>
+          <Text className="font-body text-sm text-amber-800">Back</Text>
         </Pressable>
       </View>
       <Text className="mb-6 font-body text-xs text-stone-500">
@@ -46,7 +46,7 @@ export default function XpHistory() {
       </Text>
 
       {error ? (
-        <Text className="font-body text-sm text-red-400">{error}</Text>
+        <Text className="font-body text-sm text-red-700">{error}</Text>
       ) : rows === null ? (
         <ActivityIndicator className="mt-8" color="#a8a29e" />
       ) : rows.length === 0 ? (
@@ -70,7 +70,7 @@ export default function XpHistory() {
 function XpRow({ row }: { row: XpLogEntry }) {
   const isStreak = row.reason.startsWith('streak_bonus_');
   const swatch = isStreak ? 'border-amber-700/40' : 'border-stone-800';
-  const xpColor = row.xp_change >= 0 ? 'text-emerald-300' : 'text-red-300';
+  const xpColor = row.xp_change >= 0 ? 'text-emerald-800' : 'text-red-700';
   const sign = row.xp_change >= 0 ? '+' : '';
   return (
     <View className={`rounded-md border ${swatch} bg-amber-50/40 px-4 py-3`}>

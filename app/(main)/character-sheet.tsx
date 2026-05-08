@@ -171,14 +171,14 @@ export default function CharacterSheet() {
       <ScrollView className="flex-1" contentContainerClassName="px-6 pt-16 pb-12">
       <Text className="mb-1 font-display text-3xl text-stone-900">{displayName}</Text>
       {profile?.character_title ? (
-        <Text className="mb-6 font-display text-amber-300">{profile.character_title}</Text>
+        <Text className="mb-6 font-display text-amber-800">{profile.character_title}</Text>
       ) : (
         <Text className="mb-6 font-body italic text-stone-500">Untitled, for now.</Text>
       )}
 
       {actionError ? (
         <View className="mb-4 rounded-md border border-red-900 bg-red-950 px-4 py-3">
-          <Text className="font-body text-sm text-red-300">{actionError}</Text>
+          <Text className="font-body text-sm text-red-700">{actionError}</Text>
         </View>
       ) : null}
 
@@ -202,7 +202,7 @@ export default function CharacterSheet() {
           onPress={() => router.push('/xp-history')}
           className="mt-3 active:opacity-60"
         >
-          <Text className="font-body text-xs text-amber-400">View XP history →</Text>
+          <Text className="font-body text-xs text-amber-800">View XP history →</Text>
         </Pressable>
       </View>
 
@@ -232,7 +232,7 @@ export default function CharacterSheet() {
                 >
                   <View className="flex-row items-baseline justify-between">
                     <Text className="font-body-medium text-base text-stone-900">{b.name}</Text>
-                    <Text className="font-body text-xs text-emerald-300">
+                    <Text className="font-body text-xs text-emerald-800">
                       +{b.xp_modifier_pct}%
                     </Text>
                   </View>
@@ -268,7 +268,7 @@ export default function CharacterSheet() {
         >
           <Text
             className={`font-body-medium text-xs uppercase tracking-widest ${
-              busy || restOnCooldown ? 'text-stone-500' : 'text-amber-200'
+              busy || restOnCooldown ? 'text-stone-500' : 'text-amber-800'
             }`}
           >
             {restOnCooldown
@@ -290,7 +290,7 @@ export default function CharacterSheet() {
             >
               <View className="flex-row items-baseline justify-between">
                 <Text className="font-body-medium text-base text-stone-900">{d.name}</Text>
-                <Text className="font-body text-xs text-red-300">{d.xp_modifier_pct}%</Text>
+                <Text className="font-body text-xs text-red-700">{d.xp_modifier_pct}%</Text>
               </View>
               {d.effect_description ? (
                 <Text className="font-body text-xs text-stone-700">{d.effect_description}</Text>
@@ -307,7 +307,7 @@ export default function CharacterSheet() {
         </Text>
         {!showFactionDraft && editingFactionId === null ? (
           <Pressable onPress={() => setEditingFactionId(DRAFT_ID)} className="active:opacity-60">
-            <Text className="font-body text-xs text-amber-400">+ Add</Text>
+            <Text className="font-body text-xs text-amber-800">+ Add</Text>
           </Pressable>
         ) : null}
       </View>
@@ -401,7 +401,7 @@ export default function CharacterSheet() {
         </Text>
         {!showCampaignDraft && editingCampaignId === null ? (
           <Pressable onPress={() => setEditingCampaignId(DRAFT_ID)} className="active:opacity-60">
-            <Text className="font-body text-xs text-amber-400">+ Add</Text>
+            <Text className="font-body text-xs text-amber-800">+ Add</Text>
           </Pressable>
         ) : null}
       </View>
@@ -517,7 +517,7 @@ export default function CharacterSheet() {
             >
               <Text
                 className={`text-center font-body-medium text-xs uppercase tracking-widest ${
-                  selected ? 'text-amber-200' : 'text-stone-700'
+                  selected ? 'text-amber-800' : 'text-stone-700'
                 }`}
               >
                 {d}
@@ -623,7 +623,7 @@ function FactionEditor({ initial, busy, onSave, onCancel, onDelete }: FactionEdi
             disabled={busy}
             className="rounded-md border border-red-900 bg-amber-50/40 px-3 py-2 active:bg-red-950"
           >
-            <Text className="text-center font-body text-sm text-red-300">Delete</Text>
+            <Text className="text-center font-body text-sm text-red-700">Delete</Text>
           </Pressable>
         ) : null}
       </View>
@@ -719,7 +719,7 @@ function CampaignEditor({ initial, busy, onSave, onCancel, onDelete }: CampaignE
                 >
                   <Text
                     className={`text-center font-body text-xs uppercase tracking-widest ${
-                      selected ? 'text-amber-200' : 'text-stone-700'
+                      selected ? 'text-amber-800' : 'text-stone-700'
                     }`}
                   >
                     {s}
@@ -766,7 +766,7 @@ function CampaignEditor({ initial, busy, onSave, onCancel, onDelete }: CampaignE
             disabled={busy}
             className="rounded-md border border-red-900 bg-amber-50/40 px-3 py-2 active:bg-red-950"
           >
-            <Text className="text-center font-body text-sm text-red-300">Delete</Text>
+            <Text className="text-center font-body text-sm text-red-700">Delete</Text>
           </Pressable>
         ) : null}
       </View>

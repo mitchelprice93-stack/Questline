@@ -158,7 +158,7 @@ export default function Settings() {
             className="mb-3 rounded-md border border-stone-700  px-3 py-2 font-body text-stone-900"
           />
           {emailError ? (
-            <Text className="mb-2 font-body text-sm text-red-400">{emailError}</Text>
+            <Text className="mb-2 font-body text-sm text-red-700">{emailError}</Text>
           ) : null}
           <View className="flex-row gap-2">
             <Pressable
@@ -208,7 +208,7 @@ export default function Settings() {
         </Text>
       </Pressable>
       {passwordError ? (
-        <Text className="mb-3 font-body text-sm text-red-400">{passwordError}</Text>
+        <Text className="mb-3 font-body text-sm text-red-700">{passwordError}</Text>
       ) : null}
 
       <Pressable
@@ -236,7 +236,7 @@ export default function Settings() {
         and every quest the Tome remembers.
       </Text>
       {exportError ? (
-        <Text className="mb-3 font-body text-sm text-red-400">{exportError}</Text>
+        <Text className="mb-3 font-body text-sm text-red-700">{exportError}</Text>
       ) : null}
 
       <Pressable
@@ -259,7 +259,7 @@ export default function Settings() {
       >
         <Text
           className={`font-display text-xs uppercase tracking-widest ${
-            subscription?.tier === 'hero' ? 'text-amber-200' : 'text-stone-700'
+            subscription?.tier === 'hero' ? 'text-amber-800' : 'text-stone-700'
           }`}
         >
           {subscription?.tier === 'hero' ? 'Hero · pledged to the Archivist' : 'Free chronicler'}
@@ -275,7 +275,7 @@ export default function Settings() {
           disabled
           className="mb-8 rounded-md border border-amber-700/40 bg-amber-900/10 px-4 py-3"
         >
-          <Text className="text-center font-body text-sm text-amber-300">
+          <Text className="text-center font-body text-sm text-amber-800">
             Pledge your oath to the Archivist · $3/month
           </Text>
           <Text className="mt-1 text-center font-body text-xs text-stone-500">
@@ -338,7 +338,7 @@ export default function Settings() {
                 >
                   <Text
                     className={`font-body-medium text-sm ${
-                      selected ? 'text-amber-300' : 'text-stone-700'
+                      selected ? 'text-amber-800' : 'text-stone-700'
                     }`}
                   >
                     {opt.label}
@@ -378,7 +378,7 @@ export default function Settings() {
 
 function SectionHeader({ children }: { children: string }) {
   return (
-    <Text className="mb-3 font-display text-xs uppercase tracking-[0.3em] text-amber-400">
+    <Text className="mb-3 font-display text-xs uppercase tracking-[0.3em] text-amber-800">
       {children}
     </Text>
   );

@@ -319,9 +319,9 @@ export default function QuestDetail() {
       <ParchmentScreen>
         <ScrollView className="flex-1" contentContainerClassName="px-6 pt-16 pb-12">
         <Pressable onPress={onCancelEdit} className="mb-3 self-start active:opacity-60">
-          <Text className="font-body text-sm text-amber-400">← Cancel edit</Text>
+          <Text className="font-body text-sm text-amber-800">← Cancel edit</Text>
         </Pressable>
-        <Text className="mb-1 font-display text-xs uppercase tracking-widest text-amber-400">
+        <Text className="mb-1 font-display text-xs uppercase tracking-widest text-amber-800">
           Editing quest
         </Text>
         <Text className="mb-6 font-display text-3xl text-stone-900">{quest.title}</Text>
@@ -418,7 +418,7 @@ export default function QuestDetail() {
         </Text>
 
         {actionError ? (
-          <Text className="mb-4 font-body text-sm text-red-400">{actionError}</Text>
+          <Text className="mb-4 font-body text-sm text-red-700">{actionError}</Text>
         ) : null}
 
         <View className="flex-row gap-3">
@@ -458,11 +458,11 @@ export default function QuestDetail() {
     <ParchmentScreen>
       <ScrollView className="flex-1" contentContainerClassName="px-6 pt-16 pb-12">
       <Pressable onPress={goBack} className="mb-3 self-start active:opacity-60">
-        <Text className="font-body text-sm text-amber-400">← Quest Board</Text>
+        <Text className="font-body text-sm text-amber-800">← Quest Board</Text>
       </Pressable>
       <Text className="mb-1 font-display text-3xl text-stone-900">{quest.title}</Text>
       <View className="mb-6 flex-row gap-3">
-        <Text className="font-display text-xs uppercase tracking-widest text-amber-400">
+        <Text className="font-display text-xs uppercase tracking-widest text-amber-800">
           {quest.tier}
         </Text>
         <Text className="font-body text-xs text-stone-500">·</Text>
@@ -483,7 +483,7 @@ export default function QuestDetail() {
         >
           <Text
             className={`font-display text-xs uppercase tracking-widest ${
-              quest.status === 'completed' ? 'text-emerald-300' : 'text-stone-700'
+              quest.status === 'completed' ? 'text-emerald-800' : 'text-stone-700'
             }`}
           >
             {quest.status === 'completed' ? 'Inscribed in the Tome' : 'Set aside'}
@@ -494,7 +494,7 @@ export default function QuestDetail() {
 
       {quest.recurrence ? (
         <View className="mb-6 rounded-md border border-amber-900/50 bg-amber-50/40 p-4">
-          <Text className="font-display text-xs uppercase tracking-widest text-amber-400">
+          <Text className="font-display text-xs uppercase tracking-widest text-amber-800">
             {quest.recurrence === 'daily' ? 'Daily quest' : 'Weekly quest'}
           </Text>
           <View className="mt-1 flex-row items-baseline justify-between">
@@ -513,10 +513,10 @@ export default function QuestDetail() {
       {quest.granted_buff_name && quest.granted_buff_pct !== null ? (
         <View className="mb-6 rounded-md border border-emerald-900/50 bg-amber-50/40 p-4">
           <View className="flex-row items-baseline justify-between">
-            <Text className="font-display text-xs uppercase tracking-widest text-emerald-300">
+            <Text className="font-display text-xs uppercase tracking-widest text-emerald-800">
               Granted buff
             </Text>
-            <Text className="font-body text-xs text-emerald-300">
+            <Text className="font-body text-xs text-emerald-800">
               +{quest.granted_buff_pct}%
             </Text>
           </View>
@@ -594,7 +594,7 @@ export default function QuestDetail() {
       ) : null}
 
       {actionError ? (
-        <Text className="mb-4 font-body text-sm text-red-400">{actionError}</Text>
+        <Text className="mb-4 font-body text-sm text-red-700">{actionError}</Text>
       ) : null}
 
       {isActive ? (
@@ -669,7 +669,7 @@ function Chip({
       className={`rounded-full border px-3 py-1.5 ${selected ? 'border-amber-500 bg-amber-600/20' : 'border-stone-700 bg-amber-50/40'}`}
     >
       <Text
-        className={`font-body-medium text-sm capitalize ${selected ? 'text-amber-300' : 'text-stone-700'}`}
+        className={`font-body-medium text-sm capitalize ${selected ? 'text-amber-800' : 'text-stone-700'}`}
       >
         {label}
       </Text>
