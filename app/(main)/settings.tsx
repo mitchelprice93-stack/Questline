@@ -2,7 +2,7 @@ import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 
-import { requestEmailChange, requestPasswordReset } from '../../lib/account';
+import { deleteAccount, requestEmailChange, requestPasswordReset } from '../../lib/account';
 import { useAuth } from '../../lib/auth';
 import { useAudioMuted } from '../../lib/audio-prefs';
 import { shareChronicle } from '../../lib/chronicle';
@@ -74,6 +74,9 @@ export default function Settings() {
   const [passwordBusy, setPasswordBusy] = useState(false);
   const [passwordError, setPasswordError] = useState<string | null>(null);
 
+  const [deleteBusy, setDeleteBusy] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+
   const onExport = async () => {
     setExportError(null);
     setExporting(true);
@@ -101,6 +104,32 @@ export default function Settings() {
       setEmailError(errorMessage(e));
     } finally {
       setEmailBusy(false);
+    }
+  };
+
+  const onDeleteAccount = async () => {
+    const proceed = await confirmDestructive(
+      'Delete your chronicle?',
+      'Every quest, faction, campaign, and entry the Tome holds for you will be erased. This cannot be undone.',
+    );
+    if (!proceed) return;
+    // Two-step confirm — irreversible action deserves it.
+    const reallyProceed = await confirmDestructive(
+      'Truly?',
+      'Type-confirm dialogs aren\'t available here, but consider this your final ward. Continue and the Tome closes on you forever.',
+    );
+    if (!reallyProceed) return;
+
+    setDeleteError(null);
+    setDeleteBusy(true);
+    try {
+      await deleteAccount();
+      // Server-side delete succeeded; sign out to clear the now-invalid
+      // local session and bounce back to (auth).
+      await signOut();
+    } catch (e) {
+      setDeleteError(errorMessage(e));
+      setDeleteBusy(false);
     }
   };
 
@@ -213,10 +242,26 @@ export default function Settings() {
 
       <Pressable
         onPress={() => signOut()}
-        className="mb-8 rounded-md border border-stone-700 bg-amber-50/40 px-4 py-3 active:bg-amber-100/60"
+        className="mb-3 rounded-md border border-stone-700 bg-amber-50/40 px-4 py-3 active:bg-amber-100/60"
       >
         <Text className="text-center font-body text-2xl text-stone-900">Sign out</Text>
       </Pressable>
+
+      <Pressable
+        onPress={onDeleteAccount}
+        disabled={deleteBusy}
+        className={`mb-3 rounded-md border border-red-900/60 px-4 py-3 ${
+          deleteBusy ? 'bg-red-100/40' : 'bg-red-50/40 active:bg-red-100/60'
+        }`}
+      >
+        <Text className="text-center font-body text-lg text-red-700">
+          {deleteBusy ? 'Closing the Tome…' : 'Delete account'}
+        </Text>
+      </Pressable>
+      {deleteError ? (
+        <Text className="mb-3 font-body text-base text-red-700">{deleteError}</Text>
+      ) : null}
+      <View className="mb-8" />
 
       {/* Chronicle */}
       <SectionHeader>Chronicle</SectionHeader>

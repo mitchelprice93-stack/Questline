@@ -3,6 +3,7 @@ import { useRouter, useSegments } from 'expo-router';
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react';
 
 import { hasSeenCinematic, markCinematicSeen as markSeenAsync } from './cinematic';
+import { clearQuestCache } from './offline';
 import { getCurrentProfile } from './profile';
 import { getSubscriptionStatus, type SubscriptionStatus } from './subscription';
 import { supabase } from './supabase';
@@ -139,6 +140,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return { error };
     },
     signOut: async () => {
+      // Wipe the offline cache so the next user on the device doesn't see
+      // the previous user's quest list.
+      await clearQuestCache();
       const { error } = await supabase.auth.signOut();
       return { error };
     },

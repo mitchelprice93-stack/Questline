@@ -9,6 +9,7 @@
 import { xpForTier } from './engine/xp';
 import { asError } from './errors';
 import { cancelDeadlineReminders, scheduleDeadlineReminders } from './notifications';
+import { cacheQuests, readCachedQuests } from './offline';
 import { supabase } from './supabase';
 import type {
   GrantedBuffCondition,
@@ -73,13 +74,29 @@ export async function listQuests(status: QuestStatus = 'active'): Promise<Quest[
         ? 'abandoned_at'
         : 'created_at';
 
-  const { data, error } = await supabase
-    .from('quests')
-    .select('*')
-    .eq('status', status)
-    .order(orderColumn, { ascending: false, nullsFirst: false });
-  if (error) throw asError(error);
-  return (data ?? []) as Quest[];
+  try {
+    const { data, error } = await supabase
+      .from('quests')
+      .select('*')
+      .eq('status', status)
+      .order(orderColumn, { ascending: false, nullsFirst: false });
+    if (error) throw asError(error);
+    const rows = (data ?? []) as Quest[];
+    // Update the offline cache on every successful fetch so we have
+    // something to show next time the network is missing.
+    void cacheQuests(status, rows);
+    return rows;
+  } catch (e) {
+    // Network or server failure — fall back to the cached snapshot if we
+    // have one. Throw the original error if there's nothing to fall back
+    // to so the UI's error state still fires.
+    const cached = await readCachedQuests(status);
+    if (cached) {
+      console.warn('[quests] network failed, serving cache from', cached.fetchedAt);
+      return cached.quests;
+    }
+    throw e;
+  }
 }
 
 export async function getQuest(id: string): Promise<Quest | null> {

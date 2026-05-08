@@ -30,3 +30,23 @@ export async function requestEmailChange(newEmail: string): Promise<void> {
   const { error } = await supabase.auth.updateUser({ email: trimmed });
   if (error) throw asError(error);
 }
+
+/**
+ * Permanently delete the calling user's account. Calls the delete-account
+ * edge function which uses the service-role key to invoke
+ * auth.admin.deleteUser(). All dependent rows (profile, quests, modifiers,
+ * xp_log, etc.) cascade automatically via FK constraints.
+ *
+ * After deletion the local session is no longer valid; the caller should
+ * sign out to clear local state.
+ */
+export async function deleteAccount(): Promise<void> {
+  const { data, error } = await supabase.functions.invoke<{
+    success?: boolean;
+    error?: string;
+  }>('delete-account', {
+    method: 'POST',
+  });
+  if (error) throw asError(error);
+  if (data?.error) throw new Error(data.error);
+}

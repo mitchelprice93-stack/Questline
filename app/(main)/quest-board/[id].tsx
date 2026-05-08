@@ -1,7 +1,15 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
-import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
+import {
+  ActivityIndicator,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from 'react-native';
+import Animated, { FadeIn, FadeInDown, FadeOut } from 'react-native-reanimated';
 
 import { useAuth } from '../../../lib/auth';
 import {
@@ -83,6 +91,8 @@ export default function QuestDetail() {
   const [actionError, setActionError] = useState<string | null>(null);
   const [busy, setBusy] = useState<'complete' | 'abandon' | 'save-edits' | null>(null);
   const [levelUp, setLevelUp] = useState<LevelUpState | null>(null);
+  // Toggle the gold-shimmer overlay briefly on a successful completion.
+  const [showShimmer, setShowShimmer] = useState(false);
 
   // Edit-mode state. Populated from the loaded quest on entry, written back via
   // updateQuest on save.
@@ -144,6 +154,14 @@ export default function QuestDetail() {
       if (result.netModifierPct < 0) playSfx('debuff_applied');
       if (result.buffGranted) playSfx('buff_earned');
       if (result.milestoneBonus > 0) playSfx('streak_milestone');
+      // Visual companion to the bell: brief gold shimmer over the screen.
+      // Skipped when the level-up takeover is about to render (it has its
+      // own dramatic reveal) so we don't fire two effects at once.
+      const willLevelUp = newLevel > oldLevel;
+      if (!willLevelUp) {
+        setShowShimmer(true);
+        setTimeout(() => setShowShimmer(false), 700);
+      }
       if (newLevel > oldLevel) {
         refetchProfile();
         // Level-up sting plays on takeover mount (see LevelUpTakeover).
@@ -456,6 +474,7 @@ export default function QuestDetail() {
         : null;
   return (
     <ParchmentScreen>
+      {showShimmer ? <CompletionShimmer /> : null}
       <ScrollView className="flex-1" contentContainerClassName="px-6 pt-20 pb-12">
       <Pressable onPress={goBack} className="mb-3 self-start active:opacity-60">
         <Text className="font-body text-xl text-amber-800">← Quest Board</Text>
@@ -645,6 +664,31 @@ export default function QuestDetail() {
       )}
       </ScrollView>
     </ParchmentScreen>
+  );
+}
+
+/**
+ * Brief gold shimmer overlay shown after a successful Mark complete that
+ * doesn't trigger a level-up. Two layered Animated.Views: an opaque amber
+ * sheet that fades 0 → 0.5 → 0, and a faint cream-white shine that fades
+ * a beat behind it. Total duration ~700ms, matching the parent's setTimeout.
+ */
+function CompletionShimmer() {
+  return (
+    <View pointerEvents="none" style={StyleSheet.absoluteFillObject}>
+      <Animated.View
+        entering={FadeIn.duration(180)}
+        exiting={FadeOut.duration(450)}
+        className="absolute inset-0 bg-amber-400"
+        style={{ opacity: 0.5 }}
+      />
+      <Animated.View
+        entering={FadeIn.duration(280).delay(80)}
+        exiting={FadeOut.duration(380)}
+        className="absolute inset-0 bg-amber-100"
+        style={{ opacity: 0.35 }}
+      />
+    </View>
   );
 }
 
