@@ -46,7 +46,7 @@ export default function RootLayout() {
   return (
     <AuthProvider>
       <RootLayoutNav />
-      <StatusBar style="light" />
+      <StatusBar style="dark" />
     </AuthProvider>
   );
 }

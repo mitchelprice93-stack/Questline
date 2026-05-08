@@ -112,10 +112,10 @@ export default function QuestBoard() {
   };
 
   return (
-    <View className="flex-1 bg-stone-950 px-6 pt-16">
+    <View className="flex-1 px-6 pt-16">
       <View className="mb-4 flex-row items-center justify-between">
         <View className="flex-1">
-          <Text className="font-display text-3xl text-stone-100">Quest Board</Text>
+          <Text className="font-display text-3xl text-stone-900">Quest Board</Text>
           {subscription?.tier === 'free' && activeQuestCount !== null ? (
             <Text className="mt-0.5 font-body text-xs text-stone-500">
               {activeQuestCount} / {FREE_TIER_QUEST_CAP} active · free tier
@@ -124,7 +124,7 @@ export default function QuestBoard() {
         </View>
         <Link href="/quest-board/new" asChild>
           <Pressable className="rounded-md bg-amber-600 px-3 py-2 active:bg-amber-700">
-            <Text className="font-body-medium text-sm text-stone-100">+ New</Text>
+            <Text className="font-body-medium text-sm text-stone-900">+ New</Text>
           </Pressable>
         </Link>
       </View>
@@ -143,12 +143,12 @@ export default function QuestBoard() {
               className={`flex-1 rounded-md border px-2 py-2 ${
                 selected
                   ? 'border-amber-600 bg-amber-900/40'
-                  : 'border-stone-800 bg-stone-900 active:bg-stone-800'
+                  : 'border-stone-800 bg-amber-50/40 active:bg-amber-100/60'
               }`}
             >
               <Text
                 className={`text-center font-body-medium text-xs uppercase tracking-widest ${
-                  selected ? 'text-amber-200' : 'text-stone-300'
+                  selected ? 'text-amber-200' : 'text-stone-700'
                 }`}
               >
                 {tab.label}
@@ -165,17 +165,17 @@ export default function QuestBoard() {
           onChangeText={setSearchText}
           placeholder="Search title or description"
           placeholderTextColor="#57534e"
-          className="flex-1 rounded-md border border-stone-700 bg-stone-900 px-3 py-2 font-body text-stone-100"
+          className="flex-1 rounded-md border border-stone-700 bg-amber-50/40 px-3 py-2 font-body text-stone-900"
         />
         <Pressable
           onPress={() => setFiltersOpen((v) => !v)}
-          className={`rounded-md border px-3 py-2 active:bg-stone-800 ${
-            activeFilterCount > 0 ? 'border-amber-600 bg-amber-900/30' : 'border-stone-700 bg-stone-900'
+          className={`rounded-md border px-3 py-2 active:bg-amber-100/60 ${
+            activeFilterCount > 0 ? 'border-amber-600 bg-amber-900/30' : 'border-stone-700 bg-amber-50/40'
           }`}
         >
           <Text
             className={`font-body-medium text-sm ${
-              activeFilterCount > 0 ? 'text-amber-200' : 'text-stone-300'
+              activeFilterCount > 0 ? 'text-amber-200' : 'text-stone-700'
             }`}
           >
             Filters{activeFilterCount > 0 ? ` · ${activeFilterCount}` : ''}
@@ -184,7 +184,7 @@ export default function QuestBoard() {
       </View>
 
       {filtersOpen ? (
-        <View className="mb-3 rounded-md border border-stone-800 bg-stone-900/60 p-3">
+        <View className="mb-3 rounded-md border border-stone-800 bg-amber-50/60 p-3">
           <Text className="mb-1 font-display text-[10px] uppercase tracking-widest text-stone-500">
             Tier
           </Text>
@@ -255,7 +255,7 @@ export default function QuestBoard() {
         <ActivityIndicator className="mt-8" color="#a8a29e" />
       ) : filtered.length === 0 ? (
         <View className="mt-8 items-center">
-          <Text className="font-body text-stone-400">
+          <Text className="font-body text-stone-700">
             {quests.length === 0 ? emptyCopyForStatus(status) : 'No quests match those filters.'}
           </Text>
           {quests.length === 0 && status === 'active' ? (
@@ -299,12 +299,12 @@ function FilterChip({
     <Pressable
       onPress={onPress}
       className={`rounded-full border px-2.5 py-1 ${
-        selected ? 'border-amber-500 bg-amber-600/20' : 'border-stone-700 bg-stone-900'
+        selected ? 'border-amber-500 bg-amber-600/20' : 'border-stone-700 bg-amber-50/40'
       }`}
     >
       <Text
         className={`font-body-medium text-xs capitalize ${
-          selected ? 'text-amber-300' : 'text-stone-400'
+          selected ? 'text-amber-300' : 'text-stone-700'
         }`}
       >
         {label}
@@ -344,10 +344,10 @@ function QuestRow({ quest, status }: { quest: Quest; status: QuestStatus }) {
   return (
     <Link href={{ pathname: '/quest-board/[id]', params: { id: quest.id } }} asChild>
       <Pressable
-        className={`rounded-md border bg-stone-900 p-4 active:bg-stone-800 ${palette.border}`}
+        className={`rounded-md border bg-amber-50/40 p-4 active:bg-amber-100/60 ${palette.border}`}
       >
         <View className="flex-row items-center justify-between">
-          <Text className="flex-1 font-display text-base text-stone-100" numberOfLines={1}>
+          <Text className="flex-1 font-display text-base text-stone-900" numberOfLines={1}>
             {quest.title}
           </Text>
           <Text className="ml-3 font-display text-xs uppercase tracking-widest text-amber-400">
@@ -355,10 +355,10 @@ function QuestRow({ quest, status }: { quest: Quest; status: QuestStatus }) {
           </Text>
         </View>
         <View className="mt-1 flex-row items-center justify-between">
-          <Text className="font-display text-xs uppercase tracking-widest text-stone-400">
+          <Text className="font-display text-xs uppercase tracking-widest text-stone-700">
             {metaLine}
           </Text>
-          <Text className="font-body text-xs text-stone-300">{quest.xp_reward} XP</Text>
+          <Text className="font-body text-xs text-stone-700">{quest.xp_reward} XP</Text>
         </View>
         {lifecycleLine ? (
           <Text className="mt-2 font-body text-xs text-stone-500">{lifecycleLine}</Text>

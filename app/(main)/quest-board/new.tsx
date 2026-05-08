@@ -136,9 +136,9 @@ export default function NewQuest() {
 
   if (phase === 'loading') {
     return (
-      <View className="flex-1 items-center justify-center bg-stone-950 px-6">
+      <View className="flex-1 items-center justify-center  px-6">
         <ActivityIndicator color="#f59e0b" size="large" />
-        <Text className="mt-6 font-display text-xl text-stone-100">
+        <Text className="mt-6 font-display text-xl text-stone-900">
           The Archivist considers your request…
         </Text>
       </View>
@@ -147,14 +147,14 @@ export default function NewQuest() {
 
   if (phase === 'input') {
     return (
-      <ScrollView className="flex-1 bg-stone-950" contentContainerClassName="px-6 pt-16 pb-12">
-        <Text className="mb-1 font-display text-3xl text-stone-100">New endeavor</Text>
-        <Text className="mb-6 font-body text-stone-400">
+      <ScrollView className="flex-1 " contentContainerClassName="px-6 pt-16 pb-12">
+        <Text className="mb-1 font-display text-3xl text-stone-900">New endeavor</Text>
+        <Text className="mb-6 font-body text-stone-700">
           Tell the Archivist what you need to do, in plain language. They will forge it into a quest
           for the Tome.
         </Text>
 
-        <Text className="mb-2 font-body text-sm text-stone-300">What&apos;s the endeavor?</Text>
+        <Text className="mb-2 font-body text-sm text-stone-700">What&apos;s the endeavor?</Text>
         <TextInput
           value={input}
           onChangeText={setInput}
@@ -162,7 +162,7 @@ export default function NewQuest() {
           placeholder="e.g., Finish the thermo lab report by Friday"
           placeholderTextColor="#57534e"
           textAlignVertical="top"
-          className="mb-4 min-h-[140px] rounded-md border border-stone-700 bg-stone-900 px-4 py-3 font-body text-stone-100"
+          className="mb-4 min-h-[140px] rounded-md border border-stone-700 bg-amber-50/40 px-4 py-3 font-body text-stone-900"
         />
 
         {error ? <Text className="mb-4 font-body text-sm text-red-400">{error}</Text> : null}
@@ -170,9 +170,9 @@ export default function NewQuest() {
         <Pressable
           onPress={onForge}
           disabled={!input.trim()}
-          className={`rounded-md px-4 py-3 ${input.trim() ? 'bg-amber-600 active:bg-amber-700' : 'bg-stone-800'}`}
+          className={`rounded-md px-4 py-3 ${input.trim() ? 'bg-amber-600 active:bg-amber-700' : 'bg-amber-100/40'}`}
         >
-          <Text className="text-center font-display text-base text-stone-100">
+          <Text className="text-center font-display text-base text-stone-900">
             Forge with the Archivist
           </Text>
         </Pressable>
@@ -184,11 +184,11 @@ export default function NewQuest() {
   if (!draft) return null;
 
   return (
-    <ScrollView className="flex-1 bg-stone-950" contentContainerClassName="px-6 pt-16 pb-12">
+    <ScrollView className="flex-1 " contentContainerClassName="px-6 pt-16 pb-12">
       <Text className="mb-1 font-display text-xs uppercase tracking-widest text-amber-400">
         {draft.fromFallback ? 'Templated draft' : 'The Archivist offers'}
       </Text>
-      <Text className="mb-6 font-display text-3xl text-stone-100">Review the quest</Text>
+      <Text className="mb-6 font-display text-3xl text-stone-900">Review the quest</Text>
 
       {draft.tactical_warnings.length > 0 ? (
         <View className="mb-6 rounded-md border border-amber-900/40 bg-amber-950/20 p-4">
@@ -196,32 +196,32 @@ export default function NewQuest() {
             Tactical warnings
           </Text>
           {draft.tactical_warnings.map((w, i) => (
-            <Text key={i} className="font-body text-sm text-stone-300">
+            <Text key={i} className="font-body text-sm text-stone-700">
               · {w}
             </Text>
           ))}
         </View>
       ) : null}
 
-      <Text className="mb-2 font-body text-sm text-stone-300">Title</Text>
+      <Text className="mb-2 font-body text-sm text-stone-700">Title</Text>
       <TextInput
         value={title}
         onChangeText={setTitle}
         editable={!submitting}
-        className="mb-4 rounded-md border border-stone-700 bg-stone-900 px-4 py-3 font-body text-stone-100"
+        className="mb-4 rounded-md border border-stone-700 bg-amber-50/40 px-4 py-3 font-body text-stone-900"
       />
 
-      <Text className="mb-2 font-body text-sm text-stone-300">Description</Text>
+      <Text className="mb-2 font-body text-sm text-stone-700">Description</Text>
       <TextInput
         value={description}
         onChangeText={setDescription}
         multiline
         editable={!submitting}
         textAlignVertical="top"
-        className="mb-4 min-h-[112px] rounded-md border border-stone-700 bg-stone-900 px-4 py-3 font-body text-stone-100"
+        className="mb-4 min-h-[112px] rounded-md border border-stone-700 bg-amber-50/40 px-4 py-3 font-body text-stone-900"
       />
 
-      <Text className="mb-2 font-body text-sm text-stone-300">
+      <Text className="mb-2 font-body text-sm text-stone-700">
         Tier · grants {xpForTier(tier)} XP
       </Text>
       <View className="mb-4 flex-row flex-wrap gap-2">
@@ -230,7 +230,7 @@ export default function NewQuest() {
         ))}
       </View>
 
-      <Text className="mb-2 font-body text-sm text-stone-300">Classification</Text>
+      <Text className="mb-2 font-body text-sm text-stone-700">Classification</Text>
       <View className="mb-4 flex-row flex-wrap gap-2">
         {CLASSIFICATIONS.map((c) => (
           <Chip
@@ -242,7 +242,7 @@ export default function NewQuest() {
         ))}
       </View>
 
-      <Text className="mb-2 font-body text-sm text-stone-300">Recurrence</Text>
+      <Text className="mb-2 font-body text-sm text-stone-700">Recurrence</Text>
       <View className="mb-1 flex-row flex-wrap gap-2">
         {RECURRENCES.map((r) => (
           <Chip key={r} label={r} selected={recurrence === r} onPress={() => setRecurrence(r)} />
@@ -257,23 +257,23 @@ export default function NewQuest() {
       </Text>
 
       <View className="mb-6">
-        <Text className="mb-2 font-body text-sm text-stone-300">Objectives</Text>
+        <Text className="mb-2 font-body text-sm text-stone-700">Objectives</Text>
         <ObjectivesEditor objectives={objectives} onChange={setObjectives} disabled={submitting} />
       </View>
 
-      <Text className="mb-2 font-body text-sm text-stone-300">Granted buff (optional)</Text>
+      <Text className="mb-2 font-body text-sm text-stone-700">Granted buff (optional)</Text>
       <View className="mb-6">
         <BuffEditor draft={buff} onChange={setBuff} questTier={tier} disabled={submitting} />
       </View>
 
-      <Text className="mb-2 font-body text-sm text-stone-300">Deadline (optional)</Text>
+      <Text className="mb-2 font-body text-sm text-stone-700">Deadline (optional)</Text>
       <TextInput
         value={deadlineRaw}
         onChangeText={setDeadlineRaw}
         autoCapitalize="none"
         placeholder="e.g., May 15, 2026 · 5/15/26 · next Friday"
         placeholderTextColor="#57534e"
-        className="mb-1 rounded-md border border-stone-700 bg-stone-900 px-4 py-3 font-body text-stone-100"
+        className="mb-1 rounded-md border border-stone-700 bg-amber-50/40 px-4 py-3 font-body text-stone-900"
         editable={!submitting}
       />
       <Text className="mb-6 font-body text-xs text-stone-500">
@@ -286,24 +286,24 @@ export default function NewQuest() {
         <Pressable
           onPress={onSave}
           disabled={submitting || !title.trim()}
-          className={`flex-1 rounded-md px-4 py-3 ${submitting || !title.trim() ? 'bg-stone-800' : 'bg-amber-600 active:bg-amber-700'}`}
+          className={`flex-1 rounded-md px-4 py-3 ${submitting || !title.trim() ? 'bg-amber-100/40' : 'bg-amber-600 active:bg-amber-700'}`}
         >
-          <Text className="text-center font-display text-base text-stone-100">
+          <Text className="text-center font-display text-base text-stone-900">
             {submitting ? 'Saving…' : 'Save quest'}
           </Text>
         </Pressable>
         <Pressable
           onPress={onRegenerate}
           disabled={submitting}
-          className="rounded-md border border-stone-700 bg-stone-900 px-4 py-3 active:bg-stone-800"
+          className="rounded-md border border-stone-700 bg-amber-50/40 px-4 py-3 active:bg-amber-100/60"
         >
-          <Text className="text-center font-body text-stone-300">Regenerate</Text>
+          <Text className="text-center font-body text-stone-700">Regenerate</Text>
         </Pressable>
       </View>
       <Pressable
         onPress={onDiscard}
         disabled={submitting}
-        className="rounded-md px-4 py-3 active:bg-stone-900"
+        className="rounded-md px-4 py-3 active:bg-amber-50/40"
       >
         <Text className="text-center font-body text-sm text-stone-500">Discard and start over</Text>
       </Pressable>
@@ -323,10 +323,10 @@ function Chip({
   return (
     <Pressable
       onPress={onPress}
-      className={`rounded-full border px-3 py-1.5 ${selected ? 'border-amber-500 bg-amber-600/20' : 'border-stone-700 bg-stone-900'}`}
+      className={`rounded-full border px-3 py-1.5 ${selected ? 'border-amber-500 bg-amber-600/20' : 'border-stone-700 bg-amber-50/40'}`}
     >
       <Text
-        className={`font-body-medium text-sm capitalize ${selected ? 'text-amber-300' : 'text-stone-300'}`}
+        className={`font-body-medium text-sm capitalize ${selected ? 'text-amber-300' : 'text-stone-700'}`}
       >
         {label}
       </Text>

@@ -126,8 +126,8 @@ export default function Settings() {
   };
 
   return (
-    <ScrollView className="flex-1 bg-stone-950" contentContainerClassName="px-6 pt-16 pb-12">
-      <Text className="mb-6 font-display text-3xl text-stone-100">Settings</Text>
+    <ScrollView className="flex-1 " contentContainerClassName="px-6 pt-16 pb-12">
+      <Text className="mb-6 font-display text-3xl text-stone-900">Settings</Text>
 
       {/* Account */}
       <SectionHeader>Account</SectionHeader>
@@ -136,12 +136,12 @@ export default function Settings() {
           <Text className="mb-1 font-display text-xs uppercase tracking-widest text-stone-500">
             Signed in as
           </Text>
-          <Text className="font-body text-stone-200">{session.user.email}</Text>
+          <Text className="font-body text-stone-800">{session.user.email}</Text>
         </View>
       ) : null}
 
       {emailEditing ? (
-        <View className="mb-3 rounded-md border border-amber-900/50 bg-stone-900 p-3">
+        <View className="mb-3 rounded-md border border-amber-900/50 bg-amber-50/40 p-3">
           <Text className="mb-1 font-display text-[10px] uppercase tracking-widest text-stone-500">
             New email address
           </Text>
@@ -153,7 +153,7 @@ export default function Settings() {
             autoCapitalize="none"
             keyboardType="email-address"
             editable={!emailBusy}
-            className="mb-3 rounded-md border border-stone-700 bg-stone-950 px-3 py-2 font-body text-stone-100"
+            className="mb-3 rounded-md border border-stone-700  px-3 py-2 font-body text-stone-900"
           />
           {emailError ? (
             <Text className="mb-2 font-body text-sm text-red-400">{emailError}</Text>
@@ -164,11 +164,11 @@ export default function Settings() {
               disabled={emailBusy || !newEmail.trim()}
               className={`flex-1 rounded-md px-3 py-2 ${
                 emailBusy || !newEmail.trim()
-                  ? 'bg-stone-800'
+                  ? 'bg-amber-100/40'
                   : 'bg-amber-600 active:bg-amber-700'
               }`}
             >
-              <Text className="text-center font-body-medium text-sm text-stone-100">
+              <Text className="text-center font-body-medium text-sm text-stone-900">
                 {emailBusy ? 'Sending…' : 'Send confirmation'}
               </Text>
             </Pressable>
@@ -179,18 +179,18 @@ export default function Settings() {
                 setEmailError(null);
               }}
               disabled={emailBusy}
-              className="rounded-md border border-stone-700 bg-stone-900 px-3 py-2 active:bg-stone-800"
+              className="rounded-md border border-stone-700 bg-amber-50/40 px-3 py-2 active:bg-amber-100/60"
             >
-              <Text className="font-body text-sm text-stone-300">Cancel</Text>
+              <Text className="font-body text-sm text-stone-700">Cancel</Text>
             </Pressable>
           </View>
         </View>
       ) : (
         <Pressable
           onPress={() => setEmailEditing(true)}
-          className="mb-3 rounded-md border border-stone-700 bg-stone-900 px-4 py-3 active:bg-stone-800"
+          className="mb-3 rounded-md border border-stone-700 bg-amber-50/40 px-4 py-3 active:bg-amber-100/60"
         >
-          <Text className="text-center font-body text-base text-stone-200">Change email</Text>
+          <Text className="text-center font-body text-base text-stone-800">Change email</Text>
         </Pressable>
       )}
 
@@ -198,10 +198,10 @@ export default function Settings() {
         onPress={onSendPasswordReset}
         disabled={passwordBusy || !session?.user.email}
         className={`mb-3 rounded-md border border-stone-700 px-4 py-3 ${
-          passwordBusy ? 'bg-stone-800' : 'bg-stone-900 active:bg-stone-800'
+          passwordBusy ? 'bg-amber-100/40' : 'bg-amber-50/40 active:bg-amber-100/60'
         }`}
       >
-        <Text className="text-center font-body text-base text-stone-200">
+        <Text className="text-center font-body text-base text-stone-800">
           {passwordBusy ? 'Sending…' : 'Send password reset email'}
         </Text>
       </Pressable>
@@ -211,9 +211,9 @@ export default function Settings() {
 
       <Pressable
         onPress={() => signOut()}
-        className="mb-8 rounded-md border border-stone-700 bg-stone-900 px-4 py-3 active:bg-stone-800"
+        className="mb-8 rounded-md border border-stone-700 bg-amber-50/40 px-4 py-3 active:bg-amber-100/60"
       >
-        <Text className="text-center font-body text-base text-stone-100">Sign out</Text>
+        <Text className="text-center font-body text-base text-stone-900">Sign out</Text>
       </Pressable>
 
       {/* Chronicle */}
@@ -222,10 +222,10 @@ export default function Settings() {
         onPress={onExport}
         disabled={exporting}
         className={`mb-3 rounded-md border border-stone-700 px-4 py-3 ${
-          exporting ? 'bg-stone-800' : 'bg-stone-900 active:bg-stone-800'
+          exporting ? 'bg-amber-100/40' : 'bg-amber-50/40 active:bg-amber-100/60'
         }`}
       >
-        <Text className="text-center font-body text-base text-stone-200">
+        <Text className="text-center font-body text-base text-stone-800">
           {exporting ? 'The scribes are at work…' : 'Transcribe the Tome'}
         </Text>
       </Pressable>
@@ -239,9 +239,9 @@ export default function Settings() {
 
       <Pressable
         onPress={() => router.push('/cinematic')}
-        className="mb-8 rounded-md border border-stone-700 bg-stone-900 px-4 py-3 active:bg-stone-800"
+        className="mb-8 rounded-md border border-stone-700 bg-amber-50/40 px-4 py-3 active:bg-amber-100/60"
       >
-        <Text className="text-center font-body text-base text-stone-200">
+        <Text className="text-center font-body text-base text-stone-800">
           Replay opening cinematic
         </Text>
       </Pressable>
@@ -252,17 +252,17 @@ export default function Settings() {
         className={`mb-3 rounded-md border px-4 py-3 ${
           subscription?.tier === 'hero'
             ? 'border-amber-700/60 bg-amber-900/30'
-            : 'border-stone-700 bg-stone-900'
+            : 'border-stone-700 bg-amber-50/40'
         }`}
       >
         <Text
           className={`font-display text-xs uppercase tracking-widest ${
-            subscription?.tier === 'hero' ? 'text-amber-200' : 'text-stone-400'
+            subscription?.tier === 'hero' ? 'text-amber-200' : 'text-stone-700'
           }`}
         >
           {subscription?.tier === 'hero' ? 'Hero · pledged to the Archivist' : 'Free chronicler'}
         </Text>
-        <Text className="mt-1 font-body text-sm text-stone-300">
+        <Text className="mt-1 font-body text-sm text-stone-700">
           {subscription?.tier === 'hero'
             ? 'No cap on active quests. The Tome opens fully.'
             : `Up to ${FREE_TIER_QUEST_CAP} active quests at once.`}
@@ -287,8 +287,8 @@ export default function Settings() {
       {/* Notifications */}
       <SectionHeader>Notifications</SectionHeader>
       {permissionStatus === 'unsupported' ? (
-        <View className="mb-3 rounded-md border border-stone-800 bg-stone-900 px-4 py-3">
-          <Text className="font-body text-sm text-stone-400">
+        <View className="mb-3 rounded-md border border-stone-800 bg-amber-50/40 px-4 py-3">
+          <Text className="font-body text-sm text-stone-700">
             Local notifications aren&apos;t available on this platform. Open Questline on iOS or
             Android to schedule deadline reminders and the daily check-in.
           </Text>
@@ -298,10 +298,10 @@ export default function Settings() {
           onPress={onRequestPermission}
           disabled={notifBusy}
           className={`mb-3 rounded-md border border-stone-700 px-4 py-3 ${
-            notifBusy ? 'bg-stone-800' : 'bg-stone-900 active:bg-stone-800'
+            notifBusy ? 'bg-amber-100/40' : 'bg-amber-50/40 active:bg-amber-100/60'
           }`}
         >
-          <Text className="text-center font-body text-base text-stone-200">
+          <Text className="text-center font-body text-base text-stone-800">
             {notifBusy
               ? 'Asking the device…'
               : permissionStatus === 'denied'
@@ -311,8 +311,8 @@ export default function Settings() {
         </Pressable>
       ) : (
         <>
-          <View className="mb-3 rounded-md border border-stone-800 bg-stone-900 px-4 py-3">
-            <Text className="font-body text-sm text-stone-300">
+          <View className="mb-3 rounded-md border border-stone-800 bg-amber-50/40 px-4 py-3">
+            <Text className="font-body text-sm text-stone-700">
               Deadline reminders are scheduled automatically when you set a deadline (24h and 1h
               before).
             </Text>
@@ -331,12 +331,12 @@ export default function Settings() {
                   className={`rounded-full border px-3 py-1.5 ${
                     selected
                       ? 'border-amber-500 bg-amber-600/20'
-                      : 'border-stone-700 bg-stone-900'
+                      : 'border-stone-700 bg-amber-50/40'
                   }`}
                 >
                   <Text
                     className={`font-body-medium text-sm ${
-                      selected ? 'text-amber-300' : 'text-stone-300'
+                      selected ? 'text-amber-300' : 'text-stone-700'
                     }`}
                   >
                     {opt.label}
@@ -352,10 +352,10 @@ export default function Settings() {
       <SectionHeader>Audio</SectionHeader>
       <Pressable
         onPress={() => void setMuted(!muted)}
-        className="mb-3 flex-row items-center justify-between rounded-md border border-stone-700 bg-stone-900 px-4 py-3 active:bg-stone-800"
+        className="mb-3 flex-row items-center justify-between rounded-md border border-stone-700 bg-amber-50/40 px-4 py-3 active:bg-amber-100/60"
       >
         <View className="flex-1 pr-3">
-          <Text className="font-body text-base text-stone-200">Mute all audio</Text>
+          <Text className="font-body text-base text-stone-800">Mute all audio</Text>
           <Text className="mt-0.5 font-body text-xs text-stone-500">
             Silences the cinematic, ambient bed, and UI sound effects. Settings is the only screen
             that still chimes on toggle.

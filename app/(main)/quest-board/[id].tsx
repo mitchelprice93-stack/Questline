@@ -295,14 +295,14 @@ export default function QuestDetail() {
 
   if (loadError) {
     return (
-      <View className="flex-1 items-center justify-center bg-stone-950 px-6">
+      <View className="flex-1 items-center justify-center  px-6">
         <Text className="font-body text-red-400">{loadError}</Text>
       </View>
     );
   }
   if (!quest) {
     return (
-      <View className="flex-1 items-center justify-center bg-stone-950">
+      <View className="flex-1 items-center justify-center ">
         <ActivityIndicator color="#a8a29e" />
       </View>
     );
@@ -311,34 +311,34 @@ export default function QuestDetail() {
   if (editMode) {
     const canSave = editTitle.trim().length > 0 && busy !== 'save-edits';
     return (
-      <ScrollView className="flex-1 bg-stone-950" contentContainerClassName="px-6 pt-16 pb-12">
+      <ScrollView className="flex-1 " contentContainerClassName="px-6 pt-16 pb-12">
         <Pressable onPress={onCancelEdit} className="mb-3 self-start active:opacity-60">
           <Text className="font-body text-sm text-amber-400">← Cancel edit</Text>
         </Pressable>
         <Text className="mb-1 font-display text-xs uppercase tracking-widest text-amber-400">
           Editing quest
         </Text>
-        <Text className="mb-6 font-display text-3xl text-stone-100">{quest.title}</Text>
+        <Text className="mb-6 font-display text-3xl text-stone-900">{quest.title}</Text>
 
-        <Text className="mb-2 font-body text-sm text-stone-300">Title</Text>
+        <Text className="mb-2 font-body text-sm text-stone-700">Title</Text>
         <TextInput
           value={editTitle}
           onChangeText={setEditTitle}
           editable={busy !== 'save-edits'}
-          className="mb-4 rounded-md border border-stone-700 bg-stone-900 px-4 py-3 font-body text-stone-100"
+          className="mb-4 rounded-md border border-stone-700 bg-amber-50/40 px-4 py-3 font-body text-stone-900"
         />
 
-        <Text className="mb-2 font-body text-sm text-stone-300">Description</Text>
+        <Text className="mb-2 font-body text-sm text-stone-700">Description</Text>
         <TextInput
           value={editDescription}
           onChangeText={setEditDescription}
           multiline
           editable={busy !== 'save-edits'}
           textAlignVertical="top"
-          className="mb-4 min-h-[112px] rounded-md border border-stone-700 bg-stone-900 px-4 py-3 font-body text-stone-100"
+          className="mb-4 min-h-[112px] rounded-md border border-stone-700 bg-amber-50/40 px-4 py-3 font-body text-stone-900"
         />
 
-        <Text className="mb-2 font-body text-sm text-stone-300">
+        <Text className="mb-2 font-body text-sm text-stone-700">
           Tier · grants {xpForTier(editTier)} XP
         </Text>
         <View className="mb-4 flex-row flex-wrap gap-2">
@@ -347,7 +347,7 @@ export default function QuestDetail() {
           ))}
         </View>
 
-        <Text className="mb-2 font-body text-sm text-stone-300">Classification</Text>
+        <Text className="mb-2 font-body text-sm text-stone-700">Classification</Text>
         <View className="mb-4 flex-row flex-wrap gap-2">
           {CLASSIFICATIONS.map((c) => (
             <Chip
@@ -359,7 +359,7 @@ export default function QuestDetail() {
           ))}
         </View>
 
-        <Text className="mb-2 font-body text-sm text-stone-300">Recurrence</Text>
+        <Text className="mb-2 font-body text-sm text-stone-700">Recurrence</Text>
         <View className="mb-1 flex-row flex-wrap gap-2">
           {RECURRENCES.map((r) => (
             <Chip
@@ -378,7 +378,7 @@ export default function QuestDetail() {
               : 'Resets each week. Streak grows on consecutive weeks.'}
         </Text>
 
-        <Text className="mb-2 font-body text-sm text-stone-300">Objectives</Text>
+        <Text className="mb-2 font-body text-sm text-stone-700">Objectives</Text>
         <View className="mb-6">
           <ObjectivesEditor
             objectives={editObjectives}
@@ -387,7 +387,7 @@ export default function QuestDetail() {
           />
         </View>
 
-        <Text className="mb-2 font-body text-sm text-stone-300">Granted buff (optional)</Text>
+        <Text className="mb-2 font-body text-sm text-stone-700">Granted buff (optional)</Text>
         <View className="mb-6">
           <BuffEditor
             draft={editBuff}
@@ -397,14 +397,14 @@ export default function QuestDetail() {
           />
         </View>
 
-        <Text className="mb-2 font-body text-sm text-stone-300">Deadline (optional)</Text>
+        <Text className="mb-2 font-body text-sm text-stone-700">Deadline (optional)</Text>
         <TextInput
           value={editDeadline}
           onChangeText={setEditDeadline}
           autoCapitalize="none"
           placeholder="e.g., May 15, 2026 · 5/15/26 · next Friday"
           placeholderTextColor="#57534e"
-          className="mb-1 rounded-md border border-stone-700 bg-stone-900 px-4 py-3 font-body text-stone-100"
+          className="mb-1 rounded-md border border-stone-700 bg-amber-50/40 px-4 py-3 font-body text-stone-900"
           editable={busy !== 'save-edits'}
         />
         <Text className="mb-6 font-body text-xs text-stone-500">
@@ -419,18 +419,18 @@ export default function QuestDetail() {
           <Pressable
             onPress={onSaveEdits}
             disabled={!canSave}
-            className={`flex-1 rounded-md px-4 py-3 ${canSave ? 'bg-amber-600 active:bg-amber-700' : 'bg-stone-800'}`}
+            className={`flex-1 rounded-md px-4 py-3 ${canSave ? 'bg-amber-600 active:bg-amber-700' : 'bg-amber-100/40'}`}
           >
-            <Text className="text-center font-display text-base text-stone-100">
+            <Text className="text-center font-display text-base text-stone-900">
               {busy === 'save-edits' ? 'Saving…' : 'Save changes'}
             </Text>
           </Pressable>
           <Pressable
             onPress={onCancelEdit}
             disabled={busy === 'save-edits'}
-            className="rounded-md border border-stone-700 bg-stone-900 px-4 py-3 active:bg-stone-800"
+            className="rounded-md border border-stone-700 bg-amber-50/40 px-4 py-3 active:bg-amber-100/60"
           >
-            <Text className="text-center font-body text-stone-300">Cancel</Text>
+            <Text className="text-center font-body text-stone-700">Cancel</Text>
           </Pressable>
         </View>
       </ScrollView>
@@ -448,62 +448,62 @@ export default function QuestDetail() {
         ? `Abandoned ${formatLifecycleDate(quest.abandoned_at)}`
         : null;
   return (
-    <ScrollView className="flex-1 bg-stone-950" contentContainerClassName="px-6 pt-16 pb-12">
+    <ScrollView className="flex-1 " contentContainerClassName="px-6 pt-16 pb-12">
       <Pressable onPress={goBack} className="mb-3 self-start active:opacity-60">
         <Text className="font-body text-sm text-amber-400">← Quest Board</Text>
       </Pressable>
-      <Text className="mb-1 font-display text-3xl text-stone-100">{quest.title}</Text>
+      <Text className="mb-1 font-display text-3xl text-stone-900">{quest.title}</Text>
       <View className="mb-6 flex-row gap-3">
         <Text className="font-display text-xs uppercase tracking-widest text-amber-400">
           {quest.tier}
         </Text>
         <Text className="font-body text-xs text-stone-500">·</Text>
-        <Text className="font-display text-xs uppercase tracking-widest text-stone-400">
+        <Text className="font-display text-xs uppercase tracking-widest text-stone-700">
           {quest.classification}
         </Text>
         <Text className="font-body text-xs text-stone-500">·</Text>
-        <Text className="font-body text-xs text-stone-300">{quest.xp_reward} XP</Text>
+        <Text className="font-body text-xs text-stone-700">{quest.xp_reward} XP</Text>
       </View>
 
       {lifecycleStamp ? (
         <View
           className={`mb-6 rounded-md border px-4 py-3 ${
             quest.status === 'completed'
-              ? 'border-emerald-900/40 bg-stone-900'
-              : 'border-stone-700 bg-stone-900'
+              ? 'border-emerald-900/40 bg-amber-50/40'
+              : 'border-stone-700 bg-amber-50/40'
           }`}
         >
           <Text
             className={`font-display text-xs uppercase tracking-widest ${
-              quest.status === 'completed' ? 'text-emerald-300' : 'text-stone-400'
+              quest.status === 'completed' ? 'text-emerald-300' : 'text-stone-700'
             }`}
           >
             {quest.status === 'completed' ? 'Inscribed in the Tome' : 'Set aside'}
           </Text>
-          <Text className="mt-1 font-body text-sm text-stone-300">{lifecycleStamp}</Text>
+          <Text className="mt-1 font-body text-sm text-stone-700">{lifecycleStamp}</Text>
         </View>
       ) : null}
 
       {quest.recurrence ? (
-        <View className="mb-6 rounded-md border border-amber-900/50 bg-stone-900 p-4">
+        <View className="mb-6 rounded-md border border-amber-900/50 bg-amber-50/40 p-4">
           <Text className="font-display text-xs uppercase tracking-widest text-amber-400">
             {quest.recurrence === 'daily' ? 'Daily quest' : 'Weekly quest'}
           </Text>
           <View className="mt-1 flex-row items-baseline justify-between">
-            <Text className="font-body text-sm text-stone-300">
+            <Text className="font-body text-sm text-stone-700">
               {quest.streak_count > 0
                 ? `Streak · ${quest.streak_count} ${quest.recurrence === 'daily' ? 'days' : 'weeks'}`
                 : 'No streak yet — complete to start one'}
             </Text>
             {cooldownLabel ? (
-              <Text className="font-body text-xs text-stone-400">{cooldownLabel}</Text>
+              <Text className="font-body text-xs text-stone-700">{cooldownLabel}</Text>
             ) : null}
           </View>
         </View>
       ) : null}
 
       {quest.granted_buff_name && quest.granted_buff_pct !== null ? (
-        <View className="mb-6 rounded-md border border-emerald-900/50 bg-stone-900 p-4">
+        <View className="mb-6 rounded-md border border-emerald-900/50 bg-amber-50/40 p-4">
           <View className="flex-row items-baseline justify-between">
             <Text className="font-display text-xs uppercase tracking-widest text-emerald-300">
               Granted buff
@@ -512,11 +512,11 @@ export default function QuestDetail() {
               +{quest.granted_buff_pct}%
             </Text>
           </View>
-          <Text className="mt-1 font-body-medium text-base text-stone-100">
+          <Text className="mt-1 font-body-medium text-base text-stone-900">
             {quest.granted_buff_name}
           </Text>
           {quest.granted_buff_description ? (
-            <Text className="mt-0.5 font-body text-xs text-stone-400">
+            <Text className="mt-0.5 font-body text-xs text-stone-700">
               {quest.granted_buff_description}
             </Text>
           ) : null}
@@ -533,7 +533,7 @@ export default function QuestDetail() {
       ) : null}
 
       {quest.description ? (
-        <Text className="mb-6 font-body text-stone-300">{quest.description}</Text>
+        <Text className="mb-6 font-body text-stone-700">{quest.description}</Text>
       ) : (
         <Text className="mb-6 font-body italic text-stone-500">No description.</Text>
       )}
@@ -543,11 +543,11 @@ export default function QuestDetail() {
             const urgency = deadlineUrgency(quest.deadline);
             const palette = urgency ? urgencyClasses[urgency] : urgencyClasses.normal;
             return (
-              <View className={`mb-6 rounded-md border bg-stone-900 p-4 ${palette.border}`}>
+              <View className={`mb-6 rounded-md border bg-amber-50/40 p-4 ${palette.border}`}>
                 <Text className="font-display text-xs uppercase tracking-widest text-stone-500">
                   Deadline
                 </Text>
-                <Text className="mt-1 font-body text-stone-200">
+                <Text className="mt-1 font-body text-stone-800">
                   {formatDeadline(quest.deadline)}
                 </Text>
                 <Text className={`mt-1 font-body text-xs ${palette.text}`}>
@@ -574,7 +574,7 @@ export default function QuestDetail() {
                 className={
                   obj.completed
                     ? 'font-body text-stone-500 line-through'
-                    : 'font-body text-stone-300'
+                    : 'font-body text-stone-700'
                 }
               >
                 {obj.completed ? '☑ ' : '☐ '}
@@ -595,10 +595,10 @@ export default function QuestDetail() {
             onPress={onComplete}
             disabled={busy !== null || onCooldown}
             className={`mb-3 rounded-md px-4 py-3 ${
-              busy !== null || onCooldown ? 'bg-stone-800' : 'bg-amber-600 active:bg-amber-700'
+              busy !== null || onCooldown ? 'bg-amber-100/40' : 'bg-amber-600 active:bg-amber-700'
             }`}
           >
-            <Text className="text-center font-display text-base text-stone-100">
+            <Text className="text-center font-display text-base text-stone-900">
               {busy === 'complete'
                 ? 'Completing…'
                 : onCooldown
@@ -610,17 +610,17 @@ export default function QuestDetail() {
           <Pressable
             onPress={onEnterEdit}
             disabled={busy !== null}
-            className="mb-3 rounded-md border border-stone-700 bg-stone-900 px-4 py-3 active:bg-stone-800"
+            className="mb-3 rounded-md border border-stone-700 bg-amber-50/40 px-4 py-3 active:bg-amber-100/60"
           >
-            <Text className="text-center font-body text-base text-stone-200">Edit quest</Text>
+            <Text className="text-center font-body text-base text-stone-800">Edit quest</Text>
           </Pressable>
 
           <Pressable
             onPress={onAbandon}
             disabled={busy !== null}
-            className="rounded-md border border-stone-700 bg-stone-900 px-4 py-3 active:bg-stone-800"
+            className="rounded-md border border-stone-700 bg-amber-50/40 px-4 py-3 active:bg-amber-100/60"
           >
-            <Text className="text-center font-body text-base text-stone-300">
+            <Text className="text-center font-body text-base text-stone-700">
               {busy === 'abandon' ? 'Abandoning…' : 'Abandon quest'}
             </Text>
           </Pressable>
@@ -630,7 +630,7 @@ export default function QuestDetail() {
           onPress={goBack}
           className="rounded-md bg-amber-600 px-4 py-3 active:bg-amber-700"
         >
-          <Text className="text-center font-display text-base text-stone-100">
+          <Text className="text-center font-display text-base text-stone-900">
             Return to Quest Board
           </Text>
         </Pressable>
@@ -657,10 +657,10 @@ function Chip({
   return (
     <Pressable
       onPress={onPress}
-      className={`rounded-full border px-3 py-1.5 ${selected ? 'border-amber-500 bg-amber-600/20' : 'border-stone-700 bg-stone-900'}`}
+      className={`rounded-full border px-3 py-1.5 ${selected ? 'border-amber-500 bg-amber-600/20' : 'border-stone-700 bg-amber-50/40'}`}
     >
       <Text
-        className={`font-body-medium text-sm capitalize ${selected ? 'text-amber-300' : 'text-stone-300'}`}
+        className={`font-body-medium text-sm capitalize ${selected ? 'text-amber-300' : 'text-stone-700'}`}
       >
         {label}
       </Text>

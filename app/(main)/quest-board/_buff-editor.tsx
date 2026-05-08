@@ -93,7 +93,7 @@ export function BuffEditor({ draft, onChange, questTier, disabled }: Props) {
       <Pressable
         onPress={() => update({ enabled: true })}
         disabled={disabled}
-        className="rounded-md border border-dashed border-amber-700/50 px-4 py-3 active:bg-stone-900"
+        className="rounded-md border border-dashed border-amber-700/50 px-4 py-3 active:bg-amber-50/40"
       >
         <Text className="text-center font-body text-sm text-amber-400">
           + Attach a granted buff
@@ -106,7 +106,7 @@ export function BuffEditor({ draft, onChange, questTier, disabled }: Props) {
   }
 
   return (
-    <View className="rounded-md border border-amber-900/50 bg-stone-900 p-3">
+    <View className="rounded-md border border-amber-900/50 bg-amber-50/40 p-3">
       <View className="mb-2 flex-row items-baseline justify-between">
         <Text className="font-display text-xs uppercase tracking-widest text-amber-400">
           Granted buff
@@ -116,7 +116,7 @@ export function BuffEditor({ draft, onChange, questTier, disabled }: Props) {
           disabled={disabled}
           className="active:opacity-60"
         >
-          <Text className="font-body text-xs text-stone-400">Remove</Text>
+          <Text className="font-body text-xs text-stone-700">Remove</Text>
         </Pressable>
       </View>
 
@@ -129,7 +129,7 @@ export function BuffEditor({ draft, onChange, questTier, disabled }: Props) {
         placeholder="e.g. Sage's Insight"
         placeholderTextColor="#57534e"
         editable={!disabled}
-        className="mb-3 rounded-md border border-stone-700 bg-stone-950 px-3 py-2 font-body text-stone-100"
+        className="mb-3 rounded-md border border-stone-700 bg-amber-50/60 px-3 py-2 font-body text-stone-900"
       />
 
       <Text className="mb-1 font-display text-[10px] uppercase tracking-widest text-stone-500">
@@ -142,7 +142,7 @@ export function BuffEditor({ draft, onChange, questTier, disabled }: Props) {
         placeholderTextColor="#57534e"
         editable={!disabled}
         multiline
-        className="mb-3 rounded-md border border-stone-700 bg-stone-950 px-3 py-2 font-body text-stone-100"
+        className="mb-3 rounded-md border border-stone-700 bg-amber-50/60 px-3 py-2 font-body text-stone-900"
       />
 
       <Text className="mb-1 font-display text-[10px] uppercase tracking-widest text-stone-500">
@@ -153,7 +153,7 @@ export function BuffEditor({ draft, onChange, questTier, disabled }: Props) {
         onChangeText={(pct) => update({ pct: pct.replace(/[^0-9]/g, '').slice(0, 3) })}
         keyboardType="number-pad"
         editable={!disabled}
-        className="mb-3 rounded-md border border-stone-700 bg-stone-950 px-3 py-2 font-body text-stone-100"
+        className="mb-3 rounded-md border border-stone-700 bg-amber-50/60 px-3 py-2 font-body text-stone-900"
       />
 
       <Text className="mb-1 font-display text-[10px] uppercase tracking-widest text-stone-500">
@@ -168,12 +168,12 @@ export function BuffEditor({ draft, onChange, questTier, disabled }: Props) {
               onPress={() => update({ condition: c.key })}
               disabled={disabled}
               className={`rounded-full border px-3 py-1.5 ${
-                selected ? 'border-amber-500 bg-amber-600/20' : 'border-stone-700 bg-stone-950'
+                selected ? 'border-amber-500 bg-amber-600/20' : 'border-stone-700 bg-amber-50/60'
               }`}
             >
               <Text
                 className={`font-body-medium text-xs ${
-                  selected ? 'text-amber-300' : 'text-stone-300'
+                  selected ? 'text-amber-300' : 'text-stone-700'
                 }`}
               >
                 {c.label}

@@ -2,22 +2,27 @@ import { Tabs } from 'expo-router';
 import { View } from 'react-native';
 
 import { AmbientAudioRoot } from '../../lib/ambient-audio';
+import { ParchmentBackground } from '../../lib/parchment';
 import { playSfx } from '../../lib/sfx';
 
 export default function MainLayout() {
   return (
     <View className="flex-1">
+      {/* Parchment canvas behind everything else in (main). Each screen
+          renders with a transparent root so this shows through. */}
+      <ParchmentBackground />
       {/* Ambient music bed — only mounts inside the main app, not during
           the cinematic or onboarding (which have their own audio). */}
       <AmbientAudioRoot />
       <Tabs
         screenOptions={{
           headerShown: false,
-          tabBarActiveTintColor: '#f59e0b', // amber-500
-          tabBarInactiveTintColor: '#a8a29e', // stone-400
+          // Tab bar gets a warm sepia tone so it sits cleanly on parchment.
+          tabBarActiveTintColor: '#92400e', // amber-800 — strong ink
+          tabBarInactiveTintColor: '#78716c', // stone-500 — faded ink
           tabBarStyle: {
-            backgroundColor: '#0c0a09', // stone-950
-            borderTopColor: '#292524', // stone-800
+            backgroundColor: '#3f2e1d', // dark sepia, like leather binding
+            borderTopColor: '#78350f', // amber-900
           },
         }}
         screenListeners={{

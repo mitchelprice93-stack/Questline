@@ -131,14 +131,14 @@ export default function CharacterSheet() {
 
   if (error) {
     return (
-      <View className="flex-1 items-center justify-center bg-stone-950 px-6">
+      <View className="flex-1 items-center justify-center  px-6">
         <Text className="font-body text-red-400">{error}</Text>
       </View>
     );
   }
   if (!data) {
     return (
-      <View className="flex-1 items-center justify-center bg-stone-950">
+      <View className="flex-1 items-center justify-center ">
         <ActivityIndicator color="#a8a29e" />
       </View>
     );
@@ -162,8 +162,8 @@ export default function CharacterSheet() {
   const showCampaignDraft = editingCampaignId === DRAFT_ID;
 
   return (
-    <ScrollView className="flex-1 bg-stone-950" contentContainerClassName="px-6 pt-16 pb-12">
-      <Text className="mb-1 font-display text-3xl text-stone-100">{displayName}</Text>
+    <ScrollView className="flex-1 " contentContainerClassName="px-6 pt-16 pb-12">
+      <Text className="mb-1 font-display text-3xl text-stone-900">{displayName}</Text>
       {profile?.character_title ? (
         <Text className="mb-6 font-display text-amber-300">{profile.character_title}</Text>
       ) : (
@@ -177,14 +177,14 @@ export default function CharacterSheet() {
       ) : null}
 
       {/* Level + XP bar */}
-      <View className="mb-8 rounded-md border border-stone-800 bg-stone-900 p-4">
+      <View className="mb-8 rounded-md border border-stone-800 bg-amber-50/40 p-4">
         <View className="mb-2 flex-row items-baseline justify-between">
-          <Text className="font-display text-xs uppercase tracking-widest text-stone-400">
+          <Text className="font-display text-xs uppercase tracking-widest text-stone-700">
             Level
           </Text>
-          <Text className="font-display-bold text-2xl text-stone-100">{level}</Text>
+          <Text className="font-display-bold text-2xl text-stone-900">{level}</Text>
         </View>
-        <View className="mb-1 h-2 overflow-hidden rounded-full bg-stone-800">
+        <View className="mb-1 h-2 overflow-hidden rounded-full bg-amber-100/40">
           <View className="h-2 rounded-full bg-amber-500" style={{ width: `${progressPct}%` }} />
         </View>
         <Text className="font-body text-xs text-stone-500">
@@ -201,11 +201,11 @@ export default function CharacterSheet() {
       </View>
 
       {/* Active quests */}
-      <View className="mb-8 rounded-md border border-stone-800 bg-stone-900 p-4">
-        <Text className="mb-1 font-display text-xs uppercase tracking-widest text-stone-400">
+      <View className="mb-8 rounded-md border border-stone-800 bg-amber-50/40 p-4">
+        <Text className="mb-1 font-display text-xs uppercase tracking-widest text-stone-700">
           Active quests
         </Text>
-        <Text className="font-display-bold text-2xl text-stone-100">{activeQuests}</Text>
+        <Text className="font-display-bold text-2xl text-stone-900">{activeQuests}</Text>
       </View>
 
       {/* Buffs — earned by completing quests under their granted-buff
@@ -213,7 +213,7 @@ export default function CharacterSheet() {
           active. Hidden when none are active. */}
       {buffs.length > 0 ? (
         <>
-          <Text className="mb-2 font-display text-xs uppercase tracking-widest text-stone-300">
+          <Text className="mb-2 font-display text-xs uppercase tracking-widest text-stone-700">
             Buffs
           </Text>
           <View className="mb-8 gap-2">
@@ -222,16 +222,16 @@ export default function CharacterSheet() {
               return (
                 <View
                   key={b.id}
-                  className="rounded-md border border-emerald-900/40 bg-stone-900 px-4 py-3"
+                  className="rounded-md border border-emerald-900/40 bg-amber-50/40 px-4 py-3"
                 >
                   <View className="flex-row items-baseline justify-between">
-                    <Text className="font-body-medium text-base text-stone-100">{b.name}</Text>
+                    <Text className="font-body-medium text-base text-stone-900">{b.name}</Text>
                     <Text className="font-body text-xs text-emerald-300">
                       +{b.xp_modifier_pct}%
                     </Text>
                   </View>
                   {b.effect_description ? (
-                    <Text className="font-body text-xs text-stone-400">
+                    <Text className="font-body text-xs text-stone-700">
                       {b.effect_description}
                     </Text>
                   ) : null}
@@ -248,7 +248,7 @@ export default function CharacterSheet() {
       {/* Debuffs — visible whenever any are active. Rest button always
           renders but disables on cooldown. */}
       <View className="mb-2 flex-row items-baseline justify-between">
-        <Text className="font-display text-xs uppercase tracking-widest text-stone-300">
+        <Text className="font-display text-xs uppercase tracking-widest text-stone-700">
           Debuffs
         </Text>
         <Pressable
@@ -256,7 +256,7 @@ export default function CharacterSheet() {
           disabled={busy || restOnCooldown}
           className={`rounded-md border px-3 py-1.5 ${
             busy || restOnCooldown
-              ? 'border-stone-800 bg-stone-900'
+              ? 'border-stone-800 bg-amber-50/40'
               : 'border-amber-700 bg-amber-900/40 active:bg-amber-900/60'
           }`}
         >
@@ -280,14 +280,14 @@ export default function CharacterSheet() {
           debuffs.map((d) => (
             <View
               key={d.id}
-              className="rounded-md border border-red-900/40 bg-stone-900 px-4 py-3"
+              className="rounded-md border border-red-900/40 bg-amber-50/40 px-4 py-3"
             >
               <View className="flex-row items-baseline justify-between">
-                <Text className="font-body-medium text-base text-stone-100">{d.name}</Text>
+                <Text className="font-body-medium text-base text-stone-900">{d.name}</Text>
                 <Text className="font-body text-xs text-red-300">{d.xp_modifier_pct}%</Text>
               </View>
               {d.effect_description ? (
-                <Text className="font-body text-xs text-stone-400">{d.effect_description}</Text>
+                <Text className="font-body text-xs text-stone-700">{d.effect_description}</Text>
               ) : null}
             </View>
           ))
@@ -296,7 +296,7 @@ export default function CharacterSheet() {
 
       {/* Factions */}
       <View className="mb-2 flex-row items-baseline justify-between">
-        <Text className="font-display text-xs uppercase tracking-widest text-stone-300">
+        <Text className="font-display text-xs uppercase tracking-widest text-stone-700">
           Factions
         </Text>
         {!showFactionDraft && editingFactionId === null ? (
@@ -355,9 +355,9 @@ export default function CharacterSheet() {
               key={f.id}
               onPress={() => setEditingFactionId(f.id)}
               disabled={editingFactionId !== null}
-              className="rounded-md border border-stone-800 bg-stone-900 px-4 py-3 active:bg-stone-800"
+              className="rounded-md border border-stone-800 bg-amber-50/40 px-4 py-3 active:bg-amber-100/60"
             >
-              <Text className="font-body-medium text-base text-stone-100">{f.name}</Text>
+              <Text className="font-body-medium text-base text-stone-900">{f.name}</Text>
               <Text className="font-body text-xs text-stone-500">{f.real_world_domain}</Text>
             </Pressable>
           ),
@@ -390,7 +390,7 @@ export default function CharacterSheet() {
 
       {/* Campaigns */}
       <View className="mb-2 flex-row items-baseline justify-between">
-        <Text className="font-display text-xs uppercase tracking-widest text-stone-300">
+        <Text className="font-display text-xs uppercase tracking-widest text-stone-700">
           Campaigns
         </Text>
         {!showCampaignDraft && editingCampaignId === null ? (
@@ -449,12 +449,12 @@ export default function CharacterSheet() {
               key={c.id}
               onPress={() => setEditingCampaignId(c.id)}
               disabled={editingCampaignId !== null}
-              className="rounded-md border border-stone-800 bg-stone-900 px-4 py-3 active:bg-stone-800"
+              className="rounded-md border border-stone-800 bg-amber-50/40 px-4 py-3 active:bg-amber-100/60"
             >
-              <Text className="font-body-medium text-base text-stone-100">{c.arc_name}</Text>
+              <Text className="font-body-medium text-base text-stone-900">{c.arc_name}</Text>
               <Text className="font-body text-xs text-stone-500">{c.real_world_goal}</Text>
               {c.progress_pct > 0 ? (
-                <View className="mt-2 h-1 overflow-hidden rounded-full bg-stone-800">
+                <View className="mt-2 h-1 overflow-hidden rounded-full bg-amber-100/40">
                   <View
                     className="h-1 rounded-full bg-amber-500"
                     style={{ width: `${c.progress_pct}%` }}
@@ -492,7 +492,7 @@ export default function CharacterSheet() {
 
       {/* Difficulty — segmented control. Tapping persists immediately and
           refetches the profile so XP-modifier changes go live everywhere. */}
-      <Text className="mb-2 font-display text-xs uppercase tracking-widest text-stone-300">
+      <Text className="mb-2 font-display text-xs uppercase tracking-widest text-stone-700">
         Difficulty
       </Text>
       <View className="mb-2 flex-row gap-2">
@@ -506,12 +506,12 @@ export default function CharacterSheet() {
               className={`flex-1 rounded-md border px-2 py-2 ${
                 selected
                   ? 'border-amber-600 bg-amber-900/40'
-                  : 'border-stone-800 bg-stone-900 active:bg-stone-800'
+                  : 'border-stone-800 bg-amber-50/40 active:bg-amber-100/60'
               }`}
             >
               <Text
                 className={`text-center font-body-medium text-xs uppercase tracking-widest ${
-                  selected ? 'text-amber-200' : 'text-stone-300'
+                  selected ? 'text-amber-200' : 'text-stone-700'
                 }`}
               >
                 {d}
@@ -567,7 +567,7 @@ function FactionEditor({ initial, busy, onSave, onCancel, onDelete }: FactionEdi
   const canSave = name.trim().length > 0 && domain.trim().length > 0 && !busy;
 
   return (
-    <View className="rounded-md border border-amber-900/50 bg-stone-900 p-3">
+    <View className="rounded-md border border-amber-900/50 bg-amber-50/40 p-3">
       <Text className="mb-1 font-display text-[10px] uppercase tracking-widest text-stone-500">
         Faction name
       </Text>
@@ -577,7 +577,7 @@ function FactionEditor({ initial, busy, onSave, onCancel, onDelete }: FactionEdi
         placeholder="e.g. The Crown Forge"
         placeholderTextColor="#57534e"
         editable={!busy}
-        className="mb-3 rounded-md border border-stone-700 bg-stone-950 px-3 py-2 font-body text-stone-100"
+        className="mb-3 rounded-md border border-stone-700  px-3 py-2 font-body text-stone-900"
       />
       <Text className="mb-1 font-display text-[10px] uppercase tracking-widest text-stone-500">
         Real-world domain
@@ -589,32 +589,32 @@ function FactionEditor({ initial, busy, onSave, onCancel, onDelete }: FactionEdi
         placeholderTextColor="#57534e"
         editable={!busy}
         multiline
-        className="mb-3 rounded-md border border-stone-700 bg-stone-950 px-3 py-2 font-body text-stone-100"
+        className="mb-3 rounded-md border border-stone-700  px-3 py-2 font-body text-stone-900"
       />
       <View className="flex-row gap-2">
         <Pressable
           onPress={() => onSave({ name, real_world_domain: domain })}
           disabled={!canSave}
           className={`flex-1 rounded-md px-3 py-2 ${
-            canSave ? 'bg-amber-600 active:bg-amber-700' : 'bg-stone-800'
+            canSave ? 'bg-amber-600 active:bg-amber-700' : 'bg-amber-100/40'
           }`}
         >
-          <Text className="text-center font-body-medium text-sm text-stone-100">
+          <Text className="text-center font-body-medium text-sm text-stone-900">
             {initial ? 'Save' : 'Create'}
           </Text>
         </Pressable>
         <Pressable
           onPress={onCancel}
           disabled={busy}
-          className="rounded-md border border-stone-700 bg-stone-900 px-3 py-2 active:bg-stone-800"
+          className="rounded-md border border-stone-700 bg-amber-50/40 px-3 py-2 active:bg-amber-100/60"
         >
-          <Text className="text-center font-body text-sm text-stone-300">Cancel</Text>
+          <Text className="text-center font-body text-sm text-stone-700">Cancel</Text>
         </Pressable>
         {onDelete ? (
           <Pressable
             onPress={onDelete}
             disabled={busy}
-            className="rounded-md border border-red-900 bg-stone-900 px-3 py-2 active:bg-red-950"
+            className="rounded-md border border-red-900 bg-amber-50/40 px-3 py-2 active:bg-red-950"
           >
             <Text className="text-center font-body text-sm text-red-300">Delete</Text>
           </Pressable>
@@ -657,7 +657,7 @@ function CampaignEditor({ initial, busy, onSave, onCancel, onDelete }: CampaignE
   };
 
   return (
-    <View className="rounded-md border border-amber-900/50 bg-stone-900 p-3">
+    <View className="rounded-md border border-amber-900/50 bg-amber-50/40 p-3">
       <Text className="mb-1 font-display text-[10px] uppercase tracking-widest text-stone-500">
         Arc name
       </Text>
@@ -667,7 +667,7 @@ function CampaignEditor({ initial, busy, onSave, onCancel, onDelete }: CampaignE
         placeholder="e.g. The Iron Marathon"
         placeholderTextColor="#57534e"
         editable={!busy}
-        className="mb-3 rounded-md border border-stone-700 bg-stone-950 px-3 py-2 font-body text-stone-100"
+        className="mb-3 rounded-md border border-stone-700  px-3 py-2 font-body text-stone-900"
       />
       <Text className="mb-1 font-display text-[10px] uppercase tracking-widest text-stone-500">
         Real-world goal
@@ -679,7 +679,7 @@ function CampaignEditor({ initial, busy, onSave, onCancel, onDelete }: CampaignE
         placeholderTextColor="#57534e"
         editable={!busy}
         multiline
-        className="mb-3 rounded-md border border-stone-700 bg-stone-950 px-3 py-2 font-body text-stone-100"
+        className="mb-3 rounded-md border border-stone-700  px-3 py-2 font-body text-stone-900"
       />
       {initial ? (
         <>
@@ -691,7 +691,7 @@ function CampaignEditor({ initial, busy, onSave, onCancel, onDelete }: CampaignE
             onChangeText={onProgressChange}
             keyboardType="number-pad"
             editable={!busy}
-            className="mb-3 rounded-md border border-stone-700 bg-stone-950 px-3 py-2 font-body text-stone-100"
+            className="mb-3 rounded-md border border-stone-700  px-3 py-2 font-body text-stone-900"
           />
           <Text className="mb-1 font-display text-[10px] uppercase tracking-widest text-stone-500">
             Status
@@ -707,12 +707,12 @@ function CampaignEditor({ initial, busy, onSave, onCancel, onDelete }: CampaignE
                   className={`flex-1 rounded-md border px-2 py-2 ${
                     selected
                       ? 'border-amber-600 bg-amber-900/40'
-                      : 'border-stone-800 bg-stone-950 active:bg-stone-900'
+                      : 'border-stone-800  active:bg-amber-50/40'
                   }`}
                 >
                   <Text
                     className={`text-center font-body text-xs uppercase tracking-widest ${
-                      selected ? 'text-amber-200' : 'text-stone-300'
+                      selected ? 'text-amber-200' : 'text-stone-700'
                     }`}
                   >
                     {s}
@@ -739,25 +739,25 @@ function CampaignEditor({ initial, busy, onSave, onCancel, onDelete }: CampaignE
           }
           disabled={!canSave}
           className={`flex-1 rounded-md px-3 py-2 ${
-            canSave ? 'bg-amber-600 active:bg-amber-700' : 'bg-stone-800'
+            canSave ? 'bg-amber-600 active:bg-amber-700' : 'bg-amber-100/40'
           }`}
         >
-          <Text className="text-center font-body-medium text-sm text-stone-100">
+          <Text className="text-center font-body-medium text-sm text-stone-900">
             {initial ? 'Save' : 'Create'}
           </Text>
         </Pressable>
         <Pressable
           onPress={onCancel}
           disabled={busy}
-          className="rounded-md border border-stone-700 bg-stone-900 px-3 py-2 active:bg-stone-800"
+          className="rounded-md border border-stone-700 bg-amber-50/40 px-3 py-2 active:bg-amber-100/60"
         >
-          <Text className="text-center font-body text-sm text-stone-300">Cancel</Text>
+          <Text className="text-center font-body text-sm text-stone-700">Cancel</Text>
         </Pressable>
         {onDelete ? (
           <Pressable
             onPress={onDelete}
             disabled={busy}
-            className="rounded-md border border-red-900 bg-stone-900 px-3 py-2 active:bg-red-950"
+            className="rounded-md border border-red-900 bg-amber-50/40 px-3 py-2 active:bg-red-950"
           >
             <Text className="text-center font-body text-sm text-red-300">Delete</Text>
           </Pressable>
