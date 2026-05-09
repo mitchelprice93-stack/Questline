@@ -59,7 +59,10 @@ const CHARACTER_CREATION_SCHEMA = {
   additionalProperties: false,
   properties: {
     character_title: { type: 'string', description: 'In-voice title under the character name' },
-    starting_level: { type: 'integer', minimum: 1, maximum: 12 },
+    starting_level: {
+      type: 'integer',
+      description: 'Integer between 1 and 12 inclusive.',
+    },
     factions: {
       type: 'array',
       items: {
@@ -150,10 +153,8 @@ const QUEST_GENERATION_SCHEMA = {
         },
         pct: {
           type: 'integer',
-          minimum: 5,
-          maximum: 30,
           description:
-            'XP bonus on the next completion. Scale with effort: trivial 5, minor 6-8, standard 9-12, major 13-18, legendary 19-25.',
+            'XP bonus on the next completion, between 5 and 30 inclusive. Scale with effort: trivial 5, minor 6-8, standard 9-12, major 13-18, legendary 19-25.',
         },
         condition: {
           type: 'string',
