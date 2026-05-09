@@ -1,6 +1,7 @@
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import Animated, { Easing, withTiming } from 'react-native-reanimated';
 
 import { parseDeadline } from '../../../lib/dates';
 import { xpForTier, type QuestTier } from '../../../lib/engine/xp';
@@ -35,6 +36,23 @@ function recurrenceForDb(choice: RecurrenceChoice): QuestRecurrence {
 }
 
 type Phase = 'input' | 'loading' | 'review';
+
+// Parchment-unfurl entrance for the review screen — start collapsed
+// (scaleY 0.05) + transparent, then ease open to full height while fading
+// in. Reads like the Tome unrolling the page the Archivist just inscribed.
+const ParchmentUnfurl = () => {
+  'worklet';
+  return {
+    initialValues: {
+      transform: [{ scaleY: 0.05 }],
+      opacity: 0,
+    },
+    animations: {
+      transform: [{ scaleY: withTiming(1, { duration: 550, easing: Easing.out(Easing.cubic) }) }],
+      opacity: withTiming(1, { duration: 400 }),
+    },
+  };
+};
 
 export default function NewQuest() {
   const router = useRouter();
@@ -206,6 +224,7 @@ export default function NewQuest() {
   return (
     <ParchmentScreen>
       <ScrollView className="flex-1" contentContainerClassName="px-6 pt-20 pb-12">
+      <Animated.View entering={ParchmentUnfurl}>
       <Text className="mb-1 font-display text-lg uppercase tracking-widest text-amber-800">
         {draft.fromFallback ? 'Templated draft' : 'The Archivist offers'}
       </Text>
@@ -338,6 +357,7 @@ export default function NewQuest() {
       >
         <Text className="text-center font-body text-xl text-stone-500">Discard and start over</Text>
       </Pressable>
+      </Animated.View>
       </ScrollView>
     </ParchmentScreen>
   );

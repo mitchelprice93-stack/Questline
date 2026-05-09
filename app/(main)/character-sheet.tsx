@@ -3,6 +3,7 @@ import { useCallback, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 
 import { ModifierCard } from '../../components/modifier-card';
+import { useAnimatedNumber } from '../../lib/animated-number';
 import { useAuth } from '../../lib/auth';
 import {
   createCampaign,
@@ -58,6 +59,12 @@ export default function CharacterSheet() {
   const [editingFactionId, setEditingFactionId] = useState<string | null>(null);
   const [editingCampaignId, setEditingCampaignId] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+
+  // Tick the displayed XP from its previous value to the new total when
+  // a quest completes. Must be called before any early returns to satisfy
+  // hooks rules. Falls back to 0 when the profile hasn't loaded yet.
+  const totalXp = data?.profile?.total_xp ?? 0;
+  const animatedTotalXp = useAnimatedNumber(totalXp, 900);
 
   const refresh = useCallback(async () => {
     setError(null);
@@ -156,8 +163,9 @@ export default function CharacterSheet() {
     ? new Date(profile.last_rest_at).getTime() + restCooldownMs
     : 0;
   const restOnCooldown = Date.now() < restAvailableAt;
-  const totalXp = profile?.total_xp ?? 0;
-  const { level, currentLevelXp, nextLevelXp } = calculateLevel(totalXp);
+  // Derive level + bar width from the animated value so the whole card
+  // animates in sync with the XP counter.
+  const { level, currentLevelXp, nextLevelXp } = calculateLevel(animatedTotalXp);
   const atMaxLevel = nextLevelXp === 0;
   const progressPct = atMaxLevel ? 100 : Math.round((currentLevelXp / nextLevelXp) * 100);
 
@@ -196,8 +204,8 @@ export default function CharacterSheet() {
         </View>
         <Text className="font-body text-lg text-stone-500">
           {atMaxLevel
-            ? `${totalXp.toLocaleString()} XP · max level reached`
-            : `${currentLevelXp.toLocaleString()} / ${nextLevelXp.toLocaleString()} XP into this level · ${totalXp.toLocaleString()} total`}
+            ? `${animatedTotalXp.toLocaleString()} XP · max level reached`
+            : `${currentLevelXp.toLocaleString()} / ${nextLevelXp.toLocaleString()} XP into this level · ${animatedTotalXp.toLocaleString()} total`}
         </Text>
         <Pressable
           onPress={() => router.push('/xp-history')}
