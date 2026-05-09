@@ -1,5 +1,5 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Pressable,
@@ -94,6 +94,14 @@ export default function QuestDetail() {
   const [actionError, setActionError] = useState<string | null>(null);
   const [busy, setBusy] = useState<'complete' | 'abandon' | 'save-edits' | null>(null);
   const [levelUp, setLevelUp] = useState<LevelUpState | null>(null);
+  // Holds the in-flight reputation retitle when a level-up fires at the
+  // same time as a major/legendary faction quest completion. Read by the
+  // takeover's onContinue so we can announce the new title after the
+  // takeover dismisses, instead of swallowing it silently.
+  const pendingRetitleRef = useRef<Promise<{
+    newTitle: string;
+    previousTitle: string;
+  } | null> | null>(null);
   // Toggle the gold-shimmer overlay briefly on a successful completion.
   const [showShimmer, setShowShimmer] = useState(false);
 
@@ -222,12 +230,13 @@ export default function QuestDetail() {
         await announceRetitle(retitlePromise);
         goBack();
       }
-      // For the level-up branch, the takeover takes over the screen — the
-      // new title quietly persists in the DB and the user sees it on the
-      // Character Sheet next time they look. Still await so the DB write
-      // doesn't race with anything.
+      // For the level-up branch, the takeover owns the immediate moment —
+      // we stash the retitle promise so the takeover's onContinue can
+      // announce it after the user dismisses, rather than silently. The
+      // DB write happens whenever the promise resolves; the announcement
+      // waits for the user.
       if (newLevel > oldLevel) {
-        void retitlePromise;
+        pendingRetitleRef.current = retitlePromise;
       }
     } catch (e) {
       playSfx('error');
@@ -348,7 +357,15 @@ export default function QuestDetail() {
   };
 
   if (levelUp) {
-    return <LevelUpTakeover {...levelUp} onContinue={goBack} />;
+    const onTakeoverContinue = async () => {
+      // Drain the retitle promise stashed during onComplete (if any)
+      // so the user sees their new faction standing AFTER the takeover.
+      const pending = pendingRetitleRef.current;
+      pendingRetitleRef.current = null;
+      if (pending) await announceRetitle(pending);
+      goBack();
+    };
+    return <LevelUpTakeover {...levelUp} onContinue={onTakeoverContinue} />;
   }
 
   if (loadError) {

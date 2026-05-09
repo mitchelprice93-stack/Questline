@@ -127,16 +127,17 @@ interface SpotlightScrimProps {
 }
 
 function SpotlightScrim({ target, screen }: SpotlightScrimProps) {
-  // Tight padding so the ring traces the element's edge rather than
-  // floating above it. Side/bottom kept slightly larger for breathing
-  // room; top is tighter because a top-heavy box reads as misaligned.
+  // Even with measureInWindow on web returning correct viewport coords,
+  // the ring reads as floating above the element by a noticeable margin.
+  // Shift the whole hole down by Y_OFFSET so it visually centers on the
+  // element. Keep symmetric padding for breathing room.
+  const Y_OFFSET = 10;
   const padX = 6;
-  const padTop = 2;
-  const padBottom = 6;
+  const padY = 4;
   const x = Math.max(0, target.x - padX);
-  const y = Math.max(0, target.y - padTop);
+  const y = Math.max(0, target.y - padY + Y_OFFSET);
   const w = Math.min(screen.width - x, target.width + padX * 2);
-  const h = Math.min(screen.height - y, target.height + padTop + padBottom);
+  const h = Math.min(screen.height - y, target.height + padY * 2);
 
   return (
     <>
