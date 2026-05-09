@@ -1,6 +1,7 @@
 import { Tabs } from 'expo-router';
 import { View } from 'react-native';
 
+import { TutorialOverlay } from '../../components/tutorial-overlay';
 import { AmbientAudioRoot } from '../../lib/ambient-audio';
 import { playSfx } from '../../lib/sfx';
 
@@ -48,6 +49,10 @@ export default function MainLayout() {
         <Tabs.Screen name="hero-cinematic" options={{ href: null }} />
         <Tabs.Screen name="customer-center" options={{ href: null }} />
       </Tabs>
+      {/* First-launch orientation. Renders nothing once the user has
+          dismissed it; lives at the layout root so it can overlay any
+          tab the user happens to be on. */}
+      <TutorialOverlay />
     </View>
   );
 }

@@ -11,6 +11,7 @@ import { confirmDestructive, showInfoMessage } from '../../lib/dialogs';
 import { errorMessage } from '../../lib/errors';
 import { ParchmentScreen } from '../../lib/parchment';
 import { FREE_TIER_QUEST_CAP } from '../../lib/subscription';
+import { resetTutorial } from '../../lib/tutorial';
 import {
   getCheckInTime,
   getPermissionStatus,
@@ -309,10 +310,25 @@ export default function Settings() {
 
       <Pressable
         onPress={() => router.push('/cinematic')}
-        className="mb-8 rounded-md border border-stone-700 bg-amber-50/40 px-4 py-3 active:bg-amber-100/60"
+        className="mb-3 rounded-md border border-stone-700 bg-amber-50/40 px-4 py-3 active:bg-amber-100/60"
       >
         <Text className="text-center font-body text-2xl text-stone-800">
           Replay opening cinematic
+        </Text>
+      </Pressable>
+
+      <Pressable
+        onPress={async () => {
+          await resetTutorial();
+          await showInfoMessage(
+            'The Tome forgets briefly',
+            'The orientation will play again the next time you visit the Quest Board.',
+          );
+        }}
+        className="mb-8 rounded-md border border-stone-700 bg-amber-50/40 px-4 py-3 active:bg-amber-100/60"
+      >
+        <Text className="text-center font-body text-2xl text-stone-800">
+          Replay orientation
         </Text>
       </Pressable>
 

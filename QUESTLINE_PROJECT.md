@@ -331,10 +331,10 @@ Test file: `lib/engine/xp.test.ts`. Use Jest. Cover edge cases: zero XP, negativ
 - [x] Test API key wired in `.env.local` for paywall iteration without App Store products
 
 ## 5.2 Onboarding Polish
-- [ ] First-launch flow: cinematic → permission requests → character creation → first quest
-- [ ] Tutorial overlays on key screens (dismissible, never re-shown)
-- [ ] Empty states with Archivist flavor text
-- [ ] Error states designed in-world ("The chronicles are momentarily clouded...")
+- [~] First-launch flow: cinematic → character creation → first quest. Permission requests integrated into Settings rather than gated upfront.
+- [x] Tutorial overlays on key screens (dismissible, never re-shown) — `components/tutorial-overlay.tsx`, mounted at the (main) layout root, fires on first visit, AsyncStorage-backed so it stays dismissed. Five-step orientation in Archivist voice; Settings → "Replay orientation" resets the flag for users who want a refresher.
+- [~] Empty states with Archivist flavor text — Quest Board / Character Sheet / XP History all in voice; could be tightened further pre-launch
+- [~] Error states designed in-world — most error toasts are in voice; raw RPC errors still leak through occasionally
 
 ## 5.3 App Store Assets
 - [ ] App icon (final, all required sizes)
