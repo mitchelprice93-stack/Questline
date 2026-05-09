@@ -6,11 +6,6 @@ permalink: /terms/
 
 # Questline · Terms of Service
 
-> **DRAFT — review with legal counsel before publishing.** This is a
-> reasonable starting point for a small consumer subscription app; it
-> may need additional clauses depending on jurisdiction and your risk
-> tolerance.
-
 **Effective date:** 2026-05-08
 **Last updated:** 2026-05-08
 
@@ -127,14 +122,11 @@ change constitutes acceptance.
 
 ## Governing law
 
-These Terms are governed by the laws of _replace with your
-jurisdiction before publication_, without regard to conflict of laws
-principles.
+These Terms are governed by the laws of the State of Texas, United
+States, without regard to conflict of laws principles. Any dispute
+arising out of these Terms or the service will be resolved in the
+state or federal courts located in Texas.
 
 ## Contact
 
-Email: _replace with your support email before publication_
-
----
-
-_DRAFT — pending legal review_
+Email: questline.customerservice@gmail.com

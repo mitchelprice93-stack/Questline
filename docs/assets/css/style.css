@@ -1,0 +1,230 @@
+/*
+ * Questline legal pages — parchment theme.
+ *
+ * Mirrors the in-app design language: warm vellum surface, dark ink
+ * text, amber accents, Cinzel for display headings, EB Garamond for
+ * body. No external theme — just hand-rolled CSS so the page weighs
+ * almost nothing and the look stays under our control.
+ */
+
+:root {
+  --vellum: #f5e7c1;
+  --vellum-deep: #e6d2a8;
+  --vellum-edge: #c8a878;
+  --ink: #1f1a17;
+  --ink-soft: #5a4a3a;
+  --amber: #92400e;
+  --amber-deep: #78350f;
+  --sepia: #3f2e1d;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
+  font-family: 'EB Garamond', Georgia, 'Times New Roman', serif;
+  font-size: 18px;
+  line-height: 1.7;
+  color: var(--ink);
+  /* Layered vellum background: warm linear gradient + radial spotlight
+     toward the center to mimic candlelight on paper. */
+  background-color: var(--vellum);
+  background-image:
+    radial-gradient(ellipse at center top, rgba(255, 230, 170, 0.55) 0%, rgba(245, 231, 193, 0) 60%),
+    linear-gradient(180deg, var(--vellum) 0%, var(--vellum-deep) 100%);
+  background-attachment: fixed;
+}
+
+/* Subtle paper-grain noise via a tiled SVG. Pure CSS so it stays
+   featherweight (no extra HTTP request beyond this stylesheet). */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.18;
+  mix-blend-mode: multiply;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180' viewBox='0 0 180 180'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' seed='3'/><feColorMatrix values='0 0 0 0 0.39 0 0 0 0 0.30 0 0 0 0 0.18 0 0 0 0.5 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+  background-size: 180px 180px;
+}
+
+main {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 4rem 1.5rem 3rem;
+  position: relative;
+  z-index: 1;
+}
+
+article {
+  background: rgba(245, 231, 193, 0.78);
+  border: 1px solid var(--vellum-edge);
+  border-radius: 4px;
+  padding: 3rem 2.5rem;
+  box-shadow:
+    0 1px 0 rgba(255, 250, 230, 0.6) inset,
+    0 8px 24px rgba(31, 26, 23, 0.18),
+    0 24px 48px rgba(31, 26, 23, 0.10);
+}
+
+h1, h2, h3, h4 {
+  font-family: 'Cinzel', 'Trajan Pro', Georgia, serif;
+  font-weight: 700;
+  color: var(--ink);
+  line-height: 1.25;
+  letter-spacing: 0.01em;
+}
+
+h1 {
+  font-size: 2.4rem;
+  margin: 0 0 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--amber);
+}
+
+h2 {
+  font-size: 1.6rem;
+  margin: 2.5rem 0 0.75rem;
+  color: var(--amber-deep);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 1.2rem;
+}
+
+h3 {
+  font-size: 1.25rem;
+  margin: 1.5rem 0 0.5rem;
+  color: var(--ink-soft);
+}
+
+p {
+  margin: 0 0 1rem;
+}
+
+p strong, li strong {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+a {
+  color: var(--amber);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+}
+
+a:hover {
+  color: var(--amber-deep);
+}
+
+ul, ol {
+  margin: 0 0 1.25rem;
+  padding-left: 1.5rem;
+}
+
+li {
+  margin: 0.35rem 0;
+}
+
+blockquote {
+  margin: 1.5rem 0;
+  padding: 1rem 1.5rem;
+  border-left: 3px solid var(--amber);
+  background: rgba(146, 64, 14, 0.05);
+  font-style: italic;
+  color: var(--ink-soft);
+}
+
+blockquote p:last-child {
+  margin-bottom: 0;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1.5rem 0;
+  font-size: 0.95rem;
+}
+
+th, td {
+  padding: 0.65rem 1rem;
+  border: 1px solid var(--vellum-edge);
+  text-align: left;
+  vertical-align: top;
+}
+
+th {
+  background: rgba(146, 64, 14, 0.08);
+  font-family: 'Cinzel', serif;
+  font-weight: 700;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--amber-deep);
+}
+
+code {
+  font-family: 'Courier New', monospace;
+  background: rgba(31, 26, 23, 0.06);
+  padding: 0.05em 0.35em;
+  border-radius: 2px;
+  font-size: 0.9em;
+}
+
+hr {
+  border: 0;
+  height: 1px;
+  margin: 2.5rem 0;
+  background: linear-gradient(90deg, transparent 0%, var(--vellum-edge) 50%, transparent 100%);
+}
+
+footer {
+  margin-top: 3rem;
+  padding-top: 2rem;
+  border-top: 1px solid var(--vellum-edge);
+  text-align: center;
+  font-size: 0.95rem;
+  color: var(--ink-soft);
+}
+
+footer a {
+  color: var(--amber-deep);
+  text-decoration: none;
+}
+
+footer a:hover {
+  text-decoration: underline;
+}
+
+footer .dot {
+  margin: 0 0.5rem;
+  opacity: 0.5;
+}
+
+footer .archivist {
+  margin: 1rem 0 0;
+  font-style: italic;
+  font-size: 0.85rem;
+  opacity: 0.7;
+  letter-spacing: 0.04em;
+}
+
+@media (max-width: 600px) {
+  body { font-size: 17px; }
+  main { padding: 2rem 0.75rem; }
+  article { padding: 2rem 1.25rem; }
+  h1 { font-size: 1.8rem; }
+  h2 { font-size: 1.05rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; animation: none !important; }
+}

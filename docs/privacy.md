@@ -6,12 +6,6 @@ permalink: /privacy/
 
 # Questline · Privacy Policy
 
-> **DRAFT — review with legal counsel before publishing.** This document
-> describes the data Questline actually handles as of the latest commit;
-> it has not been reviewed by an attorney and may not satisfy every
-> jurisdiction's requirements (GDPR, CCPA, COPPA, etc.). Treat as a
-> starting point.
-
 **Effective date:** 2026-05-08
 **Last updated:** 2026-05-08
 
@@ -142,8 +136,4 @@ change constitutes acceptance.
 
 ## Contact
 
-Email: _replace with your support email before publication_
-
----
-
-_DRAFT — pending legal review_
+Email: questline.customerservice@gmail.com

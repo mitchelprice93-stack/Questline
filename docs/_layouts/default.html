@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% if page.title %}{{ page.title }} · {% endif %}{{ site.title }}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=EB+Garamond:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ '/assets/css/style.css' | relative_url }}">
+</head>
+<body>
+  <main>
+    <article>
+      {{ content }}
+    </article>
+    <footer>
+      <a href="{{ '/' | relative_url }}">Home</a>
+      <span class="dot">·</span>
+      <a href="{{ '/privacy/' | relative_url }}">Privacy</a>
+      <span class="dot">·</span>
+      <a href="{{ '/terms/' | relative_url }}">Terms</a>
+      <p class="archivist">The Tome remembers.</p>
+    </footer>
+  </main>
+</body>
+</html>
