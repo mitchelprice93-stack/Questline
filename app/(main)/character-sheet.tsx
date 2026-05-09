@@ -63,8 +63,11 @@ export default function CharacterSheet() {
   // Tick the displayed XP from its previous value to the new total when
   // a quest completes. Must be called before any early returns to satisfy
   // hooks rules. Falls back to 0 when the profile hasn't loaded yet.
+  // The hook returns a smooth float; text uses Math.round, but the bar
+  // width derives from the raw float so it glides continuously even when
+  // the rounded number text snaps integer-by-integer.
   const totalXp = data?.profile?.total_xp ?? 0;
-  const animatedTotalXp = useAnimatedNumber(totalXp, 900);
+  const animatedTotalXpFloat = useAnimatedNumber(totalXp, 900);
 
   const refresh = useCallback(async () => {
     setError(null);
@@ -163,11 +166,19 @@ export default function CharacterSheet() {
     ? new Date(profile.last_rest_at).getTime() + restCooldownMs
     : 0;
   const restOnCooldown = Date.now() < restAvailableAt;
-  // Derive level + bar width from the animated value so the whole card
-  // animates in sync with the XP counter.
-  const { level, currentLevelXp, nextLevelXp } = calculateLevel(animatedTotalXp);
-  const atMaxLevel = nextLevelXp === 0;
-  const progressPct = atMaxLevel ? 100 : Math.round((currentLevelXp / nextLevelXp) * 100);
+  // Derive level + bar width from the animated float so the whole card
+  // animates in sync with the XP counter; round for text display.
+  const animatedTotalXp = Math.round(animatedTotalXpFloat);
+  const levelInfo = calculateLevel(animatedTotalXpFloat);
+  const { level } = levelInfo;
+  const currentLevelXp = Math.round(levelInfo.currentLevelXp);
+  const nextLevelXp = Math.round(levelInfo.nextLevelXp);
+  const atMaxLevel = levelInfo.nextLevelXp === 0;
+  // Bar width uses the float values directly — gives sub-pixel motion
+  // even when the rounded text snaps from 1499 → 1500.
+  const progressPct = atMaxLevel
+    ? 100
+    : (levelInfo.currentLevelXp / levelInfo.nextLevelXp) * 100;
 
   const displayName =
     profile?.character_name ?? profile?.display_name ?? session?.user.email ?? 'Wanderer';

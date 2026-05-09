@@ -1,16 +1,22 @@
-// useAnimatedNumber — smoothly tick a displayed integer from its previous
-// value to a new target whenever the target changes. Built on
-// requestAnimationFrame rather than Reanimated because Text doesn't accept
-// animated style props for its content; the simplest portable thing is a
-// state-driven counter.
+// useAnimatedNumber — smoothly tick a value from its previous toward a
+// new target whenever the target changes. Returns a continuous float;
+// callers Math.round it for integer text display, OR pass the float
+// straight into a derived value (e.g. progress-bar width) so the visual
+// glides smoothly even when the rounded text snaps.
 //
-// Initial mount: no animation. Subsequent target changes: ease-out cubic
-// over `duration`. Target changes mid-animation cancel and restart from
-// the current displayed value.
+// Built on requestAnimationFrame rather than Reanimated because Text
+// doesn't accept animated style props for its content; the simplest
+// portable thing is a state-driven counter.
+//
+// Initial mount: no animation. Subsequent target changes: linear over
+// `duration` (linear feels smoother for counting because every integer
+// flip takes the same time — eased curves bunch flips at one end and
+// the user perceives that as "jumpy"). Target changes mid-animation
+// cancel and restart from the current displayed value.
 
 import { useEffect, useRef, useState } from 'react';
 
-export function useAnimatedNumber(target: number, duration = 800): number {
+export function useAnimatedNumber(target: number, duration = 900): number {
   const [displayed, setDisplayed] = useState(target);
   // Mirror of `displayed` for the effect to read without subscribing —
   // adding `displayed` to the dep array would re-run the effect every
@@ -32,8 +38,10 @@ export function useAnimatedNumber(target: number, duration = 800): number {
       if (cancelled) return;
       const elapsed = performance.now() - start;
       const t = Math.min(1, elapsed / duration);
-      const eased = 1 - Math.pow(1 - t, 3); // ease-out cubic
-      const value = Math.round(from + (to - from) * eased);
+      // Linear: constant rate from `from` to `to`. Snap to exact `to` on
+      // the final frame so we don't end on a float-fuzz value like
+      // 1499.9998 that rounds to 1500 but holds a stale ref value.
+      const value = t >= 1 ? to : from + (to - from) * t;
       setDisplayed(value);
       if (t < 1) raf = requestAnimationFrame(tick);
     };

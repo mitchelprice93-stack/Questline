@@ -144,10 +144,11 @@ function SpotlightScrim({ target, screen, mode }: SpotlightScrimProps) {
   // Two padding profiles. 'tight' hugs DOM-measured targets (+ button,
   // status tabs); 'loose' suits virtual rects (tab bar) that sit a touch
   // high vs where the element actually paints, so we add a downward shift.
+  // Tight mode also gets a 1px upward nudge to perfectly center the ring.
   const padX = 6;
   const padTop = mode === 'tight' ? 2 : 4;
   const padBottom = mode === 'tight' ? 6 : 4;
-  const yShift = mode === 'tight' ? 0 : 10;
+  const yShift = mode === 'tight' ? -1 : 10;
   const x = Math.max(0, target.x - padX);
   const y = Math.max(0, target.y - padTop + yShift);
   const w = Math.min(screen.width - x, target.width + padX * 2);
