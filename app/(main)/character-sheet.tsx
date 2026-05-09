@@ -2,6 +2,7 @@ import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 
+import { ModifierCard } from '../../components/modifier-card';
 import { useAuth } from '../../lib/auth';
 import {
   createCampaign,
@@ -223,30 +224,13 @@ export default function CharacterSheet() {
             Buffs
           </Text>
           <View className="mb-8 gap-2">
-            {buffs.map((b) => {
-              const remaining = formatBuffRemaining(b.expires_at);
-              return (
-                <View
-                  key={b.id}
-                  className="rounded-md border border-emerald-900/40 bg-amber-50/40 px-4 py-3"
-                >
-                  <View className="flex-row items-baseline justify-between">
-                    <Text className="font-body-medium text-2xl text-stone-900">{b.name}</Text>
-                    <Text className="font-body text-lg text-emerald-800">
-                      +{b.xp_modifier_pct}%
-                    </Text>
-                  </View>
-                  {b.effect_description ? (
-                    <Text className="font-body text-lg text-stone-700">
-                      {b.effect_description}
-                    </Text>
-                  ) : null}
-                  {remaining ? (
-                    <Text className="mt-1 font-body text-lg text-stone-500">{remaining}</Text>
-                  ) : null}
-                </View>
-              );
-            })}
+            {buffs.map((b) => (
+              <ModifierCard
+                key={b.id}
+                modifier={b}
+                remainingLabel={formatBuffRemaining(b.expires_at)}
+              />
+            ))}
           </View>
         </>
       ) : null}
@@ -283,20 +267,7 @@ export default function CharacterSheet() {
             No debuffs. Keep tending the Tome.
           </Text>
         ) : (
-          debuffs.map((d) => (
-            <View
-              key={d.id}
-              className="rounded-md border border-red-900/40 bg-amber-50/40 px-4 py-3"
-            >
-              <View className="flex-row items-baseline justify-between">
-                <Text className="font-body-medium text-2xl text-stone-900">{d.name}</Text>
-                <Text className="font-body text-lg text-red-700">{d.xp_modifier_pct}%</Text>
-              </View>
-              {d.effect_description ? (
-                <Text className="font-body text-lg text-stone-700">{d.effect_description}</Text>
-              ) : null}
-            </View>
-          ))
+          debuffs.map((d) => <ModifierCard key={d.id} modifier={d} />)
         )}
       </View>
 

@@ -236,10 +236,10 @@ Test file: `lib/engine/xp.test.ts`. Use Jest. Cover edge cases: zero XP, negativ
 
 ## 3.6 Quest Micro-Animations
 - [ ] Quest accept: parchment-unfurl animation
-- [ ] Quest complete: gold-shimmer + XP counter ticks up
-- [ ] Level up: full-screen takeover with title card
-- [ ] Buff applied: small icon pulse with description tooltip
-- [ ] Debuff applied: subtle red glow + warning text
+- [x] Quest complete: gold-shimmer overlay (700ms double-layer fade) on Mark complete success when no level-up. XP counter tick-up still pending.
+- [x] Level up: full-screen takeover with title card + AI narration
+- [x] Buff applied: amber pulse on the modifier card mount (220ms peak → 480ms fade) + FadeInDown.springify entry
+- [x] Debuff applied: red pulse on the modifier card mount, same shape
 
 ## Phase 3 Definition of Done
 - Cinematic plays smoothly at 60fps on iPhone 12+ and a $200 Android (Samsung A-series test device)
