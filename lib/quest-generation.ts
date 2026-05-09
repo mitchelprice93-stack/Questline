@@ -7,7 +7,7 @@
 
 import { callClaudeProxy, ClaudeProxyError } from './ai';
 import type { QuestTier } from './engine/xp';
-import { getActiveQuestCount, getCurrentProfile, listFactions } from './profile';
+import { getActiveQuestCount, getCurrentProfile, listCampaigns, listFactions } from './profile';
 import type {
   GrantedBuffCondition,
   QuestClassification,
@@ -29,6 +29,8 @@ export interface QuestGenerationPayload {
     character_title: string | null;
     level: number;
     factions: { name: string }[];
+    /** Active campaigns the AI may pre-select if the quest aligns. Empty when the user has none. */
+    campaigns: { id: string; arc_name: string; real_world_goal: string }[];
     active_quest_count: number;
   };
 }
@@ -42,6 +44,10 @@ export interface GeneratedQuest {
   tactical_warnings: string[];
   /** A boon the chronicler earns if they meet the buff's condition on completion. */
   granted_buff: GeneratedBuff;
+  /** Active-campaign id the AI thinks this quest advances, if any. Validated
+   *  against the loaded list — null when the AI returned empty string, an
+   *  unknown id, or there were no active campaigns to choose from. */
+  suggested_campaign_id: string | null;
   /** True when the AI call failed and we fell back to a stub. */
   fromFallback: boolean;
 }
@@ -71,9 +77,10 @@ function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise
  * Runs the three queries in parallel.
  */
 export async function loadQuestGenerationContext(): Promise<QuestGenerationPayload['context']> {
-  const [profile, factions, active_quest_count] = await Promise.all([
+  const [profile, factions, campaigns, active_quest_count] = await Promise.all([
     getCurrentProfile(),
     listFactions(),
+    listCampaigns('active'),
     getActiveQuestCount(),
   ]);
   return {
@@ -81,6 +88,11 @@ export async function loadQuestGenerationContext(): Promise<QuestGenerationPaylo
     character_title: profile?.character_title ?? null,
     level: profile?.level ?? 1,
     factions: factions.map((f) => ({ name: f.name })),
+    campaigns: campaigns.map((c) => ({
+      id: c.id,
+      arc_name: c.arc_name,
+      real_world_goal: c.real_world_goal,
+    })),
     active_quest_count,
   };
 }
@@ -105,6 +117,7 @@ function templatedFallback(input: string): GeneratedQuest {
       pct: 5,
       condition: 'on_complete',
     },
+    suggested_campaign_id: null,
     fromFallback: true,
   };
 }
@@ -130,11 +143,17 @@ export async function generateQuest(input: string): Promise<GeneratedQuest> {
         suggested_tier: QuestTier;
         tactical_warnings: string[];
         granted_buff: GeneratedBuff;
+        suggested_campaign_id: string;
       }>('quest_generation', payload),
       AI_TIMEOUT_MS,
       'quest_generation',
     );
-    return { ...result.data, fromFallback: false };
+    // The AI returns empty string when no campaign fits. Guard against
+    // hallucinated ids by re-checking against the context we passed in.
+    const validCampaignIds = new Set(context.campaigns.map((c) => c.id));
+    const rawId = result.data.suggested_campaign_id;
+    const suggested_campaign_id = rawId && validCampaignIds.has(rawId) ? rawId : null;
+    return { ...result.data, suggested_campaign_id, fromFallback: false };
   } catch (e) {
     if (e instanceof ClaudeProxyError && e.isRateLimited()) {
       console.warn('quest_generation rate-limited; using fallback', e.message);

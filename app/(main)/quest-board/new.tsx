@@ -77,6 +77,10 @@ export default function NewQuest() {
         pct: String(generated.granted_buff.pct),
         condition: generated.granted_buff.condition,
       });
+      // The Archivist may flag a campaign this endeavor advances. Already
+      // validated against the active list in generateQuest — null when no
+      // match. User can override in the picker.
+      setCampaignId(generated.suggested_campaign_id);
       setPhase('review');
     } catch (e) {
       stopLoopSfx('quill_scratch');

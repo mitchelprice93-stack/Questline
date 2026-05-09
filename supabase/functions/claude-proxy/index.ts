@@ -164,6 +164,11 @@ const QUEST_GENERATION_SCHEMA = {
       },
       required: ['name', 'description', 'pct', 'condition'],
     },
+    suggested_campaign_id: {
+      type: 'string',
+      description:
+        "If exactly one of the chronicler's active campaigns from the context clearly aligns with this endeavor — meaning completing the quest would visibly advance the campaign's real_world_goal — return that campaign's id verbatim. Otherwise return an empty string. Only suggest a match when the alignment is obvious; do not force a campaign onto an unrelated quest. Empty string is the right answer when the chronicler has no active campaigns or none fit.",
+    },
   },
   required: [
     'title',
@@ -173,6 +178,7 @@ const QUEST_GENERATION_SCHEMA = {
     'suggested_tier',
     'tactical_warnings',
     'granted_buff',
+    'suggested_campaign_id',
   ],
 };
 
@@ -305,7 +311,13 @@ function buildUserMessage(req: ProxyRequest): { content: string; schema: unknown
           `Description: ONE sentence describing what the chronicler feels in the moment of receiving the buff. ` +
           `pct scales with the quest's tier (trivial 5, minor 6-8, standard 9-12, major 13-18, legendary 19-25). ` +
           `condition fits the work: 'on_time' for deadline-pressured endeavors, 'all_objectives' when the checklist matters, ` +
-          `'on_complete' for simple commitments. The buff should feel earned but not punishing to miss.`,
+          `'on_complete' for simple commitments. The buff should feel earned but not punishing to miss.\n\n` +
+          `For suggested_campaign_id: the context includes the chronicler's active campaigns (each with id, arc_name, ` +
+          `and real_world_goal). If this endeavor would clearly advance one of those goals, return that campaign's id ` +
+          `EXACTLY as given. Be conservative — only suggest when the connection is obvious from the user's input ` +
+          `(e.g. a "study for finals" quest matches a "Pass Organic Chemistry" campaign; a generic "buy groceries" ` +
+          `quest matches no campaign). Return an empty string when no campaign fits, when the active campaigns list ` +
+          `is empty, or when the connection is only loosely thematic. Never invent an id that wasn't in the context.`,
         schema: QUEST_GENERATION_SCHEMA,
       };
   }
