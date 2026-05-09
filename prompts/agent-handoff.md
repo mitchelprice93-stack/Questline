@@ -190,6 +190,13 @@ QUESTLINE_PROJECT.md            # the spec — source of truth for what to build
 
 In rough order, most recent first:
 
+- **AI campaign auto-suggestion** — `quest_generation` prompt now
+  receives the chronicler's active campaigns (id, arc_name,
+  real_world_goal) in context; schema adds `suggested_campaign_id`.
+  When a quest clearly advances an active campaign, the Archivist
+  returns its id and the new-quest review screen pre-selects it in the
+  picker. Hallucinated ids are filtered client-side against the
+  campaign list already loaded for context (no extra DB hit).
 - **AI reputation titles** — character_creation prompt + schema now
   request a per-faction `reputation_title` informed by user's
   background / proficiencies / life_summary.
@@ -243,18 +250,15 @@ In rough order, most recent first:
    android` once Google products exist.
 3. **AI reputation re-titling at faction milestones** (e.g. 25/50/100
    deeds) — new endpoint or scheduled prompt.
-4. **AI campaign auto-suggestion** at quest creation — extend the
-   quest_generation prompt with the user's active campaigns and ask the
-   AI to pre-select if there's a good match.
-5. **Remote push for debuff warnings** — `notify_user_of_debuffs`
+4. **Remote push for debuff warnings** — `notify_user_of_debuffs`
    already exists in DB (migration `20260508000001_push_tokens_*`); needs
    the cron to call it daily and the Expo push API URL configured.
-6. **Quest micro-animation polish** — XP counter tick-up on the level
+5. **Quest micro-animation polish** — XP counter tick-up on the level
    card (the number animates from old to new total); parchment-unfurl
    entrance for the new-quest review screen.
-7. **Offline write queue** — companion to read-cache; queue pending
+6. **Offline write queue** — companion to read-cache; queue pending
    mutations and replay on reconnect.
-8. **Apple Sign In** scaffolding (deferred indefinitely per Mitchel —
+7. **Apple Sign In** scaffolding (deferred indefinitely per Mitchel —
    Android-first).
 
 ## Workflow patterns
