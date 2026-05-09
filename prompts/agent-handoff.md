@@ -190,6 +190,30 @@ QUESTLINE_PROJECT.md            # the spec — source of truth for what to build
 
 In rough order, most recent first:
 
+- **Spotlight tutorial** — `components/tutorial-overlay.tsx` rewritten
+  as a 4-rectangle scrim with a hole around a measured target rect +
+  glow ring + tooltip card; `lib/tutorial-context.tsx` holds step state
+  and a target registry; `components/tutorial-target.tsx` wraps any UI
+  to publish its rect. Tutorial walks through + button, status tabs,
+  tab bar; auto-routes to `/quest-board` on start so the first
+  spotlight has its target on screen even when triggered from Settings.
+  Spotlight box is translated +10px down to compensate for the
+  measure-vs-render mismatch on RN Web.
+- **Faction-on-quest + AI auto-suggestion + reputation retitle** —
+  `quests.faction_id` was already wired through the trigger; this
+  closed the gap. New `_faction-picker.tsx` mirrors the campaign
+  picker, `quest_generation` schema gains `suggested_faction_id` for
+  AI auto-pick, and a new `reputation_retitle` proxy endpoint (Haiku
+  4.5, 256 tokens) fires on every major/legendary completion tied to a
+  faction. The Archivist proposes a 1–3 word title themed to the
+  specific deed; `lib/reputation.ts` validates + persists via
+  `updateFaction`. Announced via `showInfoMessage` after the standard
+  "Quest completed" alert, or after the level-up takeover dismisses
+  (a `pendingRetitleRef` chains the announcement so level-up doesn't
+  swallow it). Skips only when the AI returns the EXACT same title.
+- **Quest_generation routes to Haiku 4.5** — was Sonnet, now Haiku for
+  the high-volume schema-bounded endpoint. 2–4s vs 5–15s, 1/3 the cost.
+  Character creation + level-up narration stay on Sonnet for nuance.
 - **AI campaign auto-suggestion** — `quest_generation` prompt now
   receives the chronicler's active campaigns (id, arc_name,
   real_world_goal) in context; schema adds `suggested_campaign_id`.
@@ -248,17 +272,15 @@ In rough order, most recent first:
 2. **EAS dev build** for native testing of paywall + push +
    subscriptions: `npx eas-cli build --profile development --platform
    android` once Google products exist.
-3. **AI reputation re-titling at faction milestones** (e.g. 25/50/100
-   deeds) — new endpoint or scheduled prompt.
-4. **Remote push for debuff warnings** — `notify_user_of_debuffs`
+3. **Remote push for debuff warnings** — `notify_user_of_debuffs`
    already exists in DB (migration `20260508000001_push_tokens_*`); needs
    the cron to call it daily and the Expo push API URL configured.
-5. **Quest micro-animation polish** — XP counter tick-up on the level
+4. **Quest micro-animation polish** — XP counter tick-up on the level
    card (the number animates from old to new total); parchment-unfurl
    entrance for the new-quest review screen.
-6. **Offline write queue** — companion to read-cache; queue pending
+5. **Offline write queue** — companion to read-cache; queue pending
    mutations and replay on reconnect.
-7. **Apple Sign In** scaffolding (deferred indefinitely per Mitchel —
+6. **Apple Sign In** scaffolding (deferred indefinitely per Mitchel —
    Android-first).
 
 ## Workflow patterns
