@@ -194,7 +194,7 @@ export default function QuestDetail() {
           'Quest completed',
           `+${result.xpChange} XP earned${modifierLine}${buffLine} · ${result.newTotalXp} total`,
         );
-        router.back();
+        goBack();
       }
     } catch (e) {
       playSfx('error');
@@ -235,7 +235,7 @@ export default function QuestDetail() {
       // Hold the navigation back briefly so the SFX has time to start before
       // the screen unmounts; otherwise on web the audio context can be cut.
       playSfx('debuff_applied');
-      setTimeout(() => router.back(), 250);
+      setTimeout(goBack, 250);
     } catch (e) {
       playSfx('error');
       setActionError(e instanceof Error ? e.message : String(e));
@@ -313,7 +313,7 @@ export default function QuestDetail() {
   };
 
   if (levelUp) {
-    return <LevelUpTakeover {...levelUp} onContinue={() => router.back()} />;
+    return <LevelUpTakeover {...levelUp} onContinue={goBack} />;
   }
 
   if (loadError) {

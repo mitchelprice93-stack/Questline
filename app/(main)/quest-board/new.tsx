@@ -132,7 +132,11 @@ export default function NewQuest() {
       });
       // The Tome inscribes a new entry — ceremonial scratch.
       playSfx('quest_create');
-      router.back();
+      // router.back() is a no-op when there's no history (deep link or
+      // browser refresh) — without the canGoBack guard, the user is left
+      // staring at a "Saving…" button while the quest already saved.
+      if (router.canGoBack()) router.back();
+      else router.replace('/quest-board');
     } catch (e) {
       playSfx('error');
       // Quest cap is a soft, recoverable rejection — show the in-voice
