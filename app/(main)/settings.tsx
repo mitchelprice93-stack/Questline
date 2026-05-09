@@ -317,14 +317,14 @@ export default function Settings() {
       </View>
       {subscription?.tier === 'free' ? (
         <Pressable
-          disabled
-          className="mb-8 rounded-md border border-amber-700/40 bg-amber-900/10 px-4 py-3"
+          onPress={() => router.push('/paywall')}
+          className="mb-8 rounded-md border border-amber-700/60 bg-amber-100/40 px-4 py-3 active:bg-amber-100/60"
         >
           <Text className="text-center font-body text-xl text-amber-800">
             Pledge your oath to the Archivist · $3/month
           </Text>
-          <Text className="mt-1 text-center font-body text-lg text-stone-500">
-            (Available once the gates open — RevenueCat integration in progress.)
+          <Text className="mt-1 text-center font-body text-base text-stone-600">
+            Tap to read the offer.
           </Text>
         </Pressable>
       ) : (

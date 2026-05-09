@@ -42,6 +42,10 @@ export default function MainLayout() {
         {/* xp-history is reachable only from the Character Sheet — hide it
             from the tab bar so it doesn't take a top-level slot. */}
         <Tabs.Screen name="xp-history" options={{ href: null }} />
+        {/* Paywall and post-purchase cinematic — reachable only via the
+            Settings → Pledge flow, hidden from the tab bar. */}
+        <Tabs.Screen name="paywall" options={{ href: null }} />
+        <Tabs.Screen name="hero-cinematic" options={{ href: null }} />
       </Tabs>
     </View>
   );

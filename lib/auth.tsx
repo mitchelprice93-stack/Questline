@@ -6,6 +6,7 @@ import { hasSeenCinematic, markCinematicSeen as markSeenAsync } from './cinemati
 import { registerPushTokenForCurrentUser } from './notifications';
 import { clearQuestCache } from './offline';
 import { getCurrentProfile } from './profile';
+import { configurePurchases, logoutPurchases } from './purchases';
 import { getSubscriptionStatus, type SubscriptionStatus } from './subscription';
 import { supabase } from './supabase';
 import type { Profile } from './types/models';
@@ -126,6 +127,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Refresh the push token on every fresh session so it's never stale.
     // No-op on web / without notification permission.
     void registerPushTokenForCurrentUser();
+    // Tell RevenueCat which user just signed in so cross-device entitlements
+    // attribute correctly. No-op on web / without an RC API key.
+    if (session?.user.id) {
+      void configurePurchases(session.user.id);
+    }
   }, [session?.user.id, loading, refetchSubscription]);
 
   const value: AuthContextValue = {
@@ -145,8 +151,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     },
     signOut: async () => {
       // Wipe the offline cache so the next user on the device doesn't see
-      // the previous user's quest list.
+      // the previous user's quest list. Also reset RC's user identity.
       await clearQuestCache();
+      await logoutPurchases();
       const { error } = await supabase.auth.signOut();
       return { error };
     },

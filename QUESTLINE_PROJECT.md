@@ -313,15 +313,17 @@ Test file: `lib/engine/xp.test.ts`. Use Jest. Cover edge cases: zero XP, negativ
 **Exit criteria:** Live on both stores. First 100 users acquired. First paying subscriber.
 
 ## 5.1 RevenueCat Integration
-- [ ] Configure products in App Store Connect and Google Play Console
+- [ ] Configure products in App Store Connect and Google Play Console — needs your hand
 - [ ] Subscription tiers (revised — simpler than original spec):
   - **Free** — full character creation + cinematic + every mechanic. Capped at 5 active quests at any one time.
   - **Hero** ($3/mo) — uncaps active-quest count; everything else identical.
 - [x] Quest-cap enforcement (server-side trigger) — gates inserts of `status='active'` quests when free-tier user already has 5 active
-- [ ] Paywall screen (designed to feel in-world — "Pledge your oath to the Archivist")
-- [ ] Free trial: 7 days
-- [ ] Restore purchases flow
-- [ ] Receipt validation server-side via RevenueCat webhook to Supabase
+- [x] Paywall screen — `app/(main)/paywall.tsx`, in-world copy ("Pledge your oath"), reachable from Settings
+- [x] Hero upgrade cinematic — `app/(main)/hero-cinematic.tsx`, plays on purchase / restore success
+- [x] react-native-purchases SDK installed; `lib/purchases.ts` wrapper that gracefully no-ops on web / without API keys
+- [ ] Free trial: 7 days — configure in RC dashboard once products exist
+- [x] Restore purchases flow — wired in paywall
+- [x] Receipt validation server-side — `supabase/functions/revenuecat-webhook/index.ts`, deployed; expects bearer-token shared secret in Authorization header
 
 ## 5.2 Onboarding Polish
 - [ ] First-launch flow: cinematic → permission requests → character creation → first quest
