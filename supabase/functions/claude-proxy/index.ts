@@ -368,12 +368,20 @@ function buildUserMessage(req: ProxyRequest): { content: string; schema: unknown
         content:
           `The chronicler has just completed a notable deed for one of their factions. Context:\n\n${JSON.stringify(req.payload, null, 2)}\n\n` +
           `Propose a new reputation_title for this faction that reflects THIS specific deed. ` +
-          `It should feel like the Tome inscribed it after watching the work — concrete, in-voice, 1 to 3 words. ` +
-          `For legendary quests, the title should generally feel like an upgrade over the previous one. ` +
-          `For major quests, a sideways move into a more specific role is fine (e.g. "Initiate" → "Joiner of the Brotherhood" ` +
-          `after building a bookshelf, even though "Joiner" isn't strictly higher than "Initiate"). ` +
-          `Avoid bland generics like "Skilled" or "Veteran" unless the previous title was something even blander. ` +
-          `Return JSON with a single 'new_reputation_title' field.`,
+          `It should feel like the Tome inscribed it after watching the work — concrete, in-voice, 1 to 3 words.\n\n` +
+          `MANDATORY: the new title MUST be different from the current title. Echoing the existing title is a ` +
+          `failure mode — even if it still fits, propose a fresh take that draws imagery from the specific quest ` +
+          `just completed. Pull a verb, a tool, or an outcome from the quest's title and description and weave it ` +
+          `in. Examples:\n` +
+          `  - Carpenter, current "Initiate", just finished "Build a bookshelf" (major) → "Joiner", "Shelf-Wright", "Bookbinder of the Loom"\n` +
+          `  - Carpenter, current "Joiner", just finished "Frame the deck" (legendary) → "Master Frame-Wright", "Hearthbuilder", "Beam-Forger"\n` +
+          `  - Programmer, current "Apprentice", just finished "Ship the auth refactor" (legendary) → "Architect of Gates", "Cipher-Smith", "Master of Wards"\n` +
+          `  - Teacher, current "Lecturer", just finished "Graduate the senior class" (legendary) → "Master of Letters", "Hierarch of the Lectern"\n\n` +
+          `For legendary quests, prefer titles that feel like an upgrade in standing. For major quests, sideways moves ` +
+          `into more specific roles are fine. Avoid bland generics ("Skilled", "Veteran", "Expert") unless the current ` +
+          `title is even blander. Match the title's flavor to the faction's real_world_domain (carpentry → craft-guild ` +
+          `ranks; medicine → healer ranks; service → military ranks; scholarship → aspirant/lecturer/scholar).\n\n` +
+          `Return JSON with a single 'new_reputation_title' field — ONE string, 1 to 3 words.`,
         schema: REPUTATION_RETITLE_SCHEMA,
       };
   }

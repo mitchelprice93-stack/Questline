@@ -164,7 +164,13 @@ export default function QuestDetail() {
       // Major / legendary quests tied to a faction earn a fresh reputation
       // title from the Archivist. Fire this in parallel with the rest of
       // the completion UI — its latency shouldn't compound.
-      const retitlePromise = shouldRetitle(quest)
+      const eligible = shouldRetitle(quest);
+      console.log('[retitle] eligibility', {
+        eligible,
+        tier: quest.tier,
+        faction_id: quest.faction_id,
+      });
+      const retitlePromise = eligible
         ? retitleFactionFromQuest(quest.faction_id as string, quest)
         : Promise.resolve(null);
       const milestoneLine =
