@@ -30,6 +30,9 @@ export interface CharacterCreationInput {
 interface AIFaction {
   name: string;
   real_world_domain: string;
+  /** AI-suggested in-voice title reflecting the chronicler's standing.
+   *  apply_character_creation falls back to 'Initiate' when absent. */
+  reputation_title?: string;
   // Index signature satisfies the supabase-js Json type at the RPC boundary.
   [key: string]: string | undefined;
 }
@@ -83,7 +86,11 @@ function templatedFallback(input: CharacterCreationInput): CharacterSheetResult 
     factions: input.factions
       .map((f) => f.trim())
       .filter(Boolean)
-      .map((domain) => ({ name: domain, real_world_domain: domain })),
+      .map((domain) => ({
+        name: domain,
+        real_world_domain: domain,
+        reputation_title: 'Initiate',
+      })),
     campaigns: input.campaigns
       .map((c) => c.trim())
       .filter(Boolean)

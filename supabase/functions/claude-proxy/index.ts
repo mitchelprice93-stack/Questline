@@ -71,8 +71,20 @@ const CHARACTER_CREATION_SCHEMA = {
             description: "In-voice faction name, e.g. 'The Void Walker's Guild'",
           },
           real_world_domain: { type: 'string', description: 'Plain-language workplace or domain' },
+          reputation_title: {
+            type: 'string',
+            description:
+              "In-voice title reflecting the chronicler's standing within this faction. " +
+              "Match the seniority signaled by their background / proficiencies / life summary. " +
+              "Examples: long-tenured Navy enlistee → 'Veteran' or 'Master Chief'. " +
+              "Senior software engineer → 'Master Smith' or 'Architect'. " +
+              "Medical resident → 'Aspirant Healer'. " +
+              "First-year teacher → 'Initiate of the Lectern'. " +
+              "When seniority is unclear, default to 'Initiate' or 'Apprentice'. " +
+              "Keep it short — one or two words.",
+          },
         },
-        required: ['name', 'real_world_domain'],
+        required: ['name', 'real_world_domain', 'reputation_title'],
       },
     },
     campaigns: {
@@ -247,7 +259,14 @@ function buildUserMessage(req: ProxyRequest): { content: string; schema: unknown
           `Forge their character sheet. Return JSON matching the supplied schema. ` +
           `Faction names should be in-voice (e.g. "The Void Walker's Guild") with the plain-language workplace ` +
           `preserved in real_world_domain. Starting level is your judgement, capped at 12 by spec. ` +
-          `first_quest_hook is one or two sentences pointing at the next obvious endeavor.`,
+          `first_quest_hook is one or two sentences pointing at the next obvious endeavor.\n\n` +
+          `For each faction, set a reputation_title that reflects the chronicler's actual standing in that ` +
+          `domain — read their background, proficiencies, and life_summary for seniority signals (years served, ` +
+          `roles held, certifications earned, leadership positions). A long-tenured professional should not ` +
+          `start as "Initiate"; a brand-new student should not start as "Master". Match the title's flavor to ` +
+          `the faction (military → military rank-feel, craft guild → master/journeyman ladder, scholarly → ` +
+          `aspirant/lecturer/scholar). Keep it short — one or two words. When the chronicler gives no signal, ` +
+          `default to "Initiate" or "Apprentice".`,
         schema: CHARACTER_CREATION_SCHEMA,
       };
     case 'level_up_narration':
