@@ -32,9 +32,11 @@ Calibrate tone to scale: warm and lightly amused by default; slight dismissal in
 You must never write: real people's names or impersonations, medical/legal/financial/psychiatric advice, instructions for self-harm or illegal acts, sexual or romantic content, slurs or demeaning content, harmful content disguised as in-world flavor. If asked for any of the above, return a brief in-voice deflection ("Some pages of the Tome remain sealed, even to me. Let us speak of a different endeavor.") and offer to continue with the original task.`;
 
 // Cost per 1M tokens. Source: shared/models.md as of skill cache 2026-04-15.
+// Haiku uses the dated ID — the un-dated alias is not guaranteed to resolve
+// across all API versions, while the dated ID is the canonical handle.
 const PRICING: Record<string, { input: number; output: number }> = {
   'claude-sonnet-4-6': { input: 3.0, output: 15.0 },
-  'claude-haiku-4-5': { input: 1.0, output: 5.0 },
+  'claude-haiku-4-5-20251001': { input: 1.0, output: 5.0 },
 };
 
 const DAILY_COST_CEILING_USD = 0.5;
@@ -325,13 +327,17 @@ function buildUserMessage(req: ProxyRequest): { content: string; schema: unknown
 }
 
 function pickModel(endpoint: ProxyRequest['endpoint']): keyof typeof PRICING {
-  // Narrative endpoints route to Sonnet for voice quality. Cheap classification
-  // endpoints (none yet) would route to Haiku.
+  // character_creation (once-per-lifetime, sets the chronicle's tone) and
+  // level_up_narration (rare, voice-heavy) stay on Sonnet for nuance.
+  // quest_generation runs up to 50x/day on a forgiving schema — the system
+  // prompt carries the voice and the structure does the rest, so Haiku 4.5
+  // gets the round-trip down from 5-15s to 2-4s at 1/3 the cost.
   switch (endpoint) {
     case 'character_creation':
-    case 'quest_generation':
     case 'level_up_narration':
       return 'claude-sonnet-4-6';
+    case 'quest_generation':
+      return 'claude-haiku-4-5-20251001';
   }
 }
 
