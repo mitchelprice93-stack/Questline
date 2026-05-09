@@ -28,7 +28,10 @@ export interface QuestGenerationPayload {
     character_name: string | null;
     character_title: string | null;
     level: number;
-    factions: { name: string }[];
+    /** All factions the AI may pre-select if the quest aligns. Includes id +
+     *  real_world_domain so the model has enough signal to match (e.g. a
+     *  "build a bookshelf" quest → United Brotherhood of Carpenters). */
+    factions: { id: string; name: string; real_world_domain: string }[];
     /** Active campaigns the AI may pre-select if the quest aligns. Empty when the user has none. */
     campaigns: { id: string; arc_name: string; real_world_goal: string }[];
     active_quest_count: number;
@@ -48,6 +51,9 @@ export interface GeneratedQuest {
    *  against the loaded list — null when the AI returned empty string, an
    *  unknown id, or there were no active campaigns to choose from. */
   suggested_campaign_id: string | null;
+  /** Faction id the AI thinks this quest counts toward, if any. Same
+   *  validation pattern as suggested_campaign_id. */
+  suggested_faction_id: string | null;
   /** True when the AI call failed and we fell back to a stub. */
   fromFallback: boolean;
 }
@@ -90,7 +96,11 @@ export async function loadQuestGenerationContext(): Promise<QuestGenerationPaylo
     character_name: profile?.character_name ?? null,
     character_title: profile?.character_title ?? null,
     level: profile?.level ?? 1,
-    factions: factions.map((f) => ({ name: f.name })),
+    factions: factions.map((f) => ({
+      id: f.id,
+      name: f.name,
+      real_world_domain: f.real_world_domain,
+    })),
     campaigns: campaigns.map((c) => ({
       id: c.id,
       arc_name: c.arc_name,
@@ -121,6 +131,7 @@ function templatedFallback(input: string): GeneratedQuest {
       condition: 'on_complete',
     },
     suggested_campaign_id: null,
+    suggested_faction_id: null,
     fromFallback: true,
   };
 }
@@ -147,16 +158,27 @@ export async function generateQuest(input: string): Promise<GeneratedQuest> {
         tactical_warnings: string[];
         granted_buff: GeneratedBuff;
         suggested_campaign_id: string;
+        suggested_faction_id: string;
       }>('quest_generation', payload),
       AI_TIMEOUT_MS,
       'quest_generation',
     );
-    // The AI returns empty string when no campaign fits. Guard against
+    // The AI returns empty string when nothing fits. Guard against
     // hallucinated ids by re-checking against the context we passed in.
     const validCampaignIds = new Set(context.campaigns.map((c) => c.id));
-    const rawId = result.data.suggested_campaign_id;
-    const suggested_campaign_id = rawId && validCampaignIds.has(rawId) ? rawId : null;
-    return { ...result.data, suggested_campaign_id, fromFallback: false };
+    const validFactionIds = new Set(context.factions.map((f) => f.id));
+    const rawCampaignId = result.data.suggested_campaign_id;
+    const rawFactionId = result.data.suggested_faction_id;
+    const suggested_campaign_id =
+      rawCampaignId && validCampaignIds.has(rawCampaignId) ? rawCampaignId : null;
+    const suggested_faction_id =
+      rawFactionId && validFactionIds.has(rawFactionId) ? rawFactionId : null;
+    return {
+      ...result.data,
+      suggested_campaign_id,
+      suggested_faction_id,
+      fromFallback: false,
+    };
   } catch (e) {
     if (e instanceof ClaudeProxyError && e.isRateLimited()) {
       console.warn('quest_generation rate-limited; using fallback', e.message);

@@ -22,6 +22,7 @@ import {
   type BuffDraft,
 } from './_buff-editor';
 import { CampaignPicker } from './_campaign-picker';
+import { FactionPicker } from './_faction-picker';
 import { ObjectivesEditor } from './_objectives-editor';
 
 const TIERS: QuestTier[] = ['trivial', 'minor', 'standard', 'major', 'legendary'];
@@ -50,6 +51,7 @@ export default function NewQuest() {
   const [recurrence, setRecurrence] = useState<RecurrenceChoice>('none');
   const [buff, setBuff] = useState<BuffDraft>(emptyBuffDraft());
   const [campaignId, setCampaignId] = useState<string | null>(null);
+  const [factionId, setFactionId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -81,6 +83,7 @@ export default function NewQuest() {
       // validated against the active list in generateQuest — null when no
       // match. User can override in the picker.
       setCampaignId(generated.suggested_campaign_id);
+      setFactionId(generated.suggested_faction_id);
       setPhase('review');
     } catch (e) {
       stopLoopSfx('quill_scratch');
@@ -126,6 +129,7 @@ export default function NewQuest() {
         recurrence: recurrenceForDb(recurrence),
         grantedBuff: buffDraftToPayload(buff),
         campaignId,
+        factionId,
         objectives: objectives
           .map((o) => ({ ...o, text: o.text.trim() }))
           .filter((o) => o.text.length > 0),
@@ -272,6 +276,11 @@ export default function NewQuest() {
             ? 'Resets each day. Completing it on consecutive days builds a streak.'
             : 'Resets each week. Completing it on consecutive weeks builds a streak.'}
       </Text>
+
+      <View className="mb-6">
+        <Text className="mb-2 font-body text-xl text-stone-700">Faction (optional)</Text>
+        <FactionPicker value={factionId} onChange={setFactionId} disabled={submitting} />
+      </View>
 
       <View className="mb-6">
         <Text className="mb-2 font-body text-xl text-stone-700">Campaign (optional)</Text>

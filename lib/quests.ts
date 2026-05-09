@@ -47,6 +47,9 @@ export interface CreateQuestInput {
   /** Optional campaign this quest contributes to. Completing the quest
    *  auto-advances the campaign's progress_pct via DB trigger. */
   campaignId?: string | null;
+  /** Optional faction this quest counts toward. Completing the quest
+   *  auto-increments the faction's reputation_count via DB trigger. */
+  factionId?: string | null;
 }
 
 function buffColumns(buff: GrantedBuff | null | undefined) {
@@ -131,6 +134,7 @@ export async function createQuest(input: CreateQuestInput): Promise<Quest> {
       objectives: input.objectives ?? [],
       recurrence: input.recurrence ?? null,
       campaign_id: input.campaignId ?? null,
+      faction_id: input.factionId ?? null,
       ...buffColumns(input.grantedBuff),
     })
     .select()
@@ -202,6 +206,9 @@ export interface UpdateQuestInput {
   /** Pass null to detach the quest from its campaign, or undefined to
    *  leave unchanged. */
   campaignId?: string | null;
+  /** Pass null to detach the quest from its faction, or undefined to
+   *  leave unchanged. */
+  factionId?: string | null;
 }
 
 /**
@@ -229,6 +236,7 @@ export async function updateQuest(questId: string, input: UpdateQuestInput): Pro
     recurrence: input.recurrence,
     ...(input.grantedBuff !== undefined ? buffColumns(input.grantedBuff) : {}),
     ...(input.campaignId !== undefined ? { campaign_id: input.campaignId } : {}),
+    ...(input.factionId !== undefined ? { faction_id: input.factionId } : {}),
   };
   const { data, error } = await supabase
     .from('quests')

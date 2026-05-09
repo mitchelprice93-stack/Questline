@@ -52,6 +52,7 @@ import {
   type BuffDraft,
 } from './_buff-editor';
 import { CampaignPicker } from './_campaign-picker';
+import { FactionPicker } from './_faction-picker';
 import { ObjectivesEditor } from './_objectives-editor';
 
 const TIERS: QuestTier[] = ['trivial', 'minor', 'standard', 'major', 'legendary'];
@@ -107,6 +108,7 @@ export default function QuestDetail() {
   const [editRecurrence, setEditRecurrence] = useState<RecurrenceChoice>('none');
   const [editBuff, setEditBuff] = useState<BuffDraft>(emptyBuffDraft());
   const [editCampaignId, setEditCampaignId] = useState<string | null>(null);
+  const [editFactionId, setEditFactionId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!id) return;
@@ -255,6 +257,7 @@ export default function QuestDetail() {
     setEditRecurrence(recurrenceForUi(quest.recurrence));
     setEditBuff(buffDraftFromQuest(quest));
     setEditCampaignId(quest.campaign_id);
+    setEditFactionId(quest.faction_id);
     setActionError(null);
     setEditMode(true);
   };
@@ -297,6 +300,7 @@ export default function QuestDetail() {
         recurrence: recurrenceForDb(editRecurrence),
         grantedBuff: buffDraftToPayload(editBuff),
         campaignId: editCampaignId,
+        factionId: editFactionId,
         objectives: editObjectives
           .map((o) => ({ ...o, text: o.text.trim() }))
           .filter((o) => o.text.length > 0),
@@ -411,6 +415,15 @@ export default function QuestDetail() {
           <ObjectivesEditor
             objectives={editObjectives}
             onChange={setEditObjectives}
+            disabled={busy === 'save-edits'}
+          />
+        </View>
+
+        <View className="mb-6">
+          <Text className="mb-2 font-body text-xl text-stone-700">Faction (optional)</Text>
+          <FactionPicker
+            value={editFactionId}
+            onChange={setEditFactionId}
             disabled={busy === 'save-edits'}
           />
         </View>

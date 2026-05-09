@@ -172,6 +172,11 @@ const QUEST_GENERATION_SCHEMA = {
       description:
         "If exactly one of the chronicler's active campaigns from the context clearly aligns with this endeavor — meaning completing the quest would visibly advance the campaign's real_world_goal — return that campaign's id verbatim. Otherwise return an empty string. Only suggest a match when the alignment is obvious; do not force a campaign onto an unrelated quest. Empty string is the right answer when the chronicler has no active campaigns or none fit.",
     },
+    suggested_faction_id: {
+      type: 'string',
+      description:
+        "If this endeavor naturally belongs to one of the chronicler's factions — judged from the faction's name and real_world_domain — return that faction's id verbatim. Empty string when no faction fits or the chronicler has no factions. Carpentry quests should land on a carpenter faction, code quests on a software faction, lesson plans on a teaching faction, and so on.",
+    },
   },
   required: [
     'title',
@@ -182,6 +187,7 @@ const QUEST_GENERATION_SCHEMA = {
     'tactical_warnings',
     'granted_buff',
     'suggested_campaign_id',
+    'suggested_faction_id',
   ],
 };
 
@@ -320,7 +326,15 @@ function buildUserMessage(req: ProxyRequest): { content: string; schema: unknown
           `EXACTLY as given. Be conservative — only suggest when the connection is obvious from the user's input ` +
           `(e.g. a "study for finals" quest matches a "Pass Organic Chemistry" campaign; a generic "buy groceries" ` +
           `quest matches no campaign). Return an empty string when no campaign fits, when the active campaigns list ` +
-          `is empty, or when the connection is only loosely thematic. Never invent an id that wasn't in the context.`,
+          `is empty, or when the connection is only loosely thematic. Never invent an id that wasn't in the context.\n\n` +
+          `For suggested_faction_id: the context includes the chronicler's factions (each with id, name, and ` +
+          `real_world_domain). Match the endeavor to the faction whose real_world_domain naturally claims it ` +
+          `(carpentry / building → carpenter faction; coding → software faction; lessons / lectures → teaching ` +
+          `faction; clinic / patients → medical faction; military duties → service faction; and so on). Return ` +
+          `that faction's id EXACTLY as given. Be more willing to suggest a faction than a campaign — most ` +
+          `purposeful endeavors belong to some domain. Return empty string only when the quest is genuinely ` +
+          `domain-agnostic (e.g. "buy groceries", "call mom") or when the chronicler has no factions. Never ` +
+          `invent an id that wasn't in the context.`,
         schema: QUEST_GENERATION_SCHEMA,
       };
   }
