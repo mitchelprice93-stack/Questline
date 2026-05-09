@@ -340,10 +340,13 @@ Test file: `lib/engine/xp.test.ts`. Use Jest. Cover edge cases: zero XP, negativ
 - [ ] App icon (final, all required sizes)
 - [ ] Screenshots: 6 per device size, hero shots from cinematic + character sheet + quest board
 - [ ] App preview video (15–30s) — cinematic excerpt + key features
-- [~] Privacy policy — drafted at `legal/privacy.md`, awaiting legal review + hosting; URL slot in `.env.local` (`EXPO_PUBLIC_PRIVACY_URL`); linked from Settings → Legal
-- [~] Terms of service — drafted at `legal/terms.md`, same flow
+- [x] Privacy policy — live at https://mitchelprice93-stack.github.io/Questline/privacy/, lawyer-reviewed, parchment-themed; URL wired in `.env.local`; linked from Settings → Legal
+- [x] Terms of service — live at https://mitchelprice93-stack.github.io/Questline/terms/, same flow; Texas governing law
 - [x] Bundle identifiers — `com.mitchelprice.questline` for both iOS and Android, set in app.json
 - [x] iOS export-compliance flag — `usesNonExemptEncryption: false` set so TestFlight builds skip the per-build prompt
+- [x] Support email — questline.customerservice@gmail.com (in privacy + terms)
+- [~] App icon — leather-and-gold design saved to `assets/images/icon.png` + `android-icon-foreground.png` + `favicon.png`. Android adaptive-icon background updated to `#3f2e1d` (dark sepia) to match leather. Foreground may need a transparent-bg version once shipped to a device, depending on how Android crops it.
+- [x] App Store copy drafts — `prompts/app-store-copy-draft.md` covers subtitle, description, keywords, promotional text, privacy nutrition labels, support URL — ready to paste when App Store Connect signup happens
 - [ ] App Store copy:
   - Subtitle (30 chars): "Your life, as a quest"
   - Description (4000 chars): emphasize productivity + magic, target ADHD/gamification audiences
