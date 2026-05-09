@@ -67,6 +67,12 @@ export interface Faction {
   user_id: string;
   name: string;
   real_world_domain: string;
+  /** User-editable reputation title within this faction (e.g. "Veteran"
+   *  for the US Navy). Defaults to "Initiate" until renamed. */
+  reputation_title: string;
+  /** Total quests completed for this faction. Auto-incremented by a
+   *  trigger on quest completion; never edited by the client. */
+  reputation_count: number;
   created_at: string;
 }
 

@@ -36,12 +36,14 @@ export async function createFaction(input: {
 
 export async function updateFaction(
   id: string,
-  patch: { name?: string; real_world_domain?: string },
+  patch: { name?: string; real_world_domain?: string; reputation_title?: string },
 ): Promise<Faction> {
-  const trimmed: { name?: string; real_world_domain?: string } = {};
+  const trimmed: { name?: string; real_world_domain?: string; reputation_title?: string } = {};
   if (patch.name !== undefined) trimmed.name = patch.name.trim();
   if (patch.real_world_domain !== undefined)
     trimmed.real_world_domain = patch.real_world_domain.trim();
+  if (patch.reputation_title !== undefined)
+    trimmed.reputation_title = patch.reputation_title.trim() || 'Initiate';
 
   const { data, error } = await supabase
     .from('factions')

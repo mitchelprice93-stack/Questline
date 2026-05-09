@@ -51,6 +51,7 @@ import {
   emptyBuffDraft,
   type BuffDraft,
 } from './_buff-editor';
+import { CampaignPicker } from './_campaign-picker';
 import { ObjectivesEditor } from './_objectives-editor';
 
 const TIERS: QuestTier[] = ['trivial', 'minor', 'standard', 'major', 'legendary'];
@@ -105,6 +106,7 @@ export default function QuestDetail() {
   const [editDeadline, setEditDeadline] = useState('');
   const [editRecurrence, setEditRecurrence] = useState<RecurrenceChoice>('none');
   const [editBuff, setEditBuff] = useState<BuffDraft>(emptyBuffDraft());
+  const [editCampaignId, setEditCampaignId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!id) return;
@@ -252,6 +254,7 @@ export default function QuestDetail() {
     setEditDeadline(formatDeadline(quest.deadline) ?? '');
     setEditRecurrence(recurrenceForUi(quest.recurrence));
     setEditBuff(buffDraftFromQuest(quest));
+    setEditCampaignId(quest.campaign_id);
     setActionError(null);
     setEditMode(true);
   };
@@ -293,6 +296,7 @@ export default function QuestDetail() {
         deadline: deadlineIso,
         recurrence: recurrenceForDb(editRecurrence),
         grantedBuff: buffDraftToPayload(editBuff),
+        campaignId: editCampaignId,
         objectives: editObjectives
           .map((o) => ({ ...o, text: o.text.trim() }))
           .filter((o) => o.text.length > 0),
@@ -407,6 +411,15 @@ export default function QuestDetail() {
           <ObjectivesEditor
             objectives={editObjectives}
             onChange={setEditObjectives}
+            disabled={busy === 'save-edits'}
+          />
+        </View>
+
+        <View className="mb-6">
+          <Text className="mb-2 font-body text-xl text-stone-700">Campaign (optional)</Text>
+          <CampaignPicker
+            value={editCampaignId}
+            onChange={setEditCampaignId}
             disabled={busy === 'save-edits'}
           />
         </View>

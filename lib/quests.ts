@@ -44,6 +44,9 @@ export interface CreateQuestInput {
   recurrence?: QuestRecurrence;
   /** Optional pre-declared buff awarded on completion if its condition is met. */
   grantedBuff?: GrantedBuff | null;
+  /** Optional campaign this quest contributes to. Completing the quest
+   *  auto-advances the campaign's progress_pct via DB trigger. */
+  campaignId?: string | null;
 }
 
 function buffColumns(buff: GrantedBuff | null | undefined) {
@@ -127,6 +130,7 @@ export async function createQuest(input: CreateQuestInput): Promise<Quest> {
       deadline: input.deadline,
       objectives: input.objectives ?? [],
       recurrence: input.recurrence ?? null,
+      campaign_id: input.campaignId ?? null,
       ...buffColumns(input.grantedBuff),
     })
     .select()
@@ -195,6 +199,9 @@ export interface UpdateQuestInput {
   recurrence: QuestRecurrence;
   /** Pass null to remove the granted buff; omit to leave unchanged. */
   grantedBuff?: GrantedBuff | null;
+  /** Pass null to detach the quest from its campaign, or undefined to
+   *  leave unchanged. */
+  campaignId?: string | null;
 }
 
 /**
@@ -221,6 +228,7 @@ export async function updateQuest(questId: string, input: UpdateQuestInput): Pro
     objectives: input.objectives,
     recurrence: input.recurrence,
     ...(input.grantedBuff !== undefined ? buffColumns(input.grantedBuff) : {}),
+    ...(input.campaignId !== undefined ? { campaign_id: input.campaignId } : {}),
   };
   const { data, error } = await supabase
     .from('quests')

@@ -334,8 +334,16 @@ export default function CharacterSheet() {
               disabled={editingFactionId !== null}
               className="rounded-md border border-stone-800 bg-amber-50/40 px-4 py-3 active:bg-amber-100/60"
             >
-              <Text className="font-body-medium text-2xl text-stone-900">{f.name}</Text>
+              <View className="flex-row items-baseline justify-between">
+                <Text className="font-body-medium text-2xl text-stone-900">{f.name}</Text>
+                <Text className="font-display text-base uppercase tracking-widest text-amber-800">
+                  {f.reputation_title}
+                </Text>
+              </View>
               <Text className="font-body text-lg text-stone-500">{f.real_world_domain}</Text>
+              <Text className="mt-1 font-body text-sm text-stone-600">
+                {f.reputation_count} {f.reputation_count === 1 ? 'deed' : 'deeds'} inscribed
+              </Text>
             </Pressable>
           ),
         )}
@@ -428,16 +436,24 @@ export default function CharacterSheet() {
               disabled={editingCampaignId !== null}
               className="rounded-md border border-stone-800 bg-amber-50/40 px-4 py-3 active:bg-amber-100/60"
             >
-              <Text className="font-body-medium text-2xl text-stone-900">{c.arc_name}</Text>
+              <View className="flex-row items-baseline justify-between">
+                <Text className="flex-1 pr-3 font-body-medium text-2xl text-stone-900">
+                  {c.arc_name}
+                </Text>
+                <Text className="font-display text-2xl text-amber-800">
+                  {c.progress_pct}%
+                </Text>
+              </View>
               <Text className="font-body text-lg text-stone-500">{c.real_world_goal}</Text>
-              {c.progress_pct > 0 ? (
-                <View className="mt-2 h-1 overflow-hidden rounded-full bg-amber-100/40">
-                  <View
-                    className="h-1 rounded-full bg-amber-500"
-                    style={{ width: `${c.progress_pct}%` }}
-                  />
-                </View>
-              ) : null}
+              {/* Always-visible progress bar so a fresh 0% campaign still shows
+                  the rail it'll fill into. Thicker than before so the visual
+                  is more rewarding as quests rack up. */}
+              <View className="mt-3 h-2 overflow-hidden rounded-full bg-amber-100/60">
+                <View
+                  className="h-2 rounded-full bg-amber-600"
+                  style={{ width: `${Math.max(c.progress_pct, 1)}%` }}
+                />
+              </View>
             </Pressable>
           ),
         )}
@@ -535,7 +551,11 @@ function formatBuffRemaining(iso: string | null): string | null {
 interface FactionEditorProps {
   initial: Faction | null;
   busy: boolean;
-  onSave: (patch: { name?: string; real_world_domain?: string }) => void | Promise<void>;
+  onSave: (patch: {
+    name?: string;
+    real_world_domain?: string;
+    reputation_title?: string;
+  }) => void | Promise<void>;
   onCancel: () => void;
   onDelete?: () => void | Promise<void>;
 }
@@ -543,6 +563,7 @@ interface FactionEditorProps {
 function FactionEditor({ initial, busy, onSave, onCancel, onDelete }: FactionEditorProps) {
   const [name, setName] = useState(initial?.name ?? '');
   const [domain, setDomain] = useState(initial?.real_world_domain ?? '');
+  const [reputation, setReputation] = useState(initial?.reputation_title ?? 'Initiate');
   const canSave = name.trim().length > 0 && domain.trim().length > 0 && !busy;
 
   return (
@@ -570,9 +591,26 @@ function FactionEditor({ initial, busy, onSave, onCancel, onDelete }: FactionEdi
         multiline
         className="mb-3 rounded-md border border-stone-700  px-3 py-2 font-body text-stone-900"
       />
+      <Text className="mb-1 font-display text-base uppercase tracking-widest text-stone-500">
+        Reputation title
+      </Text>
+      <TextInput
+        value={reputation}
+        onChangeText={setReputation}
+        placeholder="e.g. Veteran, Senior Engineer, Master Smith"
+        placeholderTextColor="#57534e"
+        editable={!busy}
+        className="mb-1 rounded-md border border-stone-700 px-3 py-2 font-body text-stone-900"
+      />
+      <Text className="mb-3 font-body text-sm text-stone-600">
+        Your standing within this faction. Edit when your real-world rank
+        changes — the Tome only counts; you name.
+      </Text>
       <View className="flex-row gap-2">
         <Pressable
-          onPress={() => onSave({ name, real_world_domain: domain })}
+          onPress={() =>
+            onSave({ name, real_world_domain: domain, reputation_title: reputation })
+          }
           disabled={!canSave}
           className={`flex-1 rounded-md px-3 py-2 ${
             canSave ? 'bg-amber-600 active:bg-amber-700' : 'bg-amber-100/40'
