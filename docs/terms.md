@@ -1,3 +1,9 @@
+---
+layout: default
+title: Terms of Service
+permalink: /terms/
+---
+
 # Questline · Terms of Service
 
 > **DRAFT — review with legal counsel before publishing.** This is a
@@ -5,8 +11,8 @@
 > may need additional clauses depending on jurisdiction and your risk
 > tolerance.
 
-**Effective date:** _replace before publication_
-**Last updated:** _replace before publication_
+**Effective date:** 2026-05-08
+**Last updated:** 2026-05-08
 
 ## Agreement
 

@@ -1,3 +1,9 @@
+---
+layout: default
+title: Privacy Policy
+permalink: /privacy/
+---
+
 # Questline · Privacy Policy
 
 > **DRAFT — review with legal counsel before publishing.** This document
@@ -6,8 +12,8 @@
 > jurisdiction's requirements (GDPR, CCPA, COPPA, etc.). Treat as a
 > starting point.
 
-**Effective date:** _replace before publication_
-**Last updated:** _replace before publication_
+**Effective date:** 2026-05-08
+**Last updated:** 2026-05-08
 
 ## Who we are
 

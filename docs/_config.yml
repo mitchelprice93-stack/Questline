@@ -1,0 +1,27 @@
+# GitHub Pages config for Questline's legal pages.
+#
+# Uses the cayman theme (clean, no-frills, no marketing widgets) which
+# is fine for legal documents. Output URLs:
+#   https://mitchelprice93-stack.github.io/Questline/         (landing)
+#   https://mitchelprice93-stack.github.io/Questline/privacy/
+#   https://mitchelprice93-stack.github.io/Questline/terms/
+#
+# Once GitHub Pages is enabled in repo settings, every push to main
+# rebuilds the site automatically.
+
+title: Questline
+description: Your life, as a quest.
+theme: jekyll-theme-cayman
+
+# The repo serves at /Questline/ since it's not a user-page repo.
+# Jekyll needs to know that for absolute links / asset paths.
+baseurl: /Questline
+url: https://mitchelprice93-stack.github.io
+
+# Pretty URLs without the .html suffix.
+permalink: pretty
+
+# Don't try to render top-level repo files; just the docs/ folder.
+exclude:
+  - README.md
+  - LICENSE
