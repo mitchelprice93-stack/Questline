@@ -52,9 +52,12 @@ export interface GeneratedQuest {
   fromFallback: boolean;
 }
 
-// 15s — generous for a Sonnet round-trip. Spec only pins 6s for character
-// creation; quest generation has no fixed timeout but must feel responsive.
-const AI_TIMEOUT_MS = 15_000;
+// 30s — Sonnet 4.6 with thinking disabled usually returns in 3-8s, but
+// we've seen occasional 15-25s spikes under Anthropic load. The user
+// stays on a loading spinner the whole time, so erring on the side of
+// "wait for the real answer" beats silently dropping to the templated
+// fallback.
+const AI_TIMEOUT_MS = 30_000;
 
 function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
   return new Promise<T>((resolve, reject) => {
