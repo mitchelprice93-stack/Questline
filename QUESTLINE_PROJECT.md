@@ -340,6 +340,10 @@ Test file: `lib/engine/xp.test.ts`. Use Jest. Cover edge cases: zero XP, negativ
 - [ ] App icon (final, all required sizes)
 - [ ] Screenshots: 6 per device size, hero shots from cinematic + character sheet + quest board
 - [ ] App preview video (15–30s) — cinematic excerpt + key features
+- [~] Privacy policy — drafted at `legal/privacy.md`, awaiting legal review + hosting; URL slot in `.env.local` (`EXPO_PUBLIC_PRIVACY_URL`); linked from Settings → Legal
+- [~] Terms of service — drafted at `legal/terms.md`, same flow
+- [x] Bundle identifiers — `com.mitchelprice.questline` for both iOS and Android, set in app.json
+- [x] iOS export-compliance flag — `usesNonExemptEncryption: false` set so TestFlight builds skip the per-build prompt
 - [ ] App Store copy:
   - Subtitle (30 chars): "Your life, as a quest"
   - Description (4000 chars): emphasize productivity + magic, target ADHD/gamification audiences

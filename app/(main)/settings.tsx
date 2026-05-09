@@ -1,4 +1,5 @@
 import { useRouter } from 'expo-router';
+import * as WebBrowser from 'expo-web-browser';
 import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 
@@ -76,6 +77,28 @@ export default function Settings() {
 
   const [deleteBusy, setDeleteBusy] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+
+  // Public URLs for the privacy policy and terms of service. Once those
+  // pages are hosted (GitHub Pages, Notion, Termly — your call), drop the
+  // URLs into .env.local under EXPO_PUBLIC_PRIVACY_URL / _TERMS_URL.
+  // Until then the buttons surface a "coming soon" message.
+  const privacyUrl = process.env.EXPO_PUBLIC_PRIVACY_URL ?? null;
+  const termsUrl = process.env.EXPO_PUBLIC_TERMS_URL ?? null;
+
+  const onOpenLegal = async (url: string | null, label: string) => {
+    if (!url) {
+      await showInfoMessage(
+        `${label} forthcoming`,
+        `${label} is being prepared by the scribes. It will be hosted at a public URL before the App Store gates open.`,
+      );
+      return;
+    }
+    try {
+      await WebBrowser.openBrowserAsync(url);
+    } catch (e) {
+      console.warn('legal browser open failed', e);
+    }
+  };
 
   const onExport = async () => {
     setExportError(null);
@@ -426,6 +449,23 @@ export default function Settings() {
           />
         </View>
       </Pressable>
+
+      {/* Legal */}
+      <View className="mt-8">
+        <SectionHeader>Legal</SectionHeader>
+        <Pressable
+          onPress={() => onOpenLegal(privacyUrl, 'Privacy policy')}
+          className="mb-3 rounded-md border border-stone-700 bg-amber-50/40 px-4 py-3 active:bg-amber-100/60"
+        >
+          <Text className="text-center font-body text-lg text-stone-800">Privacy policy</Text>
+        </Pressable>
+        <Pressable
+          onPress={() => onOpenLegal(termsUrl, 'Terms of service')}
+          className="mb-8 rounded-md border border-stone-700 bg-amber-50/40 px-4 py-3 active:bg-amber-100/60"
+        >
+          <Text className="text-center font-body text-lg text-stone-800">Terms of service</Text>
+        </Pressable>
+      </View>
       </ScrollView>
     </ParchmentScreen>
   );
