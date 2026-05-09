@@ -20,6 +20,14 @@ interface Step {
   title: string;
   body: string;
   nextLabel: string;
+  /**
+   * 'tight' (default): asymmetric pad (2px top, 6px bottom) with no Y shift —
+   * suits real DOM-measured targets (the + button, status tabs).
+   * 'loose': symmetric pad with a 10px downward translation — suits the
+   * virtual tab-bar rect computed from screen.height that sits a touch high
+   * versus where the bar actually paints.
+   */
+  spotlightMode?: 'tight' | 'loose';
 }
 
 export const TUTORIAL_STEPS: Step[] = [
@@ -58,6 +66,7 @@ export const TUTORIAL_STEPS: Step[] = [
       'The Quest Board sits beside your Character — your level, factions, campaigns, and any ' +
       'modifiers in play — and Settings, where audio, notifications, and your chronicle export live.',
     nextLabel: 'Continue',
+    spotlightMode: 'loose',
   },
   {
     targetId: null,
@@ -100,7 +109,11 @@ export function TutorialOverlay() {
       style={[StyleSheet.absoluteFillObject, styles.layer]}
     >
       {target ? (
-        <SpotlightScrim target={target} screen={screen} />
+        <SpotlightScrim
+          target={target}
+          screen={screen}
+          mode={current.spotlightMode ?? 'tight'}
+        />
       ) : (
         <View style={[StyleSheet.absoluteFillObject, styles.fullScrim]} pointerEvents="auto" />
       )}
@@ -124,20 +137,21 @@ export function TutorialOverlay() {
 interface SpotlightScrimProps {
   target: TargetRect;
   screen: { width: number; height: number };
+  mode: 'tight' | 'loose';
 }
 
-function SpotlightScrim({ target, screen }: SpotlightScrimProps) {
-  // Even with measureInWindow on web returning correct viewport coords,
-  // the ring reads as floating above the element by a noticeable margin.
-  // Shift the whole hole down by Y_OFFSET so it visually centers on the
-  // element. Keep symmetric padding for breathing room.
-  const Y_OFFSET = 10;
+function SpotlightScrim({ target, screen, mode }: SpotlightScrimProps) {
+  // Two padding profiles. 'tight' hugs DOM-measured targets (+ button,
+  // status tabs); 'loose' suits virtual rects (tab bar) that sit a touch
+  // high vs where the element actually paints, so we add a downward shift.
   const padX = 6;
-  const padY = 4;
+  const padTop = mode === 'tight' ? 2 : 4;
+  const padBottom = mode === 'tight' ? 6 : 4;
+  const yShift = mode === 'tight' ? 0 : 10;
   const x = Math.max(0, target.x - padX);
-  const y = Math.max(0, target.y - padY + Y_OFFSET);
+  const y = Math.max(0, target.y - padTop + yShift);
   const w = Math.min(screen.width - x, target.width + padX * 2);
-  const h = Math.min(screen.height - y, target.height + padY * 2);
+  const h = Math.min(screen.height - y, target.height + padTop + padBottom);
 
   return (
     <>

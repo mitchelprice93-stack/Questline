@@ -75,8 +75,6 @@ export async function retitleFactionFromQuest(
   factionId: string,
   quest: Pick<Quest, 'title' | 'description' | 'tier' | 'classification'>,
 ): Promise<RetitleResult | null> {
-  console.log('[retitle] starting', { factionId, questTier: quest.tier, questTitle: quest.title });
-
   // Fetch the latest faction row — post-trigger so reputation_count is
   // current. RLS gates this to the caller's own factions.
   const { data, error } = await supabase
@@ -85,15 +83,10 @@ export async function retitleFactionFromQuest(
     .eq('id', factionId)
     .maybeSingle();
   if (error || !data) {
-    console.warn('[retitle] faction lookup failed', { error, factionId });
+    console.warn('[retitle] faction lookup failed', error);
     return null;
   }
   const faction = data as Faction;
-  console.log('[retitle] loaded faction', {
-    name: faction.name,
-    current_title: faction.reputation_title,
-    count: faction.reputation_count,
-  });
 
   const payload: RetitlePayload = {
     faction: {
@@ -117,20 +110,12 @@ export async function retitleFactionFromQuest(
       'reputation_retitle',
     );
     const proposed = result.data.new_reputation_title.trim();
-    console.log('[retitle] AI proposed', { proposed, previous: faction.reputation_title });
-    if (!proposed) {
-      console.warn('[retitle] AI returned empty title; skipping');
-      return null;
-    }
+    if (!proposed) return null;
     // Only skip if the AI returned EXACTLY the same string we already
     // have. Case differences ("Initiate" vs "initiate") are kept as a
     // change so the user gets feedback that something happened.
-    if (proposed === faction.reputation_title.trim()) {
-      console.log('[retitle] AI returned identical title; skipping');
-      return null;
-    }
+    if (proposed === faction.reputation_title.trim()) return null;
     await updateFaction(faction.id, { reputation_title: proposed });
-    console.log('[retitle] persisted', { newTitle: proposed });
     return { newTitle: proposed, previousTitle: faction.reputation_title };
   } catch (e) {
     if (e instanceof ClaudeProxyError && e.isRateLimited()) {
