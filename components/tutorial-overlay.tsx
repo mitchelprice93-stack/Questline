@@ -127,12 +127,16 @@ interface SpotlightScrimProps {
 }
 
 function SpotlightScrim({ target, screen }: SpotlightScrimProps) {
-  // Pad the hole slightly so the highlight doesn't kiss the element's edge.
-  const pad = 8;
-  const x = Math.max(0, target.x - pad);
-  const y = Math.max(0, target.y - pad);
-  const w = Math.min(screen.width - x, target.width + pad * 2);
-  const h = Math.min(screen.height - y, target.height + pad * 2);
+  // Tight padding so the ring traces the element's edge rather than
+  // floating above it. Side/bottom kept slightly larger for breathing
+  // room; top is tighter because a top-heavy box reads as misaligned.
+  const padX = 6;
+  const padTop = 2;
+  const padBottom = 6;
+  const x = Math.max(0, target.x - padX);
+  const y = Math.max(0, target.y - padTop);
+  const w = Math.min(screen.width - x, target.width + padX * 2);
+  const h = Math.min(screen.height - y, target.height + padTop + padBottom);
 
   return (
     <>

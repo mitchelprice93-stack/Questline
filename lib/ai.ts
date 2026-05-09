@@ -23,7 +23,8 @@ export interface ClaudeProxyResult<T> {
 export type ClaudeProxyEndpoint =
   | 'character_creation'
   | 'quest_generation'
-  | 'level_up_narration';
+  | 'level_up_narration'
+  | 'reputation_retitle';
 
 export class ClaudeProxyError extends Error {
   constructor(

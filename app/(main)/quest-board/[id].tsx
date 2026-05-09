@@ -30,6 +30,7 @@ import {
 } from '../../../lib/engine/xp';
 import { generateLevelUpNarration } from '../../../lib/level-up';
 import { ParchmentScreen } from '../../../lib/parchment';
+import { retitleFactionFromQuest, shouldRetitle } from '../../../lib/reputation';
 import { playSfx } from '../../../lib/sfx';
 import {
   abandonQuest,
@@ -125,6 +126,21 @@ export default function QuestDetail() {
     };
   }, [id]);
 
+  // Awaits the (already-running) retitle call and shows a follow-up
+  // message if the Archivist proposed a new title. Silent when the
+  // promise resolves to null — the AI either declined to retitle, the
+  // quest didn't qualify, or the call failed (logged to console).
+  const announceRetitle = async (
+    pending: Promise<{ newTitle: string; previousTitle: string } | null>,
+  ) => {
+    const result = await pending;
+    if (!result) return;
+    await showInfoMessage(
+      'The Tome inscribes a new standing',
+      `${result.previousTitle} → ${result.newTitle}`,
+    );
+  };
+
   const onComplete = async () => {
     if (!quest) return;
     setBusy('complete');
@@ -137,6 +153,12 @@ export default function QuestDetail() {
       const oldLevel = calculateLevel(profile?.total_xp ?? 0).level;
       const result = await completeQuest(quest.id);
       const { level: newLevel } = calculateLevel(result.newTotalXp);
+      // Major / legendary quests tied to a faction earn a fresh reputation
+      // title from the Archivist. Fire this in parallel with the rest of
+      // the completion UI — its latency shouldn't compound.
+      const retitlePromise = shouldRetitle(quest)
+        ? retitleFactionFromQuest(quest.faction_id as string, quest)
+        : Promise.resolve(null);
       const milestoneLine =
         result.milestoneBonus > 0
           ? ` · streak ${result.newStreak} milestone bonus +${result.milestoneBonus} XP`
@@ -187,6 +209,7 @@ export default function QuestDetail() {
           'Quest completed',
           `+${result.xpChange} XP earned${streakLine}${milestoneLine}${modifierLine}${buffLine}`,
         );
+        await announceRetitle(retitlePromise);
         const fresh = await getQuest(quest.id);
         if (fresh) setQuest(fresh);
         refetchProfile();
@@ -196,7 +219,15 @@ export default function QuestDetail() {
           'Quest completed',
           `+${result.xpChange} XP earned${modifierLine}${buffLine} · ${result.newTotalXp} total`,
         );
+        await announceRetitle(retitlePromise);
         goBack();
+      }
+      // For the level-up branch, the takeover takes over the screen — the
+      // new title quietly persists in the DB and the user sees it on the
+      // Character Sheet next time they look. Still await so the DB write
+      // doesn't race with anything.
+      if (newLevel > oldLevel) {
+        void retitlePromise;
       }
     } catch (e) {
       playSfx('error');

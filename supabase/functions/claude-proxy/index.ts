@@ -43,7 +43,11 @@ const DAILY_COST_CEILING_USD = 0.5;
 const QUEST_GENERATION_DAILY_LIMIT = 50;
 
 interface ProxyRequest {
-  endpoint: 'character_creation' | 'quest_generation' | 'level_up_narration';
+  endpoint:
+    | 'character_creation'
+    | 'quest_generation'
+    | 'level_up_narration'
+    | 'reputation_retitle';
   payload: unknown;
 }
 
@@ -208,6 +212,28 @@ const LEVEL_UP_NARRATION_SCHEMA = {
   required: ['narration'],
 };
 
+// Reputation retitle — fires after a major / legendary quest tied to a
+// faction. The Archivist proposes a new reputation_title that reflects
+// THIS specific deed. Schema is minimal: the model returns one short
+// title, the client decides whether to apply it.
+const REPUTATION_RETITLE_SCHEMA = {
+  type: 'object',
+  additionalProperties: false,
+  properties: {
+    new_reputation_title: {
+      type: 'string',
+      description:
+        "A 1 to 3 word in-voice title reflecting the chronicler's standing within this faction after this specific deed. " +
+        "Examples: a carpenter who completed a 'build a deck' major quest could become 'Joiner', 'Hearthbuilder', or 'Frame-Wright'. " +
+        "A medic who completed a 'lead a clinical trial' legendary quest could become 'Master Healer' or 'Aspirant Sage'. " +
+        "A teacher who completed 'graduate the senior class' legendary quest could become 'Lecturer of the Lectern' or 'Master of Letters'. " +
+        "Match the title's flavor to the faction (carpentry → craft-guild ranks; medicine → healer ranks; service → military ranks). " +
+        "The title should feel like an upgrade from the previous title for legendary quests; for major quests, a sideways move into a more specific role is fine.",
+    },
+  },
+  required: ['new_reputation_title'],
+};
+
 function corsHeaders(): Record<string, string> {
   return {
     'Access-Control-Allow-Origin': '*',
@@ -337,6 +363,19 @@ function buildUserMessage(req: ProxyRequest): { content: string; schema: unknown
           `invent an id that wasn't in the context.`,
         schema: QUEST_GENERATION_SCHEMA,
       };
+    case 'reputation_retitle':
+      return {
+        content:
+          `The chronicler has just completed a notable deed for one of their factions. Context:\n\n${JSON.stringify(req.payload, null, 2)}\n\n` +
+          `Propose a new reputation_title for this faction that reflects THIS specific deed. ` +
+          `It should feel like the Tome inscribed it after watching the work — concrete, in-voice, 1 to 3 words. ` +
+          `For legendary quests, the title should generally feel like an upgrade over the previous one. ` +
+          `For major quests, a sideways move into a more specific role is fine (e.g. "Initiate" → "Joiner of the Brotherhood" ` +
+          `after building a bookshelf, even though "Joiner" isn't strictly higher than "Initiate"). ` +
+          `Avoid bland generics like "Skilled" or "Veteran" unless the previous title was something even blander. ` +
+          `Return JSON with a single 'new_reputation_title' field.`,
+        schema: REPUTATION_RETITLE_SCHEMA,
+      };
   }
 }
 
@@ -351,6 +390,7 @@ function pickModel(endpoint: ProxyRequest['endpoint']): keyof typeof PRICING {
     case 'level_up_narration':
       return 'claude-sonnet-4-6';
     case 'quest_generation':
+    case 'reputation_retitle':
       return 'claude-haiku-4-5-20251001';
   }
 }
@@ -370,6 +410,8 @@ const ENDPOINT_INFERENCE: Record<ProxyRequest['endpoint'], EndpointInferenceConf
   // thinking off for snappy display; cap tokens tight since output is
   // 2-3 sentences.
   level_up_narration: { thinking: { type: 'disabled' }, max_tokens: 512 },
+  // Single short title; thinking off, tokens minimal.
+  reputation_retitle: { thinking: { type: 'disabled' }, max_tokens: 256 },
 };
 
 function calculateCostUsd(
@@ -412,7 +454,9 @@ Deno.serve(async (req) => {
   }
   if (
     !body.endpoint ||
-    !['character_creation', 'quest_generation', 'level_up_narration'].includes(body.endpoint)
+    !['character_creation', 'quest_generation', 'level_up_narration', 'reputation_retitle'].includes(
+      body.endpoint,
+    )
   ) {
     return jsonResponse({ error: 'Invalid or missing endpoint' }, 400);
   }
