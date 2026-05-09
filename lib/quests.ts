@@ -87,7 +87,7 @@ export async function listQuests(status: QuestStatus = 'active'): Promise<Quest[
       .eq('status', status)
       .order(orderColumn, { ascending: false, nullsFirst: false });
     if (error) throw asError(error);
-    const rows = (data ?? []) as Quest[];
+    const rows = (data ?? []) as unknown as Quest[];
     // Update the offline cache on every successful fetch so we have
     // something to show next time the network is missing.
     void cacheQuests(status, rows);
@@ -140,7 +140,7 @@ export async function createQuest(input: CreateQuestInput): Promise<Quest> {
     .select()
     .single();
   if (error) throw asError(error);
-  const quest = data as Quest;
+  const quest = data as unknown as Quest;
   // Schedule deadline reminders. No-op on web / without permission.
   void scheduleDeadlineReminders(quest.id, quest.title, quest.deadline);
   return quest;

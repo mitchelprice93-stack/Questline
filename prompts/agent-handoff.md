@@ -190,6 +190,22 @@ QUESTLINE_PROJECT.md            # the spec — source of truth for what to build
 
 In rough order, most recent first:
 
+- **Approaching-deadline push warnings** — migration
+  `20260509000000_approaching_deadline_warnings.sql`. New
+  `notify_approaching_deadlines(uuid)` function dispatches an Expo push
+  for any active quest whose deadline is within the next 24 hours and
+  hasn't been warned about for the current deadline. Tracking via
+  `quests.deadline_warning_sent_at` + a BEFORE UPDATE trigger that
+  resets it whenever the deadline column changes. Folded into the daily
+  06:00 UTC cron alongside refresh + debuff dispatch. Native-only
+  (Expo push needs the EAS-linked projectId; web no-ops on token
+  registration).
+- **Quest micro-animations** — `lib/animated-number.ts` (RAF-based
+  ease-out cubic counter; Text doesn't accept animated style props for
+  its content) drives the level card's XP / level / progress bar so
+  they tick in sync after a quest completion. New-quest review wraps
+  in an Animated.View with a custom `ParchmentUnfurl` entering animation
+  (scaleY 0.05 → 1 + opacity 0 → 1, 550ms ease-out cubic).
 - **Spotlight tutorial** — `components/tutorial-overlay.tsx` rewritten
   as a 4-rectangle scrim with a hole around a measured target rect +
   glow ring + tooltip card; `lib/tutorial-context.tsx` holds step state
@@ -272,15 +288,9 @@ In rough order, most recent first:
 2. **EAS dev build** for native testing of paywall + push +
    subscriptions: `npx eas-cli build --profile development --platform
    android` once Google products exist.
-3. **Remote push for debuff warnings** — `notify_user_of_debuffs`
-   already exists in DB (migration `20260508000001_push_tokens_*`); needs
-   the cron to call it daily and the Expo push API URL configured.
-4. **Quest micro-animation polish** — XP counter tick-up on the level
-   card (the number animates from old to new total); parchment-unfurl
-   entrance for the new-quest review screen.
-5. **Offline write queue** — companion to read-cache; queue pending
+3. **Offline write queue** — companion to read-cache; queue pending
    mutations and replay on reconnect.
-6. **Apple Sign In** scaffolding (deferred indefinitely per Mitchel —
+4. **Apple Sign In** scaffolding (deferred indefinitely per Mitchel —
    Android-first).
 
 ## Workflow patterns

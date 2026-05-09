@@ -296,6 +296,7 @@ export type Database = {
           completed_at: string | null
           created_at: string
           deadline: string | null
+          deadline_warning_sent_at: string | null
           description: string | null
           faction_id: string | null
           granted_buff_condition: string | null
@@ -320,6 +321,7 @@ export type Database = {
           completed_at?: string | null
           created_at?: string
           deadline?: string | null
+          deadline_warning_sent_at?: string | null
           description?: string | null
           faction_id?: string | null
           granted_buff_condition?: string | null
@@ -344,6 +346,7 @@ export type Database = {
           completed_at?: string | null
           created_at?: string
           deadline?: string | null
+          deadline_warning_sent_at?: string | null
           description?: string | null
           faction_id?: string | null
           granted_buff_condition?: string | null
@@ -492,6 +495,10 @@ export type Database = {
         }[]
       }
       cron_refresh_all_debuffs: { Args: never; Returns: number }
+      notify_approaching_deadlines: {
+        Args: { p_user_id: string }
+        Returns: number
+      }
       notify_user_of_debuffs: { Args: { p_user_id: string }; Returns: number }
       refresh_debuffs_for: { Args: { p_user_id: string }; Returns: undefined }
       refresh_debuffs_for_user: {
