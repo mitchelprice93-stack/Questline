@@ -104,20 +104,24 @@ describe('xpForTier', () => {
 });
 
 describe('applyDifficultyModifier', () => {
-  test('apprentice cuts XP to 75%', () => {
-    expect(applyDifficultyModifier(1000, 'apprentice')).toBe(750);
+  // Multipliers: apprentice 1.5 (easiest, fastest leveling) → legendary 0.75
+  // (hardest, slowest leveling). Inverted from the original spec — harder
+  // difficulty now means slower progression.
+
+  test('apprentice grants 150%', () => {
+    expect(applyDifficultyModifier(1000, 'apprentice')).toBe(1500);
   });
 
-  test('adept is identity', () => {
-    expect(applyDifficultyModifier(1500, 'adept')).toBe(1500);
+  test('adept grants 125%', () => {
+    expect(applyDifficultyModifier(1000, 'adept')).toBe(1250);
   });
 
-  test('master grants 125%', () => {
-    expect(applyDifficultyModifier(1500, 'master')).toBe(1875);
+  test('master is identity (1.0×)', () => {
+    expect(applyDifficultyModifier(1500, 'master')).toBe(1500);
   });
 
-  test('legendary grants 150%', () => {
-    expect(applyDifficultyModifier(1000, 'legendary')).toBe(1500);
+  test('legendary cuts XP to 75%', () => {
+    expect(applyDifficultyModifier(1000, 'legendary')).toBe(750);
   });
 
   test('zero XP stays zero across all difficulties', () => {
@@ -127,7 +131,7 @@ describe('applyDifficultyModifier', () => {
 
   test('rounds to integer', () => {
     // 100 * 0.75 = 75 (clean), but 101 * 0.75 = 75.75 → 76
-    expect(applyDifficultyModifier(101, 'apprentice')).toBe(76);
+    expect(applyDifficultyModifier(101, 'legendary')).toBe(76);
   });
 });
 

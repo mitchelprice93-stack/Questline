@@ -62,14 +62,18 @@ const TIER_XP: Record<QuestTier, number> = {
   legendary: 15000,
 };
 
-// Difficulty multipliers are not pinned in the v1 spec. These defaults give
-// lower difficulties less XP (so players are nudged to step up) and match the
-// schema's default 'adept' = 1.0x baseline. Revisit during balance tuning.
+// Difficulty multipliers — inverted from the original spec so that picking
+// a harder difficulty makes leveling slower (matches gamer convention).
+// apprentice (easiest) earns the most XP per quest; legendary (hardest)
+// earns the least. Master is the new baseline.
+//
+// IMPORTANT: this table is duplicated in the SQL function complete_quest
+// (migration 20260508000003_difficulty_multiplier.sql). Keep them in sync.
 const DIFFICULTY_MULT: Record<Difficulty, number> = {
-  apprentice: 0.75,
-  adept: 1.0,
-  master: 1.25,
-  legendary: 1.5,
+  apprentice: 1.5,
+  adept: 1.25,
+  master: 1.0,
+  legendary: 0.75,
 };
 
 function buildLevelThresholds(maxLevel: number): readonly number[] {

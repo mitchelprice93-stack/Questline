@@ -498,7 +498,8 @@ export default function CharacterSheet() {
         })}
       </View>
       <Text className="font-body text-lg text-stone-500">
-        XP modifier: apprentice 0.75× · adept 1.0× · master 1.25× · legendary 1.5×
+        XP modifier: apprentice 1.5× · adept 1.25× · master 1.0× · legendary 0.75×. Harder
+        difficulty earns less XP per quest.
       </Text>
       </ScrollView>
     </ParchmentScreen>
