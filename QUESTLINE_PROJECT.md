@@ -314,16 +314,21 @@ Test file: `lib/engine/xp.test.ts`. Use Jest. Cover edge cases: zero XP, negativ
 
 ## 5.1 RevenueCat Integration
 - [ ] Configure products in App Store Connect and Google Play Console — needs your hand
-- [ ] Subscription tiers (revised — simpler than original spec):
+- [ ] Subscription tiers (revised — three durations grant the same entitlement):
   - **Free** — full character creation + cinematic + every mechanic. Capped at 5 active quests at any one time.
-  - **Hero** ($3/mo) — uncaps active-quest count; everything else identical.
-- [x] Quest-cap enforcement (server-side trigger) — gates inserts of `status='active'` quests when free-tier user already has 5 active
-- [x] Paywall screen — `app/(main)/paywall.tsx`, in-world copy ("Pledge your oath"), reachable from Settings
+  - **Hero (Questline Pro entitlement)** — uncaps active-quest count. Three pledges:
+    - **Lifetime** ($59.99 one-time)
+    - **Yearly** ($29.99/yr — best value)
+    - **Monthly** ($2.99/mo)
+- [x] Quest-cap enforcement (server-side trigger)
+- [x] Paywall screen — `app/(main)/paywall.tsx`. On native + RC configured, renders `RevenueCatUI.PaywallView` (dashboard-built, A/B-testable). On web / unconfigured falls back to a custom in-world picker with all three tiers.
 - [x] Hero upgrade cinematic — `app/(main)/hero-cinematic.tsx`, plays on purchase / restore success
-- [x] react-native-purchases SDK installed; `lib/purchases.ts` wrapper that gracefully no-ops on web / without API keys
+- [x] react-native-purchases + react-native-purchases-ui SDKs installed; `lib/purchases.ts` wrapper handles configure / login / logout / package fetch / purchase / restore / customer-info, gracefully no-ops on web
+- [x] Customer Center — `app/(main)/customer-center.tsx`, renders `RevenueCatUI.CustomerCenter` for Hero users. Free users see the paywall instead.
 - [ ] Free trial: 7 days — configure in RC dashboard once products exist
 - [x] Restore purchases flow — wired in paywall
 - [x] Receipt validation server-side — `supabase/functions/revenuecat-webhook/index.ts`, deployed; expects bearer-token shared secret in Authorization header
+- [x] Test API key wired in `.env.local` for paywall iteration without App Store products
 
 ## 5.2 Onboarding Polish
 - [ ] First-launch flow: cinematic → permission requests → character creation → first quest

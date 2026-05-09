@@ -46,6 +46,7 @@ export default function MainLayout() {
             Settings → Pledge flow, hidden from the tab bar. */}
         <Tabs.Screen name="paywall" options={{ href: null }} />
         <Tabs.Screen name="hero-cinematic" options={{ href: null }} />
+        <Tabs.Screen name="customer-center" options={{ href: null }} />
       </Tabs>
     </View>
   );

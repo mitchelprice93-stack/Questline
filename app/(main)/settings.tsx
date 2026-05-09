@@ -321,14 +321,24 @@ export default function Settings() {
           className="mb-8 rounded-md border border-amber-700/60 bg-amber-100/40 px-4 py-3 active:bg-amber-100/60"
         >
           <Text className="text-center font-body text-xl text-amber-800">
-            Pledge your oath to the Archivist · $3/month
+            Pledge your oath to the Archivist
           </Text>
           <Text className="mt-1 text-center font-body text-base text-stone-600">
-            Tap to read the offer.
+            Lifetime · Yearly · Monthly. Tap to read the offer.
           </Text>
         </Pressable>
       ) : (
-        <View className="mb-8" />
+        <Pressable
+          onPress={() => router.push('/customer-center')}
+          className="mb-8 rounded-md border border-stone-700 bg-amber-50/40 px-4 py-3 active:bg-amber-100/60"
+        >
+          <Text className="text-center font-body text-xl text-stone-800">
+            Manage subscription
+          </Text>
+          <Text className="mt-1 text-center font-body text-base text-stone-600">
+            View, restore, or cancel your pledge.
+          </Text>
+        </Pressable>
       )}
 
       {/* Notifications */}
