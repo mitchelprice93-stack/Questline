@@ -11,7 +11,7 @@ import { confirmDestructive, showInfoMessage } from '../../lib/dialogs';
 import { errorMessage } from '../../lib/errors';
 import { ParchmentScreen } from '../../lib/parchment';
 import { FREE_TIER_QUEST_CAP } from '../../lib/subscription';
-import { resetTutorial } from '../../lib/tutorial';
+import { useTutorial } from '../../lib/tutorial-context';
 import {
   getCheckInTime,
   getPermissionStatus,
@@ -31,6 +31,7 @@ const CHECK_IN_OPTIONS: { key: 'off' | string; label: string }[] = [
 export default function Settings() {
   const { session, signOut, subscription } = useAuth();
   const router = useRouter();
+  const tutorial = useTutorial();
 
   const [muted, setMuted] = useAudioMuted();
 
@@ -318,12 +319,10 @@ export default function Settings() {
       </Pressable>
 
       <Pressable
-        onPress={async () => {
-          await resetTutorial();
-          await showInfoMessage(
-            'The Tome forgets briefly',
-            'The orientation will play again the next time you visit the Quest Board.',
-          );
+        onPress={() => {
+          // Provider's onStart routes to /quest-board so the spotlight has
+          // its first target on screen.
+          void tutorial.start();
         }}
         className="mb-8 rounded-md border border-stone-700 bg-amber-50/40 px-4 py-3 active:bg-amber-100/60"
       >

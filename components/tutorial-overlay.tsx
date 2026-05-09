@@ -1,115 +1,217 @@
-// First-launch orientation. Mounted once at the (main) layout root,
-// renders as a full-screen overlay if the user hasn't seen it yet.
-// Five short steps in the Archivist's voice, each dismissible. The
-// "Skip" link advances straight to "seen" without forcing the user
-// through every screen.
+// First-launch spotlight tutorial. When active, the overlay either:
+//   - draws a 4-rectangle scrim leaving a "hole" around a target rect
+//     (registered by a <TutorialTarget> elsewhere in the tree), with a
+//     tooltip card pointing at the hole, OR
+//   - falls back to a centered modal card for steps that don't have a
+//     specific UI element to highlight.
+//
+// Mounted once at the (main) layout root inside <TutorialProvider>.
 
 import { useEffect, useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Dimensions, Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
 
-import { hasSeenTutorial, markTutorialSeen } from '../lib/tutorial';
+import { useTutorial, type TargetRect } from '../lib/tutorial-context';
 
 interface Step {
+  /** Centered modal when null. Otherwise the id of a TutorialTarget to spotlight. */
+  targetId: string | null;
   eyebrow: string;
   title: string;
   body: string;
-  /** Label for the advance button on this step. Last step uses "Begin". */
   nextLabel: string;
 }
 
-const STEPS: Step[] = [
+export const TUTORIAL_STEPS: Step[] = [
   {
+    targetId: null,
     eyebrow: 'The Tome opens',
     title: 'Welcome, chronicler',
-    body: "I am the Archivist of Fate. Your endeavors will be inscribed here, day by day. A brief orientation, before the first quill stroke.",
+    body:
+      "I am the Archivist of Fate. Your endeavors will be inscribed here, day by day. " +
+      'A brief orientation, before the first quill stroke.',
     nextLabel: 'Continue',
   },
   {
+    targetId: 'new-quest-button',
     eyebrow: 'The Quest Board',
-    title: 'Forge your endeavors',
-    body: "Each task you mean to undertake becomes a quest. Tap + New to describe what you need to do — the Tome will give it shape, a tier, and a buff you might earn for finishing well.",
+    title: 'Forge a new endeavor',
+    body:
+      "Tap the + when you're ready to inscribe a new quest. Describe what you mean to do " +
+      'in plain language; the Tome will give it shape, a tier, and a buff you might earn for finishing well.',
     nextLabel: 'Continue',
   },
   {
-    eyebrow: 'The Character Sheet',
-    title: 'Your standing in the chronicle',
-    body: "Your level, factions, campaigns, and any active modifiers live on the Character tab. Modifiers are buffs you've earned and debuffs the Tome has noted — both fade in time.",
+    targetId: 'quest-status-tabs',
+    eyebrow: 'The Tome remembers',
+    title: 'Active, completed, abandoned',
+    body:
+      'Every quest passes through these three states. Active is the work at hand; ' +
+      "Completed is the work the Tome has inscribed; Abandoned is the work you've set aside.",
     nextLabel: 'Continue',
   },
   {
-    eyebrow: 'Recurring deeds',
-    title: 'Daily and weekly quests',
-    body: "Quests can recur. A daily quest resets each morning; a weekly one each week. Completing them in succession builds streaks, and the Tome rewards persistence.",
+    targetId: 'tab-bar',
+    eyebrow: 'Beneath the page',
+    title: 'Your tabs',
+    body:
+      'The Quest Board sits beside your Character — your level, factions, campaigns, and any ' +
+      'modifiers in play — and Settings, where audio, notifications, and your chronicle export live.',
     nextLabel: 'Continue',
   },
   {
-    eyebrow: 'Settings',
-    title: 'When the time comes',
-    body: "Audio, notifications, your chronicle export, and — should you wish — your pledge to the Archivist all live in Settings. The Tome serves at your pace.",
+    targetId: null,
+    eyebrow: 'Begin',
+    title: 'The Tome opens once more',
+    body:
+      'You may revisit this orientation at any time from Settings. ' +
+      'Now — what shall we inscribe first?',
     nextLabel: 'Begin',
   },
 ];
 
+// Tooltip dimensions used to decide whether it sits above or below the hole.
+const TOOLTIP_MAX_WIDTH = 360;
+const TOOLTIP_GAP = 16;
+
 export function TutorialOverlay() {
-  const [visible, setVisible] = useState(false);
-  const [step, setStep] = useState(0);
+  const { step, isActive, getTarget, next, skip } = useTutorial();
+  const [screen, setScreen] = useState(() => Dimensions.get('window'));
 
   useEffect(() => {
-    let cancelled = false;
-    void hasSeenTutorial().then((seen) => {
-      if (!cancelled) setVisible(!seen);
-    });
-    return () => {
-      cancelled = true;
-    };
+    const sub = Dimensions.addEventListener('change', ({ window }) => setScreen(window));
+    return () => sub.remove();
   }, []);
 
-  const onNext = async () => {
-    if (step + 1 < STEPS.length) {
-      setStep(step + 1);
-      return;
-    }
-    await markTutorialSeen();
-    setVisible(false);
-  };
+  if (!isActive) return null;
+  const current = TUTORIAL_STEPS[step];
+  if (!current) return null;
 
-  const onSkip = async () => {
-    await markTutorialSeen();
-    setVisible(false);
-  };
-
-  if (!visible) return null;
-
-  // STEPS is constant, length validated above; the index is always in range.
-  const current = STEPS[step] as Step;
+  const target = current.targetId ? getTarget(current.targetId) : null;
+  // Bare scrim until the target has reported its layout; avoids a "no hole"
+  // flash that looks like a regular modal.
+  const isLast = step + 1 >= TUTORIAL_STEPS.length;
 
   return (
     <Animated.View
-      entering={FadeIn.duration(400)}
-      exiting={FadeOut.duration(250)}
-      style={[StyleSheet.absoluteFillObject, styles.scrim]}
+      entering={FadeIn.duration(300)}
+      exiting={FadeOut.duration(200)}
+      pointerEvents="box-none"
+      style={[StyleSheet.absoluteFillObject, styles.layer]}
     >
-      <View style={styles.cardWrap}>
+      {target ? (
+        <SpotlightScrim target={target} screen={screen} />
+      ) : (
+        <View style={[StyleSheet.absoluteFillObject, styles.fullScrim]} pointerEvents="auto" />
+      )}
+      <Tooltip
+        target={target}
+        screen={screen}
+        eyebrow={current.eyebrow}
+        title={current.title}
+        body={current.body}
+        nextLabel={current.nextLabel}
+        showSkip={!isLast}
+        onNext={next}
+        onSkip={skip}
+        stepIndex={step}
+        totalSteps={TUTORIAL_STEPS.length}
+      />
+    </Animated.View>
+  );
+}
+
+interface SpotlightScrimProps {
+  target: TargetRect;
+  screen: { width: number; height: number };
+}
+
+function SpotlightScrim({ target, screen }: SpotlightScrimProps) {
+  // Pad the hole slightly so the highlight doesn't kiss the element's edge.
+  const pad = 8;
+  const x = Math.max(0, target.x - pad);
+  const y = Math.max(0, target.y - pad);
+  const w = Math.min(screen.width - x, target.width + pad * 2);
+  const h = Math.min(screen.height - y, target.height + pad * 2);
+
+  return (
+    <>
+      {/* Top */}
+      <View style={[styles.scrimRect, { top: 0, left: 0, right: 0, height: y }]} />
+      {/* Bottom */}
+      <View
+        style={[
+          styles.scrimRect,
+          { top: y + h, left: 0, right: 0, bottom: 0 },
+        ]}
+      />
+      {/* Left */}
+      <View style={[styles.scrimRect, { top: y, left: 0, width: x, height: h }]} />
+      {/* Right */}
+      <View
+        style={[
+          styles.scrimRect,
+          { top: y, left: x + w, right: 0, height: h },
+        ]}
+      />
+      {/* Transparent block over the hole — keeps the user from tapping
+          the spotlit element while the tutorial is open. They use Next
+          (or Skip) to dismiss; once dismissed they have full access. */}
+      <View
+        style={{ position: 'absolute', top: y, left: x, width: w, height: h }}
+      />
+      {/* Glow ring around the hole. */}
+      <View
+        pointerEvents="none"
+        style={[
+          styles.spotlightRing,
+          { top: y - 2, left: x - 2, width: w + 4, height: h + 4 },
+        ]}
+      />
+    </>
+  );
+}
+
+interface TooltipProps {
+  target: TargetRect | null;
+  screen: { width: number; height: number };
+  eyebrow: string;
+  title: string;
+  body: string;
+  nextLabel: string;
+  showSkip: boolean;
+  onNext: () => void;
+  onSkip: () => void;
+  stepIndex: number;
+  totalSteps: number;
+}
+
+function Tooltip({
+  target,
+  screen,
+  eyebrow,
+  title,
+  body,
+  nextLabel,
+  showSkip,
+  onNext,
+  onSkip,
+  stepIndex,
+  totalSteps,
+}: TooltipProps) {
+  // Centered card when there's no target.
+  if (!target) {
+    return (
+      <View pointerEvents="box-none" style={[StyleSheet.absoluteFillObject, styles.centerWrap]}>
         <View style={styles.card}>
-          <Text style={styles.eyebrow}>{current.eyebrow}</Text>
-          <Text style={styles.title}>{current.title}</Text>
-          <Text style={styles.body}>{current.body}</Text>
-
-          <View style={styles.dotsRow}>
-            {STEPS.map((_, i) => (
-              <View
-                key={i}
-                style={[styles.dot, i === step ? styles.dotActive : null]}
-              />
-            ))}
-          </View>
-
+          <Text style={styles.eyebrow}>{eyebrow}</Text>
+          <Text style={styles.title}>{title}</Text>
+          <Text style={styles.body}>{body}</Text>
+          <Dots count={totalSteps} active={stepIndex} />
           <Pressable onPress={onNext} style={styles.nextBtn}>
-            <Text style={styles.nextLabel}>{current.nextLabel}</Text>
+            <Text style={styles.nextLabel}>{nextLabel}</Text>
           </Pressable>
-
-          {step + 1 < STEPS.length ? (
+          {showSkip ? (
             <Pressable onPress={onSkip} style={styles.skipBtn}>
               <Text style={styles.skipLabel}>Skip the orientation</Text>
             </Pressable>
@@ -118,31 +220,100 @@ export function TutorialOverlay() {
           )}
         </View>
       </View>
-    </Animated.View>
+    );
+  }
+
+  // Decide whether the tooltip sits above or below the highlighted target.
+  // Estimate ~280px tall; if there's room below, prefer below.
+  const estimatedHeight = 280;
+  const spaceBelow = screen.height - (target.y + target.height);
+  const placeBelow = spaceBelow >= estimatedHeight + TOOLTIP_GAP * 2;
+
+  const top = placeBelow
+    ? target.y + target.height + TOOLTIP_GAP
+    : Math.max(TOOLTIP_GAP, target.y - estimatedHeight - TOOLTIP_GAP);
+
+  // Center horizontally on the target, clamped to the screen with margins.
+  const margin = 16;
+  const targetCenter = target.x + target.width / 2;
+  const ttWidth = Math.min(TOOLTIP_MAX_WIDTH, screen.width - margin * 2);
+  let left = targetCenter - ttWidth / 2;
+  left = Math.max(margin, Math.min(screen.width - margin - ttWidth, left));
+
+  return (
+    <View
+      pointerEvents="box-none"
+      style={[StyleSheet.absoluteFillObject]}
+    >
+      <View
+        pointerEvents="auto"
+        style={[styles.card, { position: 'absolute', top, left, width: ttWidth }]}
+      >
+        <Text style={styles.eyebrow}>{eyebrow}</Text>
+        <Text style={styles.title}>{title}</Text>
+        <Text style={styles.body}>{body}</Text>
+        <Dots count={totalSteps} active={stepIndex} />
+        <Pressable onPress={onNext} style={styles.nextBtn}>
+          <Text style={styles.nextLabel}>{nextLabel}</Text>
+        </Pressable>
+        {showSkip ? (
+          <Pressable onPress={onSkip} style={styles.skipBtn}>
+            <Text style={styles.skipLabel}>Skip the orientation</Text>
+          </Pressable>
+        ) : (
+          <View style={{ height: 12 }} />
+        )}
+      </View>
+    </View>
   );
 }
 
-// Inline StyleSheet rather than NativeWind here so the overlay always
-// renders correctly even if the Tailwind context isn't in scope (it is,
-// but absolute overlays in nested layouts have bitten us before).
+function Dots({ count, active }: { count: number; active: number }) {
+  return (
+    <View style={styles.dotsRow}>
+      {Array.from({ length: count }).map((_, i) => (
+        <View key={i} style={[styles.dot, i === active ? styles.dotActive : null]} />
+      ))}
+    </View>
+  );
+}
+
+const SCRIM_COLOR = 'rgba(31, 26, 23, 0.78)';
+
 const styles = StyleSheet.create({
-  scrim: {
-    backgroundColor: 'rgba(31, 26, 23, 0.78)',
+  layer: {
+    zIndex: 100,
+  },
+  fullScrim: {
+    backgroundColor: SCRIM_COLOR,
+  },
+  scrimRect: {
+    position: 'absolute',
+    backgroundColor: SCRIM_COLOR,
+  },
+  spotlightRing: {
+    position: 'absolute',
+    borderRadius: 8,
+    borderWidth: 2,
+    borderColor: '#fcd34d',
+    shadowColor: '#fcd34d',
+    shadowOpacity: 0.6,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 0 },
+    elevation: 6,
+  },
+  centerWrap: {
     justifyContent: 'center',
     alignItems: 'center',
     padding: 24,
-    zIndex: 100,
-  },
-  cardWrap: {
-    width: '100%',
-    maxWidth: 480,
   },
   card: {
     backgroundColor: '#f5e7c1',
     borderColor: '#92400e',
     borderWidth: 1,
     borderRadius: 6,
-    padding: 28,
+    padding: 24,
+    maxWidth: 480,
     shadowColor: '#000',
     shadowOpacity: 0.4,
     shadowRadius: 24,
@@ -151,31 +322,31 @@ const styles = StyleSheet.create({
   },
   eyebrow: {
     fontFamily: 'Cinzel_400Regular',
-    fontSize: 13,
+    fontSize: 12,
     letterSpacing: 3,
     color: '#92400e',
     textTransform: 'uppercase',
-    marginBottom: 8,
+    marginBottom: 6,
   },
   title: {
     fontFamily: 'Cinzel_700Bold',
-    fontSize: 26,
+    fontSize: 22,
     color: '#1f1a17',
-    marginBottom: 16,
-    lineHeight: 32,
+    marginBottom: 12,
+    lineHeight: 28,
   },
   body: {
     fontFamily: 'EBGaramond_400Regular',
-    fontSize: 18,
-    lineHeight: 28,
+    fontSize: 16,
+    lineHeight: 24,
     color: '#1f1a17',
-    marginBottom: 24,
+    marginBottom: 18,
   },
   dotsRow: {
     flexDirection: 'row',
     justifyContent: 'center',
     gap: 8,
-    marginBottom: 20,
+    marginBottom: 16,
   },
   dot: {
     width: 8,
@@ -190,23 +361,23 @@ const styles = StyleSheet.create({
   nextBtn: {
     backgroundColor: '#d97706',
     borderRadius: 6,
-    paddingVertical: 14,
+    paddingVertical: 12,
     alignItems: 'center',
   },
   nextLabel: {
     fontFamily: 'Cinzel_400Regular',
-    fontSize: 18,
+    fontSize: 16,
     color: '#fef3c7',
     letterSpacing: 1.5,
   },
   skipBtn: {
-    paddingVertical: 12,
+    paddingVertical: 10,
     alignItems: 'center',
-    marginTop: 6,
+    marginTop: 4,
   },
   skipLabel: {
     fontFamily: 'EBGaramond_400Regular',
-    fontSize: 14,
+    fontSize: 13,
     color: '#5a4a3a',
   },
 });

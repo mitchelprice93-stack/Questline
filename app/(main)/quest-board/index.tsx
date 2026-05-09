@@ -2,6 +2,7 @@ import { Link, useFocusEffect } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, Text, TextInput, View } from 'react-native';
 
+import { TutorialTarget } from '../../../components/tutorial-target';
 import { useAuth } from '../../../lib/auth';
 import {
   deadlineUrgency,
@@ -124,14 +125,17 @@ export default function QuestBoard() {
             </Text>
           ) : null}
         </View>
-        <Link href="/quest-board/new" asChild>
-          <Pressable className="rounded-md bg-amber-600 px-3 py-2 active:bg-amber-700">
-            <Text className="font-body-medium text-xl text-stone-900">+ New</Text>
-          </Pressable>
-        </Link>
+        <TutorialTarget id="new-quest-button">
+          <Link href="/quest-board/new" asChild>
+            <Pressable className="rounded-md bg-amber-600 px-3 py-2 active:bg-amber-700">
+              <Text className="font-body-medium text-xl text-stone-900">+ New</Text>
+            </Pressable>
+          </Link>
+        </TutorialTarget>
       </View>
 
       {/* Status tabs */}
+      <TutorialTarget id="quest-status-tabs">
       <View className="mb-3 flex-row gap-2">
         {STATUS_TABS.map((tab) => {
           const selected = status === tab.key;
@@ -159,6 +163,7 @@ export default function QuestBoard() {
           );
         })}
       </View>
+      </TutorialTarget>
 
       {/* Search + filters toggle */}
       <View className="mb-3 flex-row gap-2">
