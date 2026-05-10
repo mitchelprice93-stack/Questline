@@ -62,8 +62,8 @@ export const TUTORIAL_STEPS: Step[] = [
       "Completed is the work the Tome has inscribed; Abandoned is the work you've set aside.",
     nextLabel: 'Continue',
     // Status-tabs row sits a few px lower than measureInWindow reports
-    // on this layout — the + button doesn't need this. -4 nudges up.
-    yShiftOverride: -4,
+    // on this layout — the + button doesn't need this. -6 nudges up.
+    yShiftOverride: -6,
   },
   {
     targetId: 'tab-bar',
