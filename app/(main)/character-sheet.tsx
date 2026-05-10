@@ -1,6 +1,12 @@
 import { useFocusEffect, useRouter } from 'expo-router';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import Animated, {
+  Easing,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from 'react-native-reanimated';
 
 import { ModifierCard } from '../../components/modifier-card';
 import { useAnimatedNumber } from '../../lib/animated-number';
@@ -166,15 +172,14 @@ export default function CharacterSheet() {
     ? new Date(profile.last_rest_at).getTime() + restCooldownMs
     : 0;
   const restOnCooldown = Date.now() < restAvailableAt;
-  // Round the float for level + integer text values; calculateLevel
-  // floors its input internally so passing a float doesn't actually
-  // produce smooth output. The bar uses levelProgressFraction directly
-  // off the float, which IS continuous — that's how we get sub-pixel
-  // motion across the bar while the digits step integer-by-integer.
+  // Round the float for level + integer text values. The bar is driven
+  // separately by Reanimated (see AnimatedXpBar below) so its width
+  // doesn't ride React's render loop — feeding a percentage style object
+  // through the reconciler each frame produced visible stutter on web,
+  // even though the text counter (using the same source) read smooth.
   const animatedTotalXp = Math.round(animatedTotalXpFloat);
   const { level, currentLevelXp, nextLevelXp } = calculateLevel(animatedTotalXp);
   const atMaxLevel = nextLevelXp === 0;
-  const progressPct = atMaxLevel ? 100 : levelProgressFraction(animatedTotalXpFloat) * 100;
 
   const displayName =
     profile?.character_name ?? profile?.display_name ?? session?.user.email ?? 'Wanderer';
@@ -206,9 +211,7 @@ export default function CharacterSheet() {
           </Text>
           <Text className="font-display-bold text-2xl text-stone-900">{level}</Text>
         </View>
-        <View className="mb-1 h-2 overflow-hidden rounded-full bg-amber-100/40">
-          <View className="h-2 rounded-full bg-amber-500" style={{ width: `${progressPct}%` }} />
-        </View>
+        <AnimatedXpBar targetFraction={atMaxLevel ? 1 : levelProgressFraction(totalXp)} />
         <Text className="font-body text-lg text-stone-500">
           {atMaxLevel
             ? `${animatedTotalXp.toLocaleString()} XP · max level reached`
@@ -795,6 +798,33 @@ function CampaignEditor({ initial, busy, onSave, onCancel, onDelete }: CampaignE
           </Pressable>
         ) : null}
       </View>
+    </View>
+  );
+}
+
+/**
+ * Reanimated-driven progress bar for the level card. Lives outside the
+ * React render loop — withTiming drives the width worklet directly, so a
+ * 900ms sweep stays glass-smooth even while the parent re-renders text
+ * from setState changes.
+ */
+function AnimatedXpBar({ targetFraction }: { targetFraction: number }) {
+  const fraction = useSharedValue(targetFraction);
+
+  useEffect(() => {
+    fraction.value = withTiming(targetFraction, {
+      duration: 900,
+      easing: Easing.linear,
+    });
+  }, [targetFraction, fraction]);
+
+  const style = useAnimatedStyle(() => ({
+    width: `${Math.max(0, Math.min(100, fraction.value * 100))}%`,
+  }));
+
+  return (
+    <View className="mb-1 h-2 overflow-hidden rounded-full bg-amber-100/40">
+      <Animated.View className="h-2 rounded-full bg-amber-500" style={style} />
     </View>
   );
 }
