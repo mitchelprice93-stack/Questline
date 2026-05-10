@@ -25,3 +25,14 @@ export async function markCinematicSeen(userId: string): Promise<void> {
     // Best-effort — user will see it again on next launch but the app still works.
   }
 }
+
+/** Wipe the seen flag so the cinematic plays again on next launch.
+ *  Used by the Reset Character flow — when the user starts over, the
+ *  full first-run experience replays. */
+export async function resetCinematicSeen(userId: string): Promise<void> {
+  try {
+    await AsyncStorage.removeItem(KEY(userId));
+  } catch {
+    // ignore
+  }
+}

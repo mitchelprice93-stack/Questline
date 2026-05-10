@@ -2,7 +2,11 @@ import type { AuthError, Session } from '@supabase/supabase-js';
 import { useRouter, useSegments } from 'expo-router';
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react';
 
-import { hasSeenCinematic, markCinematicSeen as markSeenAsync } from './cinematic';
+import {
+  hasSeenCinematic,
+  markCinematicSeen as markSeenAsync,
+  resetCinematicSeen as resetSeenAsync,
+} from './cinematic';
 import { registerPushTokenForCurrentUser } from './notifications';
 import { clearQuestCache } from './offline';
 import { getCurrentProfile } from './profile';
@@ -31,6 +35,8 @@ interface AuthContextValue {
   refetchSubscription: () => Promise<void>;
   /** Mark the cinematic as seen for the current user (persists + updates state). */
   markCinematicSeen: () => Promise<void>;
+  /** Wipe the seen flag so the cinematic plays again. Used by Reset Character. */
+  resetCinematicSeen: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -71,6 +77,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!session?.user.id) return;
     await markSeenAsync(session.user.id);
     setCinematicSeen(true);
+  }, [session?.user.id]);
+
+  const resetCinematicSeen = useCallback(async () => {
+    if (!session?.user.id) return;
+    await resetSeenAsync(session.user.id);
+    setCinematicSeen(false);
   }, [session?.user.id]);
 
   useEffect(() => {
@@ -160,6 +172,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     refetchProfile,
     refetchSubscription,
     markCinematicSeen,
+    resetCinematicSeen,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

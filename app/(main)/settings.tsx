@@ -3,14 +3,21 @@ import * as WebBrowser from 'expo-web-browser';
 import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 
-import { deleteAccount, requestEmailChange, requestPasswordReset } from '../../lib/account';
+import {
+  deleteAccount,
+  requestEmailChange,
+  requestPasswordReset,
+  resetCharacter,
+} from '../../lib/account';
 import { useAuth } from '../../lib/auth';
 import { useAudioMuted } from '../../lib/audio-prefs';
 import { shareChronicle } from '../../lib/chronicle';
 import { confirmDestructive, showInfoMessage } from '../../lib/dialogs';
 import { errorMessage } from '../../lib/errors';
+import { clearQuestCache } from '../../lib/offline';
 import { ParchmentScreen } from '../../lib/parchment';
 import { FREE_TIER_QUEST_CAP } from '../../lib/subscription';
+import { resetTutorial } from '../../lib/tutorial';
 import { useTutorial } from '../../lib/tutorial-context';
 import {
   getCheckInTime,
@@ -29,7 +36,7 @@ const CHECK_IN_OPTIONS: { key: 'off' | string; label: string }[] = [
 ];
 
 export default function Settings() {
-  const { session, signOut, subscription } = useAuth();
+  const { session, signOut, subscription, refetchProfile, resetCinematicSeen } = useAuth();
   const router = useRouter();
   const tutorial = useTutorial();
 
@@ -79,6 +86,13 @@ export default function Settings() {
 
   const [deleteBusy, setDeleteBusy] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+
+  // Reset character — opens an inline "type DELETE to confirm" panel
+  // before the wipe fires. Cancel-able until the user types and taps.
+  const [resetStage, setResetStage] = useState<'idle' | 'confirming'>('idle');
+  const [resetTypeInput, setResetTypeInput] = useState('');
+  const [resetBusy, setResetBusy] = useState(false);
+  const [resetError, setResetError] = useState<string | null>(null);
 
   // Public URLs for the privacy policy and terms of service. Once those
   // pages are hosted (GitHub Pages, Notion, Termly — your call), drop the
@@ -155,6 +169,43 @@ export default function Settings() {
     } catch (e) {
       setDeleteError(errorMessage(e));
       setDeleteBusy(false);
+    }
+  };
+
+  const onTapReset = async () => {
+    const proceed = await confirmDestructive(
+      'Reset your chronicle?',
+      'Every quest, faction, campaign, and entry the Tome holds for you will be erased. Your account and login remain — but you will return to the chronicle\'s forging and start anew. This cannot be undone.',
+    );
+    if (!proceed) return;
+    setResetTypeInput('');
+    setResetError(null);
+    setResetStage('confirming');
+  };
+
+  const onCancelReset = () => {
+    setResetStage('idle');
+    setResetTypeInput('');
+    setResetError(null);
+  };
+
+  const onConfirmReset = async () => {
+    if (resetTypeInput !== 'DELETE') return;
+    setResetBusy(true);
+    setResetError(null);
+    try {
+      await resetCharacter();
+      // Wipe local artifacts so the fresh chronicle isn't haunted by the
+      // previous one: cached quest lists, cinematic-seen flag, tutorial flag.
+      await clearQuestCache();
+      await resetTutorial();
+      await resetCinematicSeen();
+      // Refetching profile sets character_name back to null in auth state,
+      // which trips useProtectedRoute and bounces us through onboarding.
+      await refetchProfile();
+    } catch (e) {
+      setResetError(errorMessage(e));
+      setResetBusy(false);
     }
   };
 
@@ -271,6 +322,72 @@ export default function Settings() {
       >
         <Text className="text-center font-body text-2xl text-stone-900">Sign out</Text>
       </Pressable>
+
+      {/* Reset character — wipes the chronicle but keeps the auth account.
+          Two-step gate: the in-voice confirm dialog opens an inline panel
+          that requires literally typing DELETE before the action arms. */}
+      {resetStage === 'idle' ? (
+        <Pressable
+          onPress={onTapReset}
+          className="mb-3 rounded-md border border-amber-700/60 bg-amber-50/40 px-4 py-3 active:bg-amber-100/60"
+        >
+          <Text className="text-center font-body text-lg text-amber-800">
+            Reset character
+          </Text>
+        </Pressable>
+      ) : (
+        <View className="mb-3 rounded-md border border-amber-700/60 bg-amber-50/40 px-4 py-3">
+          <Text className="mb-2 font-body text-lg text-stone-800">
+            Type{' '}
+            <Text className="font-body-medium text-amber-900">DELETE</Text>
+            {' '}to confirm. The Tome will be wiped clean and the chronicle
+            forged anew. Your account remains.
+          </Text>
+          <TextInput
+            value={resetTypeInput}
+            onChangeText={setResetTypeInput}
+            placeholder="DELETE"
+            placeholderTextColor="#a8a29e"
+            autoCapitalize="characters"
+            autoCorrect={false}
+            editable={!resetBusy}
+            className="mb-3 rounded-md border border-stone-700 bg-amber-100/40 px-3 py-2 font-body text-stone-900"
+          />
+          <View className="flex-row gap-2">
+            <Pressable
+              onPress={onConfirmReset}
+              disabled={resetBusy || resetTypeInput !== 'DELETE'}
+              className={`flex-1 rounded-md px-3 py-2 ${
+                resetBusy || resetTypeInput !== 'DELETE'
+                  ? 'bg-amber-100/40'
+                  : 'bg-red-700 active:bg-red-800'
+              }`}
+            >
+              <Text
+                className={`text-center font-body-medium text-base ${
+                  resetBusy || resetTypeInput !== 'DELETE'
+                    ? 'text-stone-500'
+                    : 'text-amber-50'
+                }`}
+              >
+                {resetBusy ? 'Erasing the Tome…' : 'Reset chronicle'}
+              </Text>
+            </Pressable>
+            <Pressable
+              onPress={onCancelReset}
+              disabled={resetBusy}
+              className="rounded-md border border-stone-700 bg-amber-50/40 px-3 py-2 active:bg-amber-100/60"
+            >
+              <Text className="text-center font-body-medium text-base text-stone-700">
+                Cancel
+              </Text>
+            </Pressable>
+          </View>
+          {resetError ? (
+            <Text className="mt-3 font-body text-base text-red-700">{resetError}</Text>
+          ) : null}
+        </View>
+      )}
 
       <Pressable
         onPress={onDeleteAccount}

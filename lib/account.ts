@@ -50,3 +50,19 @@ export async function deleteAccount(): Promise<void> {
   if (error) throw asError(error);
   if (data?.error) throw new Error(data.error);
 }
+
+/**
+ * Wipe the calling user's chronicle without touching the auth account.
+ * Deletes all factions, campaigns, quests, modifiers, and xp_log entries
+ * for the user, then resets the profile to pre-character-creation
+ * defaults (character_name = NULL, level 1, total_xp 0, difficulty
+ * 'adept'). Auth session, push token, and ai_call_log history are kept.
+ *
+ * After this resolves, the caller should clear any local AsyncStorage
+ * caches (offline quest cache, tutorial flag, etc.) and route back
+ * through onboarding so apply_character_creation runs again.
+ */
+export async function resetCharacter(): Promise<void> {
+  const { error } = await supabase.rpc('reset_character');
+  if (error) throw asError(error);
+}

@@ -505,6 +505,7 @@ export type Database = {
         Args: { p_user_id: string }
         Returns: undefined
       }
+      reset_character: { Args: never; Returns: undefined }
       rest_user: {
         Args: never
         Returns: {
