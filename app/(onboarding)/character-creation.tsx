@@ -9,6 +9,7 @@ import {
   generateCharacterSheet,
   type CharacterSheetResult,
 } from '../../lib/character-creation';
+import { ParchmentScreen } from '../../lib/parchment';
 
 const TOTAL_STEPS = 7;
 
@@ -78,13 +79,17 @@ export default function CharacterCreation() {
 
   if (submitting) {
     return (
-      <View className="flex-1 items-center justify-center bg-stone-950 px-6">
-        <ActivityIndicator color="#f59e0b" size="large" />
-        <Text className="mt-6 font-display text-xl text-stone-100">
-          The Archivist studies your tome…
-        </Text>
-        {error ? <Text className="mt-4 font-body text-sm text-red-400">{error}</Text> : null}
-      </View>
+      <ParchmentScreen>
+        <View className="flex-1 items-center justify-center px-6">
+          <ActivityIndicator color="#92400e" size="large" />
+          <Text className="mt-6 font-display text-xl text-stone-900">
+            The Archivist studies your tome…
+          </Text>
+          {error ? (
+            <Text className="mt-4 font-body text-base text-red-700">{error}</Text>
+          ) : null}
+        </View>
+      </ParchmentScreen>
     );
   }
 
@@ -119,11 +124,12 @@ export default function CharacterCreation() {
   };
 
   return (
-    <ScrollView className="flex-1 bg-stone-950" contentContainerClassName="px-6 pt-16 pb-12">
-      <Text className="mb-1 font-display text-xs uppercase tracking-widest text-stone-500">
+    <ParchmentScreen>
+      <ScrollView className="flex-1" contentContainerClassName="px-6 pt-16 pb-12">
+      <Text className="mb-1 font-display text-xs uppercase tracking-widest text-amber-800">
         Step {step + 1} of {TOTAL_STEPS}
       </Text>
-      <View className="mb-8 h-1 overflow-hidden rounded-full bg-stone-800">
+      <View className="mb-8 h-1 overflow-hidden rounded-full bg-amber-100/40">
         <View
           className="h-1 rounded-full bg-amber-500"
           style={{ width: `${((step + 1) / TOTAL_STEPS) * 100}%` }}
@@ -223,28 +229,29 @@ export default function CharacterCreation() {
         </Step>
       )}
 
-      {error ? <Text className="mt-4 font-body text-sm text-red-400">{error}</Text> : null}
+      {error ? <Text className="mt-4 font-body text-base text-red-700">{error}</Text> : null}
 
       <View className="mt-8 flex-row gap-3">
         {step > 0 ? (
           <Pressable
             onPress={back}
-            className="flex-1 rounded-md border border-stone-700 bg-stone-900 px-4 py-3 active:bg-stone-800"
+            className="flex-1 rounded-md border border-stone-700 bg-amber-50/40 px-4 py-3 active:bg-amber-100/60"
           >
-            <Text className="text-center font-body text-stone-300">Back</Text>
+            <Text className="text-center font-body text-stone-700">Back</Text>
           </Pressable>
         ) : null}
         <Pressable
           onPress={next}
           disabled={!canAdvance}
-          className={`flex-1 rounded-md px-4 py-3 ${canAdvance ? 'bg-amber-600 active:bg-amber-700' : 'bg-stone-800'}`}
+          className={`flex-1 rounded-md px-4 py-3 ${canAdvance ? 'bg-amber-600 active:bg-amber-700' : 'bg-amber-100/40'}`}
         >
-          <Text className="text-center font-body-medium text-stone-100">
+          <Text className="text-center font-body-medium text-stone-900">
             {step === TOTAL_STEPS - 1 ? 'Forge character' : 'Next'}
           </Text>
         </Pressable>
       </View>
-    </ScrollView>
+      </ScrollView>
+    </ParchmentScreen>
   );
 }
 
@@ -259,8 +266,8 @@ function Step({
 }) {
   return (
     <View>
-      <Text className="mb-2 font-display text-3xl text-stone-100">{title}</Text>
-      <Text className="mb-6 font-body text-stone-400">{flavor}</Text>
+      <Text className="mb-2 font-display text-3xl text-stone-900">{title}</Text>
+      <Text className="mb-6 font-body text-lg text-stone-700">{flavor}</Text>
       {children}
     </View>
   );
@@ -283,16 +290,16 @@ function Field({
 }) {
   return (
     <View className="mb-4">
-      <Text className="mb-2 font-body text-sm text-stone-300">{label}</Text>
+      <Text className="mb-2 font-body text-base text-stone-700">{label}</Text>
       <TextInput
         value={value}
         onChangeText={onChange}
         multiline={multiline}
         autoFocus={autoFocus}
         placeholder={placeholder}
-        placeholderTextColor="#57534e"
+        placeholderTextColor="#a8a29e"
         textAlignVertical={multiline ? 'top' : 'auto'}
-        className={`rounded-md border border-stone-700 bg-stone-900 px-4 py-3 font-body text-stone-100 ${
+        className={`rounded-md border border-stone-700 bg-amber-50/40 px-4 py-3 font-body text-stone-900 ${
           multiline ? 'min-h-[112px]' : ''
         }`}
       />
@@ -303,7 +310,7 @@ function Field({
 function Hint({ count, singular }: { count: number; singular: string }) {
   if (count === 0) return null;
   return (
-    <Text className="font-body text-xs text-stone-500">
+    <Text className="font-body text-sm text-stone-600">
       {count} {singular}
       {count === 1 ? '' : 's'} parsed
     </Text>
@@ -326,23 +333,24 @@ function Reveal({
   const stagger = (n: number) => FadeInDown.delay(n * 200).duration(D);
 
   return (
-    <ScrollView className="flex-1 bg-stone-950" contentContainerClassName="px-6 pt-16 pb-12">
+    <ParchmentScreen>
+      <ScrollView className="flex-1" contentContainerClassName="px-6 pt-16 pb-12">
       <Animated.View entering={stagger(0)}>
-        <Text className="mb-1 font-display text-xs uppercase tracking-widest text-amber-400">
+        <Text className="mb-1 font-display text-xs uppercase tracking-widest text-amber-800">
           The Tome opens
         </Text>
       </Animated.View>
 
       <Animated.View entering={stagger(1)}>
-        <Text className="mb-1 font-display text-3xl text-stone-100">{chroniclerName}</Text>
+        <Text className="mb-1 font-display text-3xl text-stone-900">{chroniclerName}</Text>
       </Animated.View>
 
       <Animated.View entering={stagger(2)}>
-        <Text className="mb-2 font-display text-xl text-amber-300">{sheet.character_title}</Text>
+        <Text className="mb-2 font-display text-xl text-amber-800">{sheet.character_title}</Text>
       </Animated.View>
 
       <Animated.View entering={stagger(3)}>
-        <Text className="mb-8 font-body text-stone-400">
+        <Text className="mb-8 font-body text-lg text-stone-600">
           Inscribed at Level {sheet.starting_level}
           {sheet.fromFallback ? ' · templated (the Archivist was silent)' : ''}
         </Text>
@@ -351,12 +359,12 @@ function Reveal({
       {sheet.factions.length > 0 ? (
         <Animated.View entering={stagger(4)}>
           <View className="mb-6">
-            <Text className="mb-2 font-body text-sm text-stone-300">Factions</Text>
+            <Text className="mb-2 font-body text-base text-stone-700">Factions</Text>
             <View className="gap-2">
               {sheet.factions.map((f, i) => (
-                <View key={i} className="rounded-md border border-stone-800 bg-stone-900 p-4">
-                  <Text className="font-body-medium text-base text-stone-100">{f.name}</Text>
-                  <Text className="font-body text-xs text-stone-500">{f.real_world_domain}</Text>
+                <View key={i} className="rounded-md border border-stone-700 bg-amber-50/40 p-4">
+                  <Text className="font-body-medium text-lg text-stone-900">{f.name}</Text>
+                  <Text className="font-body text-sm text-stone-600">{f.real_world_domain}</Text>
                 </View>
               ))}
             </View>
@@ -367,12 +375,12 @@ function Reveal({
       {sheet.campaigns.length > 0 ? (
         <Animated.View entering={stagger(5)}>
           <View className="mb-6">
-            <Text className="mb-2 font-body text-sm text-stone-300">Campaigns</Text>
+            <Text className="mb-2 font-body text-base text-stone-700">Campaigns</Text>
             <View className="gap-2">
               {sheet.campaigns.map((c, i) => (
-                <View key={i} className="rounded-md border border-stone-800 bg-stone-900 p-4">
-                  <Text className="font-body-medium text-base text-stone-100">{c.arc_name}</Text>
-                  <Text className="font-body text-xs text-stone-500">{c.real_world_goal}</Text>
+                <View key={i} className="rounded-md border border-stone-700 bg-amber-50/40 p-4">
+                  <Text className="font-body-medium text-lg text-stone-900">{c.arc_name}</Text>
+                  <Text className="font-body text-sm text-stone-600">{c.real_world_goal}</Text>
                 </View>
               ))}
             </View>
@@ -381,11 +389,11 @@ function Reveal({
       ) : null}
 
       <Animated.View entering={stagger(6)}>
-        <View className="mb-8 rounded-md border border-amber-900/40 bg-amber-950/20 p-4">
-          <Text className="mb-1 font-display text-xs uppercase tracking-widest text-amber-500">
+        <View className="mb-8 rounded-md border border-amber-900/40 bg-amber-100/40 p-4">
+          <Text className="mb-1 font-display text-xs uppercase tracking-widest text-amber-800">
             First quest hook
           </Text>
-          <Text className="font-body text-stone-200">{sheet.first_quest_hook}</Text>
+          <Text className="font-body text-lg text-stone-800">{sheet.first_quest_hook}</Text>
         </View>
       </Animated.View>
 
@@ -394,11 +402,12 @@ function Reveal({
           onPress={onContinue}
           className="rounded-md bg-amber-600 px-4 py-3 active:bg-amber-700"
         >
-          <Text className="text-center font-display text-base text-stone-100">
+          <Text className="text-center font-display text-base text-stone-900">
             Begin your chronicle
           </Text>
         </Pressable>
       </Animated.View>
-    </ScrollView>
+      </ScrollView>
+    </ParchmentScreen>
   );
 }
