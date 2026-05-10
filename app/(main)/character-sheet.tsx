@@ -1,5 +1,5 @@
 import { useFocusEffect, useRouter } from 'expo-router';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import Animated, {
   Easing,
@@ -803,15 +803,29 @@ function CampaignEditor({ initial, busy, onSave, onCancel, onDelete }: CampaignE
 }
 
 /**
- * Reanimated-driven progress bar for the level card. Lives outside the
- * React render loop — withTiming drives the width worklet directly, so a
- * 900ms sweep stays glass-smooth even while the parent re-renders text
- * from setState changes.
+ * Reanimated-driven progress bar for the level card. Drives a scaleX
+ * transform rather than width — transforms are GPU-composited (no
+ * layout/reflow) and Reanimated's web shim handles them more reliably
+ * than percentage widths, so the sweep stays glass-smooth.
+ *
+ * The bar is rendered at full width (scaleX:1 = full bar) and scaled
+ * down via transformOrigin:'left' so it grows from the left edge.
+ *
+ * On first mount the sharedValue is initialized to the target so we
+ * snap to the correct starting state — no "fill from empty" sweep just
+ * because the user opened the screen. Subsequent target changes (e.g.
+ * after a quest completion refetches the profile) animate over 900ms.
  */
 function AnimatedXpBar({ targetFraction }: { targetFraction: number }) {
   const fraction = useSharedValue(targetFraction);
+  const isFirstRenderRef = useRef(true);
 
   useEffect(() => {
+    if (isFirstRenderRef.current) {
+      isFirstRenderRef.current = false;
+      fraction.value = targetFraction;
+      return;
+    }
     fraction.value = withTiming(targetFraction, {
       duration: 900,
       easing: Easing.linear,
@@ -819,12 +833,15 @@ function AnimatedXpBar({ targetFraction }: { targetFraction: number }) {
   }, [targetFraction, fraction]);
 
   const style = useAnimatedStyle(() => ({
-    width: `${Math.max(0, Math.min(100, fraction.value * 100))}%`,
+    transform: [{ scaleX: Math.max(0.0001, Math.min(1, fraction.value)) }],
   }));
 
   return (
     <View className="mb-1 h-2 overflow-hidden rounded-full bg-amber-100/40">
-      <Animated.View className="h-2 rounded-full bg-amber-500" style={style} />
+      <Animated.View
+        className="h-2 w-full rounded-full bg-amber-500"
+        style={[{ transformOrigin: 'left' as const }, style]}
+      />
     </View>
   );
 }
