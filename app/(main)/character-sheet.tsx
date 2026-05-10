@@ -839,8 +839,16 @@ function AnimatedXpBar({ targetFraction }: { targetFraction: number }) {
   return (
     <View className="mb-1 h-2 overflow-hidden rounded-full bg-amber-100/40">
       <Animated.View
-        className="h-2 w-full rounded-full bg-amber-500"
-        style={[{ transformOrigin: 'left' as const }, style]}
+        style={[
+          {
+            height: 8, // matches h-2 (Tailwind 0.5rem on default 16px base)
+            width: '100%',
+            borderRadius: 9999, // rounded-full
+            backgroundColor: '#f59e0b', // amber-500
+            transformOrigin: 'left',
+          },
+          style,
+        ]}
       />
     </View>
   );
