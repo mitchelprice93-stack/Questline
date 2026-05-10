@@ -102,6 +102,30 @@ export interface LevelInfo {
   nextLevelXp: number;
 }
 
+/**
+ * Smooth 0..1 fraction of progress within the current level for a given
+ * XP value. Accepts floats — useful for driving an animated progress bar
+ * between integer XP totals. calculateLevel() floors its input on
+ * purpose (the level number must be an integer), which makes it unsuitable
+ * for animating widths.
+ */
+export function levelProgressFraction(totalXp: number): number {
+  if (totalXp <= 0) return 0;
+  let i = 0;
+  while (
+    i + 1 < LEVEL_THRESHOLDS.length &&
+    (LEVEL_THRESHOLDS[i + 1] ?? Number.POSITIVE_INFINITY) <= totalXp
+  ) {
+    i++;
+  }
+  if (i + 1 >= LEVEL_THRESHOLDS.length) return 1; // max level — full bar
+  const cur = LEVEL_THRESHOLDS[i] ?? 0;
+  const next = LEVEL_THRESHOLDS[i + 1] ?? cur;
+  if (next <= cur) return 1;
+  const f = (totalXp - cur) / (next - cur);
+  return Math.max(0, Math.min(1, f));
+}
+
 export function calculateLevel(totalXp: number): LevelInfo {
   const xp = Math.max(0, Math.floor(totalXp));
 

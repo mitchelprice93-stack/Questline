@@ -22,7 +22,7 @@ import {
   type ActiveModifier,
 } from '../../lib/debuffs';
 import { confirmDestructive, showInfoMessage } from '../../lib/dialogs';
-import { calculateLevel, type Difficulty } from '../../lib/engine/xp';
+import { calculateLevel, levelProgressFraction, type Difficulty } from '../../lib/engine/xp';
 import { errorMessage } from '../../lib/errors';
 import { ParchmentScreen } from '../../lib/parchment';
 import {
@@ -166,19 +166,15 @@ export default function CharacterSheet() {
     ? new Date(profile.last_rest_at).getTime() + restCooldownMs
     : 0;
   const restOnCooldown = Date.now() < restAvailableAt;
-  // Derive level + bar width from the animated float so the whole card
-  // animates in sync with the XP counter; round for text display.
+  // Round the float for level + integer text values; calculateLevel
+  // floors its input internally so passing a float doesn't actually
+  // produce smooth output. The bar uses levelProgressFraction directly
+  // off the float, which IS continuous — that's how we get sub-pixel
+  // motion across the bar while the digits step integer-by-integer.
   const animatedTotalXp = Math.round(animatedTotalXpFloat);
-  const levelInfo = calculateLevel(animatedTotalXpFloat);
-  const { level } = levelInfo;
-  const currentLevelXp = Math.round(levelInfo.currentLevelXp);
-  const nextLevelXp = Math.round(levelInfo.nextLevelXp);
-  const atMaxLevel = levelInfo.nextLevelXp === 0;
-  // Bar width uses the float values directly — gives sub-pixel motion
-  // even when the rounded text snaps from 1499 → 1500.
-  const progressPct = atMaxLevel
-    ? 100
-    : (levelInfo.currentLevelXp / levelInfo.nextLevelXp) * 100;
+  const { level, currentLevelXp, nextLevelXp } = calculateLevel(animatedTotalXp);
+  const atMaxLevel = nextLevelXp === 0;
+  const progressPct = atMaxLevel ? 100 : levelProgressFraction(animatedTotalXpFloat) * 100;
 
   const displayName =
     profile?.character_name ?? profile?.display_name ?? session?.user.email ?? 'Wanderer';
