@@ -1,6 +1,7 @@
 // Profile + character-sheet data fetchers. RLS gates each query to the caller.
 
 import { asError } from './errors';
+import { cacheProfileTotalXp } from './offline';
 import { supabase } from './supabase';
 import type { Campaign, Faction, Profile } from './types/models';
 
@@ -18,7 +19,11 @@ export async function getCurrentProfile(): Promise<Profile | null> {
     .eq('id', user.id)
     .maybeSingle();
   if (error) throw asError(error);
-  return (data ?? null) as Profile | null;
+  const profile = (data ?? null) as Profile | null;
+  // Mirror total_xp into AsyncStorage so the offline completeQuest path
+  // can compute an optimistic newTotalXp = cachedTotal + baseTierXp.
+  if (profile?.total_xp != null) void cacheProfileTotalXp(profile.total_xp);
+  return profile;
 }
 
 export async function getActiveQuestCount(): Promise<number> {

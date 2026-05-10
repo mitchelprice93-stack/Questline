@@ -190,16 +190,22 @@ QUESTLINE_PROJECT.md            # the spec — source of truth for what to build
 
 In rough order, most recent first:
 
-- **Offline write queue (v1, createQuest only)** — `lib/offline-queue.ts`
-  is a generic AsyncStorage-backed queue (enqueue, drainQueue, isNetworkError,
-  AppState-driven init). `lib/quests.ts` splits an `insertQuest` raw call,
-  wraps `createQuest` in try/catch that branches on network error: queues
-  the mutation + drops a synthesized tmp_… Quest into the read cache via
-  `addPendingQuest`. Initial drain runs at app load (deferred 1 tick to let
-  module-load handler registration finish) and on every AppState 'active'
-  transition. Max 5 retries per mutation before drop. completeQuest /
-  abandonQuest / character-sheet CRUD still throw on network failure —
-  scope deliberately narrow for v1.
+- **Offline write queue (v1, completeQuest)** — `lib/offline-queue.ts`
+  is a generic AsyncStorage-backed queue (enqueue, drainQueue,
+  isNetworkError, AppState-driven init). `lib/quests.ts` splits a
+  `callCompleteRpc` raw call, wraps `completeQuest` in a try/catch
+  that branches on network error: synthesizes an optimistic
+  CompleteQuestResult (xpChange = baseTierXp, newTotalXp = cached
+  total + base, no modifiers / streak milestones), calls
+  `markPendingCompletion` to update the local cache (one-shot moves
+  active → completed; recurring stays active with bumped streak +
+  last_completed_at), and queues the RPC for replay.
+  `getCurrentProfile` mirrors `total_xp` to AsyncStorage on every
+  successful fetch so the offline path has a real number to add to.
+  `getQuest` also falls back to cache on network error — the recurring
+  branch in [id].tsx calls it after completion.
+  createQuest stays online-only (Mitchel prefers a clear "save failed"
+  over a hidden queued draft). Max 5 retries per mutation before drop.
 - **Approaching-deadline push warnings** — migration
   `20260509000000_approaching_deadline_warnings.sql`. New
   `notify_approaching_deadlines(uuid)` function dispatches an Expo push
@@ -299,11 +305,16 @@ In rough order, most recent first:
 2. **EAS dev build** for native testing of paywall + push +
    subscriptions: `npx eas-cli build --profile development --platform
    android` once Google products exist.
-3. **Extend offline write queue** — v1 covers createQuest. Add
-   completeQuest / abandonQuest / faction & campaign CRUD when those
-   surfaces start mattering offline. NetInfo for instant reconnect
-   detection (currently relies on AppState foreground). Optional UI
-   indicator surfacing pending count.
+3. **Extend offline write queue** — v1 covers completeQuest only. Add
+   abandonQuest (parallel pattern, ~30 LOC) and faction / campaign
+   CRUD when those surfaces start mattering offline. NetInfo for
+   instant reconnect detection (currently relies on AppState
+   foreground; on phones this fires when the user unlocks / switches
+   back to the app, which is acceptable). Optimistic auth-context
+   profile.total_xp update so the character sheet's XP reflects an
+   offline completion before the queue drains (today the optimistic
+   value lives in the alert/takeover only; profile state stays stale
+   until refetchProfile succeeds online).
 4. **Apple Sign In** scaffolding (deferred indefinitely per Mitchel —
    Android-first).
 

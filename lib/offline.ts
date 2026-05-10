@@ -14,6 +14,7 @@ import type { Quest, QuestStatus } from './types/models';
 
 const KEY = (status: QuestStatus) => `questline.cache.quests.${status}`;
 const META_KEY = (status: QuestStatus) => `questline.cache.quests.${status}.fetchedAt`;
+const KEY_PROFILE_TOTAL_XP = 'questline.cache.profile.total_xp';
 
 interface CachedQuests {
   quests: Quest[];
@@ -56,25 +57,105 @@ export async function readCachedQuests(status: QuestStatus): Promise<CachedQuest
 }
 
 /**
- * Optimistic insert — prepend a quest to the cached list for its status.
- * Called by the write-side queue when a createQuest fails for network
- * reasons: we drop the synthesized "pending" quest into the cache so the
- * user sees their work immediately on the next list view, even though
- * the server doesn't know about it yet. The pending quest's id is a
- * temp id ("tmp_…") which lets the UI distinguish it later if needed.
- *
- * No-op when the cache for that status is empty — without a baseline
- * list we can't fall back to anything anyway, and the next online fetch
- * will surface the real row from the server.
+ * Look up a single cached quest by id across active/completed/abandoned
+ * lists. Used by the write-side queue when an RPC (completeQuest) fails
+ * for network reasons — we need the quest's tier/title/recurrence to
+ * synthesize an optimistic result and update local state without hitting
+ * the server.
  */
-export async function addPendingQuest(quest: Quest): Promise<void> {
+export async function getCachedQuestById(questId: string): Promise<Quest | null> {
+  for (const status of ['active', 'completed', 'abandoned'] as QuestStatus[]) {
+    const cached = await readCachedQuests(status);
+    const found = cached?.quests.find((q) => q.id === questId);
+    if (found) return found;
+  }
+  return null;
+}
+
+/**
+ * Optimistic completion — move a quest from the active cache to the
+ * completed cache, stamping completed_at. For recurring quests we leave
+ * the row in active and bump last_completed_at + streak_count instead,
+ * mirroring how the server-side trigger behaves on a successful RPC.
+ *
+ * Best-effort. If neither list is cached, this no-ops; the next online
+ * listQuests fetch will see the real state once the queued RPC drains.
+ */
+export async function markPendingCompletion(questId: string): Promise<void> {
   try {
-    const cached = await readCachedQuests(quest.status);
-    if (!cached) return;
-    const next = [quest, ...cached.quests.filter((q) => q.id !== quest.id)];
-    await cacheQuests(quest.status, next);
+    const activeCache = await readCachedQuests('active');
+    if (!activeCache) return;
+    const idx = activeCache.quests.findIndex((q) => q.id === questId);
+    if (idx < 0) return;
+    const quest = activeCache.quests[idx];
+    if (!quest) return;
+    const now = new Date().toISOString();
+
+    if (quest.recurrence) {
+      // Recurring: stay active, bump streak + last_completed_at. Real
+      // streak math is server-side; this is just a "looks completed for
+      // today" marker until reconnect overwrites it.
+      const updated: Quest = {
+        ...quest,
+        last_completed_at: now,
+        streak_count: quest.streak_count + 1,
+      };
+      const nextActive = [...activeCache.quests];
+      nextActive[idx] = updated;
+      await cacheQuests('active', nextActive);
+      return;
+    }
+
+    // One-shot: move from active → completed.
+    const completedQuest: Quest = {
+      ...quest,
+      status: 'completed',
+      completed_at: now,
+    };
+    const nextActive = activeCache.quests.filter((_, i) => i !== idx);
+    await cacheQuests('active', nextActive);
+
+    const completedCache = await readCachedQuests('completed');
+    if (completedCache) {
+      const nextCompleted = [
+        completedQuest,
+        ...completedCache.quests.filter((q) => q.id !== questId),
+      ];
+      await cacheQuests('completed', nextCompleted);
+    } else {
+      // No completed cache yet — seed it with just this row so the
+      // user can see their work in the Completed tab right away.
+      await cacheQuests('completed', [completedQuest]);
+    }
   } catch (e) {
-    console.warn('[offline] addPendingQuest failed', e);
+    console.warn('[offline] markPendingCompletion failed', e);
+  }
+}
+
+/**
+ * Persist the user's total_xp so the offline completeQuest path can
+ * compute an optimistic newTotalXp without a server round-trip. Updated
+ * on every successful getCurrentProfile fetch.
+ */
+export async function cacheProfileTotalXp(xp: number): Promise<void> {
+  try {
+    await AsyncStorage.setItem(KEY_PROFILE_TOTAL_XP, String(xp));
+  } catch (e) {
+    console.warn('[offline] cacheProfileTotalXp failed', e);
+  }
+}
+
+/** Read the most recent cached total_xp. Returns 0 if nothing is cached
+ *  — caller treats that as "we don't know" and the optimistic estimate
+ *  will be (0 + baseXp), which the next online refetch will correct. */
+export async function readCachedProfileTotalXp(): Promise<number> {
+  try {
+    const raw = await AsyncStorage.getItem(KEY_PROFILE_TOTAL_XP);
+    if (!raw) return 0;
+    const n = Number(raw);
+    return Number.isFinite(n) ? n : 0;
+  } catch {
+    return 0;
   }
 }
 
@@ -82,7 +163,7 @@ export async function addPendingQuest(quest: Quest): Promise<void> {
  *  the same device doesn't see the previous user's quests. */
 export async function clearQuestCache(): Promise<void> {
   try {
-    const keys: string[] = [];
+    const keys: string[] = [KEY_PROFILE_TOTAL_XP];
     (['active', 'completed', 'abandoned'] as QuestStatus[]).forEach((s) => {
       keys.push(KEY(s), META_KEY(s));
     });

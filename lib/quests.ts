@@ -7,9 +7,15 @@
 // follow-up that wires SQLite/MMKV.
 
 import { xpForTier } from './engine/xp';
-import { asError, errorMessage } from './errors';
+import { asError } from './errors';
 import { cancelDeadlineReminders, scheduleDeadlineReminders } from './notifications';
-import { addPendingQuest, cacheQuests, readCachedQuests } from './offline';
+import {
+  cacheQuests,
+  getCachedQuestById,
+  markPendingCompletion,
+  readCachedProfileTotalXp,
+  readCachedQuests,
+} from './offline';
 import { enqueue, isNetworkError, registerHandler } from './offline-queue';
 import { supabase } from './supabase';
 import type {
@@ -107,20 +113,34 @@ export async function listQuests(status: QuestStatus = 'active'): Promise<Quest[
 }
 
 export async function getQuest(id: string): Promise<Quest | null> {
-  const { data, error } = await supabase.from('quests').select('*').eq('id', id).maybeSingle();
-  if (error) throw asError(error);
-  return (data ?? null) as Quest | null;
+  try {
+    const { data, error } = await supabase.from('quests').select('*').eq('id', id).maybeSingle();
+    if (error) throw asError(error);
+    return (data ?? null) as Quest | null;
+  } catch (e) {
+    if (!isNetworkError(e)) throw e;
+    // Offline — serve from any cached list. The post-completion path on
+    // the detail screen calls this to pick up streak / last_completed_at;
+    // markPendingCompletion has already updated the active cache with
+    // the new values, so the cached read reflects the optimistic state.
+    return getCachedQuestById(id);
+  }
 }
 
-/** Raw insert — used by both the public createQuest and the offline-queue
- *  replay handler. Doesn't touch the queue or local cache; just hits the
- *  server and returns what comes back. */
-async function insertQuest(userId: string, input: CreateQuestInput): Promise<Quest> {
+export async function createQuest(input: CreateQuestInput): Promise<Quest> {
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
+  if (userError) throw userError;
+  if (!user) throw new Error('Must be signed in to create a quest');
+
   const xp_reward = xpForTier(input.tier);
+
   const { data, error } = await supabase
     .from('quests')
     .insert({
-      user_id: userId,
+      user_id: user.id,
       title: input.title,
       description: input.description,
       tier: input.tier,
@@ -136,83 +156,11 @@ async function insertQuest(userId: string, input: CreateQuestInput): Promise<Que
     .select()
     .single();
   if (error) throw asError(error);
-  return data as unknown as Quest;
+  const quest = data as unknown as Quest;
+  // Schedule deadline reminders. No-op on web / without permission.
+  void scheduleDeadlineReminders(quest.id, quest.title, quest.deadline);
+  return quest;
 }
-
-/** Build a Quest object that "looks real" for optimistic display while
- *  the server insert is queued. Uses a tmp_… id so callers can later
- *  distinguish a pending row from a real one if they need to. */
-function synthesizePendingQuest(userId: string, input: CreateQuestInput): Quest {
-  const now = new Date().toISOString();
-  const tmpId =
-    'tmp_' + Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
-  const buff = buffColumns(input.grantedBuff);
-  return {
-    id: tmpId,
-    user_id: userId,
-    faction_id: input.factionId ?? null,
-    campaign_id: input.campaignId ?? null,
-    title: input.title,
-    description: input.description,
-    objectives: input.objectives ?? [],
-    tier: input.tier,
-    classification: input.classification,
-    xp_reward: xpForTier(input.tier),
-    status: 'active',
-    recurrence: input.recurrence ?? null,
-    streak_count: 0,
-    deadline: input.deadline,
-    completed_at: null,
-    last_completed_at: null,
-    abandoned_at: null,
-    granted_buff_name: buff.granted_buff_name,
-    granted_buff_description: buff.granted_buff_description,
-    granted_buff_pct: buff.granted_buff_pct,
-    granted_buff_condition: buff.granted_buff_condition,
-    created_at: now,
-  };
-}
-
-export async function createQuest(input: CreateQuestInput): Promise<Quest> {
-  const {
-    data: { user },
-    error: userError,
-  } = await supabase.auth.getUser();
-  if (userError) throw userError;
-  if (!user) throw new Error('Must be signed in to create a quest');
-
-  try {
-    const quest = await insertQuest(user.id, input);
-    // Schedule deadline reminders. No-op on web / without permission.
-    void scheduleDeadlineReminders(quest.id, quest.title, quest.deadline);
-    return quest;
-  } catch (e) {
-    if (!isNetworkError(e)) throw e;
-    // Network's down — queue the insert for the next drain and inject a
-    // pending row into the local cache so the user sees their work in
-    // the list immediately. The drain replays insertQuest later; the next
-    // listQuests fetch overwrites the cache with the real server row.
-    const pending = synthesizePendingQuest(user.id, input);
-    await enqueue('createQuest', input);
-    await addPendingQuest(pending);
-    return pending;
-  }
-}
-
-// Register the replay handler at module load so drainQueue can find it.
-registerHandler('createQuest', async (payload) => {
-  const input = payload as CreateQuestInput;
-  const {
-    data: { user },
-    error: userError,
-  } = await supabase.auth.getUser();
-  if (userError || !user) {
-    // Re-auth required — skip and let the next drain retry. The error
-    // bubbles up so drainQueue records an attempt.
-    throw new Error('not signed in: ' + errorMessage(userError));
-  }
-  await insertQuest(user.id, input);
-});
 
 export interface CompleteQuestResult {
   newTotalXp: number;
@@ -228,15 +176,14 @@ export interface CompleteQuestResult {
   buffGranted: string | null;
 }
 
-export async function completeQuest(questId: string): Promise<CompleteQuestResult> {
+/** Raw RPC call — used by both the public completeQuest and the offline-
+ *  queue replay handler. Throws on any server/network error. */
+async function callCompleteRpc(questId: string): Promise<CompleteQuestResult> {
   const { data, error } = await supabase.rpc('complete_quest', { quest_id: questId });
   if (error) throw asError(error);
   // RPC returns SETOF, supabase-js gives us an array — take the first row.
   const row = Array.isArray(data) ? data[0] : data;
   if (!row) throw new Error('complete_quest returned no row');
-  // For one-shot quests the row is now in 'completed' status; reminders no
-  // longer make sense. Recurring quests stay active so we leave them alone.
-  void cancelDeadlineReminders(questId);
   return {
     newTotalXp: Number(row.new_total_xp),
     xpChange: Number(row.xp_change),
@@ -246,6 +193,57 @@ export async function completeQuest(questId: string): Promise<CompleteQuestResul
     buffGranted: (row.buff_granted as string | null) ?? null,
   };
 }
+
+/** Synthesize an optimistic completion result from cached state. Used
+ *  when the network is unavailable: the real RPC is queued and replayed
+ *  on reconnect, but the user gets immediate feedback (XP estimate,
+ *  level-up trigger, takeover) based on what we know locally.
+ *
+ *  Modifiers (active debuffs / buff conditions) and streak milestones
+ *  are NOT computed locally — those need the server's view. The server's
+ *  RPC will reconcile when the queue drains; the next profile refetch
+ *  pulls the real total_xp and the user's display catches up. */
+async function synthesizeOfflineCompletion(questId: string): Promise<CompleteQuestResult> {
+  const quest = await getCachedQuestById(questId);
+  const baseXp = quest ? xpForTier(quest.tier) : 0;
+  const cachedTotal = await readCachedProfileTotalXp();
+  return {
+    newTotalXp: cachedTotal + baseXp,
+    xpChange: baseXp,
+    newStreak: quest?.recurrence ? quest.streak_count + 1 : 0,
+    milestoneBonus: 0,
+    netModifierPct: 0,
+    buffGranted: null,
+  };
+}
+
+export async function completeQuest(questId: string): Promise<CompleteQuestResult> {
+  try {
+    const result = await callCompleteRpc(questId);
+    // For one-shot quests the row is now in 'completed' status; reminders
+    // no longer make sense. Recurring quests stay active so we leave them.
+    void cancelDeadlineReminders(questId);
+    return result;
+  } catch (e) {
+    if (!isNetworkError(e)) throw e;
+    // Network's down. Optimistically mark the quest completed in the
+    // local cache (so the list views reflect it) and queue the RPC to
+    // replay when the app foregrounds with connectivity. Return a
+    // synthesized result so the calling UI (level-up takeover, XP
+    // toast, SFX) behaves as if the server had answered.
+    const optimistic = await synthesizeOfflineCompletion(questId);
+    await markPendingCompletion(questId);
+    await enqueue('completeQuest', { questId });
+    void cancelDeadlineReminders(questId);
+    return optimistic;
+  }
+}
+
+// Register the replay handler at module load so drainQueue can find it.
+registerHandler('completeQuest', async (payload) => {
+  const { questId } = payload as { questId: string };
+  await callCompleteRpc(questId);
+});
 
 export async function abandonQuest(questId: string): Promise<void> {
   const { error } = await supabase.rpc('abandon_quest', { quest_id: questId });

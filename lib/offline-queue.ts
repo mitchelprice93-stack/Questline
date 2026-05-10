@@ -6,10 +6,11 @@
 // their work immediately. The next time the app foregrounds, drainQueue
 // replays the pending mutations against the server.
 //
-// Scope (v1): createQuest only — the most common offline-failure path.
-// completeQuest / abandonQuest still throw on network failure; those are
-// less frequent and surface a clearer error to the user. Future iterations
-// can add more handlers; the queue is generic.
+// Scope (v1): completeQuest — the offline-failure path that matters
+// most for testing on phones away from wifi. Quest creation stays
+// online-only (the user prefers a clear "save failed" over a hidden
+// queued draft). createQuest / abandonQuest can be added to the
+// queue later if needed; the infrastructure is generic.
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { AppState } from 'react-native';
@@ -20,7 +21,7 @@ const KEY = 'questline.offline.queue.v1';
 /** After this many failed drains, drop the mutation rather than retry forever. */
 const MAX_ATTEMPTS = 5;
 
-export type MutationKind = 'createQuest';
+export type MutationKind = 'completeQuest';
 
 export interface QueuedMutation {
   /** Local id for the queue entry — distinct from any server-side id the
