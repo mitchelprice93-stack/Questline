@@ -61,9 +61,9 @@ export const TUTORIAL_STEPS: Step[] = [
       'Every quest passes through these three states. Active is the work at hand; ' +
       "Completed is the work the Tome has inscribed; Abandoned is the work you've set aside.",
     nextLabel: 'Continue',
-    // Status-tabs row sits a couple px lower than measureInWindow reports
-    // on this layout — the + button doesn't need this. -2 nudges up.
-    yShiftOverride: -2,
+    // Status-tabs row sits a few px lower than measureInWindow reports
+    // on this layout — the + button doesn't need this. -4 nudges up.
+    yShiftOverride: -4,
   },
   {
     targetId: 'tab-bar',
