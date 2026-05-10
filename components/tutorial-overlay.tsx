@@ -28,6 +28,10 @@ interface Step {
    * versus where the bar actually paints.
    */
   spotlightMode?: 'tight' | 'loose';
+  /** Per-step Y override added on top of the mode's default shift, in
+   *  pixels. Negative pushes the spotlight up. Used for one-offs where
+   *  the standard mode lands a few pixels off for a specific target. */
+  yShiftOverride?: number;
 }
 
 export const TUTORIAL_STEPS: Step[] = [
@@ -57,6 +61,9 @@ export const TUTORIAL_STEPS: Step[] = [
       'Every quest passes through these three states. Active is the work at hand; ' +
       "Completed is the work the Tome has inscribed; Abandoned is the work you've set aside.",
     nextLabel: 'Continue',
+    // Status-tabs row sits a couple px lower than measureInWindow reports
+    // on this layout — the + button doesn't need this. -2 nudges up.
+    yShiftOverride: -2,
   },
   {
     targetId: 'tab-bar',
@@ -113,6 +120,7 @@ export function TutorialOverlay() {
           target={target}
           screen={screen}
           mode={current.spotlightMode ?? 'tight'}
+          yShiftOverride={current.yShiftOverride}
         />
       ) : (
         <View style={[StyleSheet.absoluteFillObject, styles.fullScrim]} pointerEvents="auto" />
@@ -138,19 +146,20 @@ interface SpotlightScrimProps {
   target: TargetRect;
   screen: { width: number; height: number };
   mode: 'tight' | 'loose';
+  yShiftOverride?: number;
 }
 
-function SpotlightScrim({ target, screen, mode }: SpotlightScrimProps) {
+function SpotlightScrim({ target, screen, mode, yShiftOverride }: SpotlightScrimProps) {
   // Two padding profiles. 'tight' hugs DOM-measured targets (+ button,
   // status tabs); 'loose' suits virtual rects (tab bar) that sit a touch
   // high vs where the element actually paints, so we add a downward shift.
-  // Tight mode also rides a small downward nudge — measureInWindow on web
-  // reports a Y that the eye reads a few pixels above the visual element,
-  // so we compensate.
+  // Per-step yShiftOverride wins over the mode default for one-off
+  // adjustments (some targets land slightly off even within the same mode).
   const padX = 6;
   const padTop = mode === 'tight' ? 2 : 4;
   const padBottom = mode === 'tight' ? 6 : 4;
-  const yShift = mode === 'tight' ? 0 : 10;
+  const baseShift = mode === 'tight' ? 0 : 10;
+  const yShift = yShiftOverride ?? baseShift;
   const x = Math.max(0, target.x - padX);
   const y = Math.max(0, target.y - padTop + yShift);
   const w = Math.min(screen.width - x, target.width + padX * 2);
