@@ -190,6 +190,16 @@ QUESTLINE_PROJECT.md            # the spec — source of truth for what to build
 
 In rough order, most recent first:
 
+- **Offline write queue (v1, createQuest only)** — `lib/offline-queue.ts`
+  is a generic AsyncStorage-backed queue (enqueue, drainQueue, isNetworkError,
+  AppState-driven init). `lib/quests.ts` splits an `insertQuest` raw call,
+  wraps `createQuest` in try/catch that branches on network error: queues
+  the mutation + drops a synthesized tmp_… Quest into the read cache via
+  `addPendingQuest`. Initial drain runs at app load (deferred 1 tick to let
+  module-load handler registration finish) and on every AppState 'active'
+  transition. Max 5 retries per mutation before drop. completeQuest /
+  abandonQuest / character-sheet CRUD still throw on network failure —
+  scope deliberately narrow for v1.
 - **Approaching-deadline push warnings** — migration
   `20260509000000_approaching_deadline_warnings.sql`. New
   `notify_approaching_deadlines(uuid)` function dispatches an Expo push
@@ -270,7 +280,8 @@ In rough order, most recent first:
   Character Sheet still in place as backup.
 - **Offline read-cache** — `lib/offline.ts` snapshots quest lists to
   AsyncStorage on every successful fetch; falls back when network
-  fails. Write queue NOT yet built — mutations still require network.
+  fails. v1 write queue (createQuest only) landed in a follow-up — see
+  recent work.
 - **RC + paywall + customer center** — full scaffolding. Real purchases
   blocked on Google Play / Apple Developer products.
 - **App Store copy drafts** — `prompts/app-store-copy-draft.md` covers
@@ -288,8 +299,11 @@ In rough order, most recent first:
 2. **EAS dev build** for native testing of paywall + push +
    subscriptions: `npx eas-cli build --profile development --platform
    android` once Google products exist.
-3. **Offline write queue** — companion to read-cache; queue pending
-   mutations and replay on reconnect.
+3. **Extend offline write queue** — v1 covers createQuest. Add
+   completeQuest / abandonQuest / faction & campaign CRUD when those
+   surfaces start mattering offline. NetInfo for instant reconnect
+   detection (currently relies on AppState foreground). Optional UI
+   indicator surfacing pending count.
 4. **Apple Sign In** scaffolding (deferred indefinitely per Mitchel —
    Android-first).
 
