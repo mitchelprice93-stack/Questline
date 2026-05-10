@@ -55,6 +55,29 @@ export async function readCachedQuests(status: QuestStatus): Promise<CachedQuest
   }
 }
 
+/**
+ * Optimistic insert — prepend a quest to the cached list for its status.
+ * Called by the write-side queue when a createQuest fails for network
+ * reasons: we drop the synthesized "pending" quest into the cache so the
+ * user sees their work immediately on the next list view, even though
+ * the server doesn't know about it yet. The pending quest's id is a
+ * temp id ("tmp_…") which lets the UI distinguish it later if needed.
+ *
+ * No-op when the cache for that status is empty — without a baseline
+ * list we can't fall back to anything anyway, and the next online fetch
+ * will surface the real row from the server.
+ */
+export async function addPendingQuest(quest: Quest): Promise<void> {
+  try {
+    const cached = await readCachedQuests(quest.status);
+    if (!cached) return;
+    const next = [quest, ...cached.quests.filter((q) => q.id !== quest.id)];
+    await cacheQuests(quest.status, next);
+  } catch (e) {
+    console.warn('[offline] addPendingQuest failed', e);
+  }
+}
+
 /** Wipe the cache. Useful on sign-out so a different user signing in on
  *  the same device doesn't see the previous user's quests. */
 export async function clearQuestCache(): Promise<void> {

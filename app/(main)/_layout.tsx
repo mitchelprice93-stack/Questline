@@ -4,6 +4,10 @@ import { Dimensions, View } from 'react-native';
 
 import { TUTORIAL_STEPS, TutorialOverlay } from '../../components/tutorial-overlay';
 import { AmbientAudioRoot } from '../../lib/ambient-audio';
+import { initOfflineQueue } from '../../lib/offline-queue';
+// Side-effect import: registers the createQuest replay handler with the
+// offline queue. Must happen before initOfflineQueue's first drain.
+import '../../lib/quests';
 import { playSfx } from '../../lib/sfx';
 import { TutorialProvider, useTutorial } from '../../lib/tutorial-context';
 
@@ -16,6 +20,13 @@ export default function MainLayout() {
     // the user is on Settings or Character when they tap "Replay orientation".
     router.replace('/(main)/quest-board');
   }, [router]);
+
+  // Wire up the offline write queue once. Drains any pending mutations
+  // on initial load and on every app foreground (covers reconnect-while-
+  // backgrounded). Idempotent — safe if MainLayout remounts.
+  useEffect(() => {
+    initOfflineQueue();
+  }, []);
 
   return (
     <TutorialProvider totalSteps={TUTORIAL_STEPS.length} onStart={onTutorialStart}>
