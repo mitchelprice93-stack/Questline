@@ -6,6 +6,12 @@
 // helpers fail fast on no network. Treat that as a known gap until the
 // follow-up that wires SQLite/MMKV.
 
+import {
+  onCampaignComplete,
+  onQuestAbandon,
+  onQuestComplete,
+  onStreakMilestone,
+} from './engine/achievementTriggers';
 import { xpForTier } from './engine/xp';
 import { asError } from './errors';
 import { cancelDeadlineReminders, scheduleDeadlineReminders } from './notifications';
@@ -217,12 +223,63 @@ async function synthesizeOfflineCompletion(questId: string): Promise<CompleteQue
   };
 }
 
+/**
+ * Fire achievement triggers for a just-completed quest. Fire-and-forget —
+ * achievement work must not block the user's quest-complete UX, and any
+ * failure here is logged inside the trigger module rather than thrown.
+ *
+ * Quest is captured BEFORE completion so the_comeback's age check sees the
+ * prior last_completed_at, not the freshly-stamped now().
+ */
+async function fireCompletionAchievements(
+  questBefore: Quest,
+  result: CompleteQuestResult,
+): Promise<void> {
+  try {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) return;
+
+    void onQuestComplete(user.id, questBefore);
+
+    if (questBefore.recurrence && result.newStreak > 0) {
+      void onStreakMilestone(user.id, questBefore.id, questBefore.recurrence, result.newStreak);
+    }
+
+    // The bump_faction_and_campaign trigger may have just flipped the linked
+    // campaign to 'completed'. Re-read it to detect that — if status flipped,
+    // fire the arc_completed template (idempotent via unique index).
+    if (questBefore.campaign_id) {
+      const { data: campaign } = await supabase
+        .from('campaigns')
+        .select('id, arc_name, faction_id, status')
+        .eq('id', questBefore.campaign_id)
+        .maybeSingle();
+      if (campaign && campaign.status === 'completed') {
+        void onCampaignComplete(user.id, {
+          id: campaign.id,
+          arc_name: campaign.arc_name,
+          faction_id: campaign.faction_id,
+        });
+      }
+    }
+  } catch (e) {
+    console.warn('[achievements] post-completion fire failed', e);
+  }
+}
+
 export async function completeQuest(questId: string): Promise<CompleteQuestResult> {
+  // Fetch the quest BEFORE the RPC stamps last_completed_at — the achievement
+  // age check (the_comeback) needs the prior gap, not zero.
+  const questBefore = await getQuest(questId).catch(() => null);
+
   try {
     const result = await callCompleteRpc(questId);
     // For one-shot quests the row is now in 'completed' status; reminders
     // no longer make sense. Recurring quests stay active so we leave them.
     void cancelDeadlineReminders(questId);
+    if (questBefore) void fireCompletionAchievements(questBefore, result);
     return result;
   } catch (e) {
     if (!isNetworkError(e)) throw e;
@@ -231,6 +288,10 @@ export async function completeQuest(questId: string): Promise<CompleteQuestResul
     // replay when the app foregrounds with connectivity. Return a
     // synthesized result so the calling UI (level-up takeover, XP
     // toast, SFX) behaves as if the server had answered.
+    //
+    // Achievements DO NOT fire on the optimistic path — server state is
+    // the source of truth, and the queued replay below catches them up
+    // when the network returns.
     const optimistic = await synthesizeOfflineCompletion(questId);
     await markPendingCompletion(questId);
     await enqueue('completeQuest', { questId });
@@ -240,15 +301,32 @@ export async function completeQuest(questId: string): Promise<CompleteQuestResul
 }
 
 // Register the replay handler at module load so drainQueue can find it.
+// Achievements fire here too so an offline-completed quest still surfaces
+// any earned achievements once the queue drains.
 registerHandler('completeQuest', async (payload) => {
   const { questId } = payload as { questId: string };
-  await callCompleteRpc(questId);
+  const questBefore = await getQuest(questId).catch(() => null);
+  const result = await callCompleteRpc(questId);
+  if (questBefore) void fireCompletionAchievements(questBefore, result);
 });
 
 export async function abandonQuest(questId: string): Promise<void> {
+  // Capture the quest BEFORE abandon flips status — the engine needs
+  // created_at + the (still-active) timestamps to compute age.
+  const quest = await getQuest(questId).catch(() => null);
   const { error } = await supabase.rpc('abandon_quest', { quest_id: questId });
   if (error) throw asError(error);
   void cancelDeadlineReminders(questId);
+  if (quest) {
+    try {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (user) void onQuestAbandon(user.id, quest);
+    } catch (e) {
+      console.warn('[achievements] post-abandon fire failed', e);
+    }
+  }
 }
 
 export async function updateQuestObjectives(

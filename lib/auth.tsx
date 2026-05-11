@@ -7,6 +7,7 @@ import {
   markCinematicSeen as markSeenAsync,
   resetCinematicSeen as resetSeenAsync,
 } from './cinematic';
+import { onUserLogin } from './engine/achievementTriggers';
 import { registerPushTokenForCurrentUser } from './notifications';
 import { clearQuestCache } from './offline';
 import { getCurrentProfile } from './profile';
@@ -143,6 +144,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // attribute correctly. No-op on web / without an RC API key.
     if (session?.user.id) {
       void configurePurchases(session.user.id);
+      // Achievement check: drives Resurrected (30+ day absence) and
+      // Final Page (365 days since character creation), and stamps a
+      // fresh last_seen_at for the next session to compare against.
+      void onUserLogin(session.user.id);
     }
   }, [session?.user.id, loading, refetchSubscription]);
 

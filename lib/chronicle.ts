@@ -6,11 +6,13 @@
 
 import { Platform } from 'react-native';
 
+import { onChronicleExport } from './engine/achievementTriggers';
 import { calculateLevel } from './engine/xp';
 import { listActiveDebuffs } from './debuffs';
 import { errorMessage } from './errors';
 import { getCurrentProfile, listCampaigns, listFactions } from './profile';
 import { listQuests } from './quests';
+import { supabase } from './supabase';
 import type { Campaign, Faction, Profile, Quest } from './types/models';
 
 interface ChronicleSnapshot {
@@ -158,6 +160,19 @@ export function renderChronicle(snap: ChronicleSnapshot, now: Date = new Date())
  * Generate + hand off to the platform's download/share path. Returns when
  * the share sheet is dismissed (native) or the download is initiated (web).
  */
+/** Fire-and-forget achievement trigger. Looked up at the call site rather
+ *  than top-of-function so a missing session doesn't abort the export. */
+async function fireExportAchievement(): Promise<void> {
+  try {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (user) void onChronicleExport(user.id);
+  } catch (e) {
+    console.warn('[achievements] post-export fire failed', e);
+  }
+}
+
 export async function shareChronicle(): Promise<void> {
   const snap = await loadSnapshot();
   const text = renderChronicle(snap);
@@ -175,6 +190,7 @@ export async function shareChronicle(): Promise<void> {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
+    void fireExportAchievement();
     return;
   }
 
@@ -194,6 +210,7 @@ export async function shareChronicle(): Promise<void> {
     } else {
       throw new Error('Sharing unavailable on this device.');
     }
+    void fireExportAchievement();
   } catch (e) {
     throw new Error(`Chronicle export failed: ${errorMessage(e)}`);
   }
