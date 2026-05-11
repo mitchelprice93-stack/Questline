@@ -28,6 +28,8 @@ import {
   type ActiveModifier,
 } from '../../lib/debuffs';
 import { confirmDestructive, showInfoMessage } from '../../lib/dialogs';
+import { ACHIEVEMENTS } from '../../lib/engine/achievements';
+import { loadAchievementSnapshot } from '../../lib/engine/achievementTriggers';
 import { calculateLevel, levelProgressFraction, type Difficulty } from '../../lib/engine/xp';
 import { errorMessage } from '../../lib/errors';
 import { ParchmentScreen } from '../../lib/parchment';
@@ -46,6 +48,9 @@ interface SheetData {
   activeQuests: number;
   buffs: ActiveModifier[];
   debuffs: ActiveModifier[];
+  /** Counts for the "Achievements: N / 24 + X arcs" line. Null while loading
+   *  the snapshot the first time; the line just renders without it then. */
+  achievements: { earnedCount: number; totalCount: number; arcCount: number } | null;
 }
 
 const DIFFICULTIES: Difficulty[] = ['apprentice', 'adept', 'master', 'legendary'];
@@ -96,7 +101,24 @@ export default function CharacterSheet() {
         listActiveBuffs(),
         listActiveDebuffs(),
       ]);
-      setData({ profile, factions, campaigns, activeQuests, buffs, debuffs });
+      // Achievement counts shown on the sheet are best-effort — render the
+      // sheet even if this fails so the user still sees their character.
+      let achievements: SheetData['achievements'] = null;
+      if (profile) {
+        try {
+          const snap = await loadAchievementSnapshot(profile.id);
+          const earnedCodes = new Set(snap.earned.map((r) => r.code));
+          const totalCount = ACHIEVEMENTS.filter((a) => !a.isTemplate).length;
+          const earnedCount = ACHIEVEMENTS.filter(
+            (a) => !a.isTemplate && earnedCodes.has(a.code),
+          ).length;
+          const arcCount = snap.earned.filter((r) => r.code === 'arc_completed').length;
+          achievements = { earnedCount, totalCount, arcCount };
+        } catch (e) {
+          console.warn('achievement snapshot failed', e);
+        }
+      }
+      setData({ profile, factions, campaigns, activeQuests, buffs, debuffs, achievements });
     } catch (e) {
       setError(errorMessage(e));
     }
@@ -166,7 +188,7 @@ export default function CharacterSheet() {
     );
   }
 
-  const { profile, factions, campaigns, activeQuests, buffs, debuffs } = data;
+  const { profile, factions, campaigns, activeQuests, buffs, debuffs, achievements } = data;
   const restCooldownMs = 7 * 24 * 60 * 60 * 1000;
   const restAvailableAt = profile?.last_rest_at
     ? new Date(profile.last_rest_at).getTime() + restCooldownMs
@@ -232,6 +254,30 @@ export default function CharacterSheet() {
         </Text>
         <Text className="font-display-bold text-2xl text-stone-900">{activeQuests}</Text>
       </View>
+
+      {/* Achievements — counts plus tap-to-open. The arc count appears as
+          a "+ X arcs" suffix when the chronicler has any. */}
+      <Pressable
+        onPress={() => router.push('/achievements')}
+        className="mb-8 rounded-md border border-stone-800 bg-amber-50/40 p-4 active:bg-amber-100/60"
+      >
+        <Text className="mb-1 font-display text-lg uppercase tracking-widest text-stone-700">
+          Achievements
+        </Text>
+        {achievements ? (
+          <Text className="font-display-bold text-2xl text-stone-900">
+            {achievements.earnedCount} / {achievements.totalCount}
+            {achievements.arcCount > 0 ? (
+              <Text className="font-body text-lg text-amber-800">
+                {`  + ${achievements.arcCount} arc${achievements.arcCount === 1 ? '' : 's'}`}
+              </Text>
+            ) : null}
+          </Text>
+        ) : (
+          <Text className="font-body italic text-stone-500">Loading the ledger…</Text>
+        )}
+        <Text className="mt-1 font-body text-base text-amber-800">View the ledger →</Text>
+      </Pressable>
 
       {/* Buffs — earned by completing quests under their granted-buff
           conditions. Persist for a tier-scaled lifetime; stack while
