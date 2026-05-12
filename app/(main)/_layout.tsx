@@ -2,6 +2,7 @@ import { Tabs, useRouter } from 'expo-router';
 import { useCallback, useEffect } from 'react';
 import { Dimensions, View } from 'react-native';
 
+import { AchievementSurface } from '../../components/AchievementSurface';
 import { TUTORIAL_STEPS, TutorialOverlay } from '../../components/tutorial-overlay';
 import { AmbientAudioRoot } from '../../lib/ambient-audio';
 import { initOfflineQueue } from '../../lib/offline-queue';
@@ -71,12 +72,19 @@ export default function MainLayout() {
           <Tabs.Screen name="paywall" options={{ href: null }} />
           <Tabs.Screen name="hero-cinematic" options={{ href: null }} />
           <Tabs.Screen name="customer-center" options={{ href: null }} />
+          {/* Achievements screen — reachable from the Character Sheet's
+              "Achievements: N / 24" line, hidden from the tab bar. */}
+          <Tabs.Screen name="achievements" options={{ href: null }} />
         </Tabs>
         <TabBarTutorialAnchor />
         {/* First-launch orientation. Renders nothing once the user has
             dismissed it; lives at the layout root so it can overlay any
             tab the user happens to be on. */}
         <TutorialOverlay />
+        {/* Achievement toast / cinematic surface. Subscribes to the global
+            feed; mounted once at the root so it overlays whichever tab
+            the user happens to be on when an achievement fires. */}
+        <AchievementSurface />
       </View>
     </TutorialProvider>
   );

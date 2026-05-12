@@ -59,7 +59,28 @@ export interface Profile {
   difficulty: Difficulty;
   /** Last time the user invoked +rest. Drives the 7-day cooldown. */
   last_rest_at: string | null;
+  /** Last time the user opened the app (session.user.id observed by AuthProvider).
+   *  Drives the "Resurrected" achievement (login after 30-day absence). */
+  last_seen_at: string | null;
   created_at: string;
+}
+
+// ---- Achievements (v1.1) --------------------------------------------------
+
+export interface AchievementEarnedRow {
+  id: string;
+  user_id: string;
+  achievement_code: string;
+  metadata: Record<string, unknown> | null;
+  earned_at: string;
+}
+
+export interface AchievementProgressRow {
+  user_id: string;
+  achievement_code: string;
+  current_value: number;
+  target_value: number;
+  last_updated: string;
 }
 
 export interface Faction {

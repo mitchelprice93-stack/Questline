@@ -39,6 +39,70 @@ export type Database = {
   }
   public: {
     Tables: {
+      achievement_progress: {
+        Row: {
+          achievement_code: string
+          current_value: number
+          last_updated: string
+          target_value: number
+          user_id: string
+        }
+        Insert: {
+          achievement_code: string
+          current_value?: number
+          last_updated?: string
+          target_value: number
+          user_id: string
+        }
+        Update: {
+          achievement_code?: string
+          current_value?: number
+          last_updated?: string
+          target_value?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "achievement_progress_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      achievements_earned: {
+        Row: {
+          achievement_code: string
+          earned_at: string
+          id: string
+          metadata: Json | null
+          user_id: string
+        }
+        Insert: {
+          achievement_code: string
+          earned_at?: string
+          id?: string
+          metadata?: Json | null
+          user_id: string
+        }
+        Update: {
+          achievement_code?: string
+          earned_at?: string
+          id?: string
+          metadata?: Json | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "achievements_earned_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ai_call_log: {
         Row: {
           cost_usd: number | null
@@ -235,6 +299,7 @@ export type Database = {
           display_name: string | null
           id: string
           last_rest_at: string | null
+          last_seen_at: string | null
           level: number
           total_xp: number
         }
@@ -246,6 +311,7 @@ export type Database = {
           display_name?: string | null
           id: string
           last_rest_at?: string | null
+          last_seen_at?: string | null
           level?: number
           total_xp?: number
         }
@@ -257,6 +323,7 @@ export type Database = {
           display_name?: string | null
           id?: string
           last_rest_at?: string | null
+          last_seen_at?: string | null
           level?: number
           total_xp?: number
         }

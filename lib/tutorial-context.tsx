@@ -10,6 +10,7 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
+import { InteractionManager } from 'react-native';
 
 import { hasSeenTutorial, markTutorialSeen, resetTutorial } from './tutorial';
 
@@ -57,24 +58,44 @@ export function TutorialProvider({ children, totalSteps, onStart }: ProviderProp
   // overlay to re-measure when the child finishes laying out.
   const [targets, setTargets] = useState<Record<string, TargetRect>>({});
 
-  // Auto-start on first launch when the user hasn't seen the tutorial.
-  useEffect(() => {
-    let cancelled = false;
-    void hasSeenTutorial().then((seen) => {
-      if (cancelled || seen) return;
-      setStep(0);
-      onStart?.();
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [onStart]);
-
-  const start = useCallback(async () => {
-    await resetTutorial();
+  const activate = useCallback(() => {
     setStep(0);
     onStart?.();
   }, [onStart]);
+
+  // Auto-start on first launch when the user hasn't seen the tutorial.
+  //
+  // Deferred past the initial mount on purpose. The Replay-from-Settings
+  // flow runs against a warm app — fonts applied, Quest Board mounted, tab
+  // bar measured, async data loaded — so TutorialTarget rects are stable
+  // and the spotlights land where the yShift overrides expect them.
+  // First launch fires the moment MainLayout mounts, against rects captured
+  // mid-settle, which puts the spotlights a few pixels off. Wait for any
+  // in-flight transitions, then a short grace period, before activating —
+  // that matches the warm-app state the Replay path enjoys.
+  useEffect(() => {
+    let cancelled = false;
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    void hasSeenTutorial().then((seen) => {
+      if (cancelled || seen) return;
+      InteractionManager.runAfterInteractions(() => {
+        if (cancelled) return;
+        timer = setTimeout(() => {
+          if (cancelled) return;
+          activate();
+        }, 400);
+      });
+    });
+    return () => {
+      cancelled = true;
+      if (timer) clearTimeout(timer);
+    };
+  }, [activate]);
+
+  const start = useCallback(async () => {
+    await resetTutorial();
+    activate();
+  }, [activate]);
 
   const next = useCallback(async () => {
     setStep((prev) => {

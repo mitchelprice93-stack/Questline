@@ -3,6 +3,7 @@
 // The DB owns the math (refresh_debuffs_for, complete_quest, rest_user RPCs).
 // These wrappers just unwrap supabase-js error envelopes.
 
+import { onDebuffClear } from './engine/achievementTriggers';
 import { asError } from './errors';
 import { supabase } from './supabase';
 
@@ -57,8 +58,22 @@ export async function restUser(): Promise<RestResult> {
   if (error) throw asError(error);
   const row = Array.isArray(data) ? data[0] : data;
   if (!row) throw new Error('rest_user returned no row');
+  const clearedCount = Number(row.cleared_count);
+  // The +rest RPC only clears debuffs older than 14 days, so any non-zero
+  // clear count satisfies the Penitent achievement's precondition. Fire the
+  // trigger and let the registry idempotency check decide whether to grant.
+  if (clearedCount > 0) {
+    try {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (user) void onDebuffClear(user.id);
+    } catch (e) {
+      console.warn('[achievements] post-rest fire failed', e);
+    }
+  }
   return {
-    clearedCount: Number(row.cleared_count),
+    clearedCount,
     nextRestAvailableAt: String(row.next_rest_available_at),
   };
 }

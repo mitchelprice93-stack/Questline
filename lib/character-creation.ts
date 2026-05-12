@@ -4,6 +4,7 @@
 // apply_character_creation RPC.
 
 import { callClaudeProxy, ClaudeProxyError } from './ai';
+import { onCharacterCreated } from './engine/achievementTriggers';
 import { assessStartingLevel, LEVEL_THRESHOLDS } from './engine/xp';
 import { asError } from './errors';
 import { supabase } from './supabase';
@@ -157,4 +158,20 @@ export async function applyCharacterSheet(
     p_campaigns: sheet.campaigns,
   });
   if (error) throw asError(error);
+
+  // Fire chronicle_begins (always) and known_by_name (when the AI assigned
+  // a non-empty title). Fire-and-forget — a failed achievement insert never
+  // blocks the user from entering the app.
+  try {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (user) {
+      void onCharacterCreated(user.id, {
+        hasCharacterTitle: !!sheet.character_title?.trim(),
+      });
+    }
+  } catch (e) {
+    console.warn('[achievements] post-character-creation fire failed', e);
+  }
 }
