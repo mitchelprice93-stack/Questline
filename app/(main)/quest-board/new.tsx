@@ -74,6 +74,24 @@ function recurrenceForDb(choice: RecurrenceChoice): QuestRecurrence {
   return choice === 'none' ? null : choice;
 }
 
+// Tier-scaled default for campaign_contribution_pct. Mirrors the OLD
+// trigger behavior so newly-linked campaigns feel familiar before the
+// chronicler overrides the value.
+function defaultPctForTier(t: QuestTier): number {
+  switch (t) {
+    case 'trivial':
+      return 2;
+    case 'minor':
+      return 5;
+    case 'standard':
+      return 10;
+    case 'major':
+      return 20;
+    case 'legendary':
+      return 40;
+  }
+}
+
 type Phase = 'input' | 'loading' | 'review';
 
 // Parchment-unfurl entrance for the review screen — start collapsed
@@ -113,6 +131,11 @@ export default function NewQuest() {
   const [recurrenceUnit, setRecurrenceUnit] = useState<RecurrenceUnit>('days');
   const [buff, setBuff] = useState<BuffDraft>(emptyBuffDraft());
   const [campaignId, setCampaignId] = useState<string | null>(null);
+  // % the campaign advances when this quest completes. Defaults via
+  // tier-scaled fallback whenever a campaign is first linked; the user
+  // can override on the review screen. String for the TextInput; we
+  // parse + clamp at save time.
+  const [campaignContributionPct, setCampaignContributionPct] = useState<string>('10');
   const [factionId, setFactionId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -145,6 +168,11 @@ export default function NewQuest() {
       // validated against the active list in generateQuest — null when no
       // match. User can override in the picker.
       setCampaignId(generated.suggested_campaign_id);
+      // Auto-default the campaign contribution % to the tier scale when
+      // the AI links to a campaign. User can override on the review screen.
+      if (generated.suggested_campaign_id) {
+        setCampaignContributionPct(String(defaultPctForTier(generated.suggested_tier)));
+      }
       setFactionId(generated.suggested_faction_id);
       // Apply the AI's recurrence inference. The AI never returns 'custom'
       // (too ambiguous to infer); the user picks that manually if they
@@ -195,6 +223,17 @@ export default function NewQuest() {
         setError('Custom cadence needs a positive number for the interval.');
         return;
       }
+      // Validate + clamp campaign % when a campaign is linked.
+      let parsedPct: number | null = null;
+      if (campaignId) {
+        const raw = Math.floor(Number(campaignContributionPct) || 0);
+        if (raw < 1 || raw > 100) {
+          playSfx('error');
+          setError('Campaign contribution must be between 1 and 100.');
+          return;
+        }
+        parsedPct = raw;
+      }
       await createQuest({
         title: title.trim(),
         description: description.trim() ? description.trim() : null,
@@ -206,6 +245,7 @@ export default function NewQuest() {
         recurrenceUnit: recurrence === 'custom' ? recurrenceUnit : null,
         grantedBuff: buffDraftToPayload(buff),
         campaignId,
+        campaignContributionPct: parsedPct,
         factionId,
         objectives: objectives
           .map((o) => ({ ...o, text: o.text.trim() }))
@@ -407,15 +447,42 @@ export default function NewQuest() {
         </View>
       ) : null}
 
-      <View className="mb-6">
-        <Text className="mb-2 font-body text-xl text-stone-700">Faction (optional)</Text>
-        <FactionPicker value={factionId} onChange={setFactionId} disabled={submitting} />
-      </View>
-
-      <View className="mb-6">
-        <Text className="mb-2 font-body text-xl text-stone-700">Campaign (optional)</Text>
-        <CampaignPicker value={campaignId} onChange={setCampaignId} disabled={submitting} />
-      </View>
+      {/* Faction + Campaign pickers carry their own labels via DropdownPicker
+          so the parent doesn't need a wrapping View+Text — keeps spacing
+          consistent with the other dropdowns on this form. */}
+      <FactionPicker value={factionId} onChange={setFactionId} disabled={submitting} />
+      <CampaignPicker
+        value={campaignId}
+        onChange={(next) => {
+          setCampaignId(next);
+          // When a campaign is first linked, seed the % from the tier so
+          // the input doesn't look empty. Clear when unlinked.
+          if (next && (!campaignId || campaignContributionPct === '')) {
+            setCampaignContributionPct(String(defaultPctForTier(tier)));
+          }
+        }}
+        disabled={submitting}
+      />
+      {campaignId ? (
+        <View className="mb-4 rounded-md border border-amber-900/40 bg-amber-50/40 p-4">
+          <Text className="mb-2 font-body text-base text-stone-600">
+            Completing this quest advances the campaign by…
+          </Text>
+          <View className="flex-row items-center gap-2">
+            <TextInput
+              value={campaignContributionPct}
+              onChangeText={(t) => setCampaignContributionPct(t.replace(/[^0-9]/g, '').slice(0, 3))}
+              keyboardType="number-pad"
+              editable={!submitting}
+              className="w-20 rounded-md border border-stone-700 bg-amber-50/40 px-3 py-2 font-body text-xl text-stone-900"
+            />
+            <Text className="font-body text-xl text-stone-700">%</Text>
+          </View>
+          <Text className="mt-2 font-body text-sm italic text-stone-500">
+            1–100. The campaign auto-closes the moment progress reaches 100%.
+          </Text>
+        </View>
+      ) : null}
 
       <View className="mb-6">
         <Text className="mb-2 font-body text-xl text-stone-700">Objectives</Text>

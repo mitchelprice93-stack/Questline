@@ -47,6 +47,10 @@ export interface Quest {
   last_completed_at: string | null;
   /** Set when the quest was abandoned. */
   abandoned_at: string | null;
+  /** How many percentage points completing this quest advances its linked
+   *  campaign. 1-100; null iff campaign_id is null. The DB enforces the
+   *  pairing invariant via CHECK constraint. */
+  campaign_contribution_pct: number | null;
   /** Pre-declared buff this quest will grant on completion if its condition
    *  is satisfied. All four fields move together — either every one is set
    *  or every one is null. */

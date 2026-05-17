@@ -62,8 +62,12 @@ export interface CreateQuestInput {
   /** Optional pre-declared buff awarded on completion if its condition is met. */
   grantedBuff?: GrantedBuff | null;
   /** Optional campaign this quest contributes to. Completing the quest
-   *  auto-advances the campaign's progress_pct via DB trigger. */
+   *  auto-advances the campaign's progress_pct by `campaignContributionPct`
+   *  (or a tier-scaled default if omitted on creation). */
   campaignId?: string | null;
+  /** % the campaign advances when this quest completes (1-100). Required
+   *  when campaignId is set, null/omitted when not. */
+  campaignContributionPct?: number | null;
   /** Optional faction this quest counts toward. Completing the quest
    *  auto-increments the faction's reputation_count via DB trigger. */
   factionId?: string | null;
@@ -86,6 +90,43 @@ function recurrenceColumns(input: {
     recurrence_interval: input.recurrenceInterval ?? null,
     recurrence_unit: input.recurrenceUnit ?? null,
   };
+}
+
+/** Default campaign-contribution % when the caller doesn't specify. Mirrors
+ *  the OLD tier-scaled trigger so quest behavior on first creation feels
+ *  identical to what existed before per-quest % became user-editable. */
+function defaultCampaignContributionForTier(tier: QuestTier): number {
+  switch (tier) {
+    case 'trivial':
+      return 2;
+    case 'minor':
+      return 5;
+    case 'standard':
+      return 10;
+    case 'major':
+      return 20;
+    case 'legendary':
+      return 40;
+  }
+}
+
+/** Normalize campaign + contribution-% to satisfy the DB CHECK invariant:
+ *  both null, or both set. Tier-scaled default applied when a campaign
+ *  is linked but no explicit % was passed. */
+function campaignColumns(input: {
+  campaignId?: string | null;
+  campaignContributionPct?: number | null;
+  tier: QuestTier;
+}) {
+  const campaignId = input.campaignId ?? null;
+  if (!campaignId) {
+    return { campaign_id: null, campaign_contribution_pct: null };
+  }
+  const pct =
+    typeof input.campaignContributionPct === 'number'
+      ? Math.max(1, Math.min(100, Math.round(input.campaignContributionPct)))
+      : defaultCampaignContributionForTier(input.tier);
+  return { campaign_id: campaignId, campaign_contribution_pct: pct };
 }
 
 function buffColumns(buff: GrantedBuff | null | undefined) {
@@ -178,7 +219,7 @@ export async function createQuest(input: CreateQuestInput): Promise<Quest> {
       deadline: input.deadline,
       objectives: input.objectives ?? [],
       ...recurrenceColumns(input),
-      campaign_id: input.campaignId ?? null,
+      ...campaignColumns(input),
       faction_id: input.factionId ?? null,
       ...buffColumns(input.grantedBuff),
     })
@@ -376,6 +417,9 @@ export interface UpdateQuestInput {
   /** Pass null to detach the quest from its campaign, or undefined to
    *  leave unchanged. */
   campaignId?: string | null;
+  /** New contribution % when changing campaign or tweaking the amount.
+   *  Required when campaignId is set, ignored when campaignId is null. */
+  campaignContributionPct?: number | null;
   /** Pass null to detach the quest from its faction, or undefined to
    *  leave unchanged. */
   factionId?: string | null;
@@ -405,7 +449,11 @@ export async function updateQuest(questId: string, input: UpdateQuestInput): Pro
     objectives: input.objectives,
     ...recurrenceColumns(input),
     ...(input.grantedBuff !== undefined ? buffColumns(input.grantedBuff) : {}),
-    ...(input.campaignId !== undefined ? { campaign_id: input.campaignId } : {}),
+    // Apply campaign+pct together so the CHECK pairing invariant holds.
+    // We always pass both (or both null) whenever the caller touches
+    // campaignId, even if pct was omitted (defaultCampaignContributionForTier
+    // fills in a sensible value).
+    ...(input.campaignId !== undefined ? campaignColumns(input) : {}),
     ...(input.factionId !== undefined ? { faction_id: input.factionId } : {}),
   };
   const { data, error } = await supabase

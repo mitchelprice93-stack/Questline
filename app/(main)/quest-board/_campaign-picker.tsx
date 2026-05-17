@@ -3,14 +3,21 @@
 // so completing it auto-bumps that campaign's progress (the SQL trigger
 // in 20260508000004 does the bumping).
 //
-// Hidden when the user has no active campaigns. Leading underscore keeps
-// expo-router from treating this as a route.
+// Hidden when the user has no active campaigns — leading underscore
+// keeps expo-router from treating this as a route.
+//
+// UI delegates to the shared <DropdownPicker> so it matches Tier /
+// Classification / Recurrence / Faction on the same form. The wrapper
+// maps the dropdown's string value to/from null (no-campaign) at the
+// component boundary.
 
 import { useEffect, useState } from 'react';
-import { Pressable, Text, View } from 'react-native';
 
+import { DropdownPicker } from '../../../components/dropdown-picker';
 import { listCampaigns } from '../../../lib/profile';
 import type { Campaign } from '../../../lib/types/models';
+
+const NONE = '__none__';
 
 interface Props {
   /** Currently-selected campaign id, or null for "no campaign". */
@@ -36,67 +43,30 @@ export function CampaignPicker({ value, onChange, disabled }: Props) {
     };
   }, []);
 
-  // Don't render anything until we know whether there are any campaigns,
-  // and don't render at all if the user has none — picker would just be
-  // a "None" toggle, which is the default state anyway.
   if (campaigns === null) return null;
   if (campaigns.length === 0) return null;
 
-  return (
-    <View>
-      <View className="flex-row flex-wrap gap-2">
-        <Chip
-          label="None"
-          selected={value === null}
-          onPress={() => onChange(null)}
-          disabled={disabled}
-        />
-        {campaigns.map((c) => (
-          <Chip
-            key={c.id}
-            label={c.arc_name}
-            selected={value === c.id}
-            onPress={() => onChange(c.id)}
-            disabled={disabled}
-          />
-        ))}
-      </View>
-      {value !== null ? (
-        <Text className="mt-2 font-body text-sm text-stone-600">
-          Completing this quest will advance the campaign by a tier-scaled amount
-          (trivial 2% → legendary 40%).
-        </Text>
-      ) : null}
-    </View>
-  );
-}
+  const options = [
+    { value: NONE, label: 'None', description: 'No campaign linked.' },
+    ...campaigns.map((c) => ({
+      value: c.id,
+      label: c.arc_name,
+      description: c.real_world_goal,
+      rightLabel: `${c.progress_pct}%`,
+    })),
+  ];
 
-function Chip({
-  label,
-  selected,
-  onPress,
-  disabled,
-}: {
-  label: string;
-  selected: boolean;
-  onPress: () => void;
-  disabled?: boolean;
-}) {
+  // The contribution % input lives in the parent (next to the campaign
+  // picker), so the picker itself just describes the link relationship.
   return (
-    <Pressable
-      onPress={onPress}
+    <DropdownPicker
+      label="Campaign (optional)"
+      value={value ?? NONE}
+      onChange={(v) => onChange(v === NONE ? null : v)}
       disabled={disabled}
-      className={`rounded-full border px-3 py-1.5 ${
-        selected ? 'border-amber-500 bg-amber-600/20' : 'border-stone-700 bg-amber-50/40'
-      }`}
-    >
-      <Text
-        className={`font-body-medium text-base ${
-          selected ? 'text-amber-800' : 'text-stone-700'
-        }`}
-      >
-        {label}
-      </Text>
-    </Pressable>
+      headerInMenu="Choose the campaign"
+      options={options}
+      showSelectedRightLabel={false}
+    />
   );
 }

@@ -105,6 +105,22 @@ function recurrenceForUi(value: QuestRecurrence): RecurrenceChoice {
   return value ?? 'none';
 }
 
+// Tier-scaled default for campaign_contribution_pct. Mirrors new.tsx.
+function defaultPctForTier(t: QuestTier): number {
+  switch (t) {
+    case 'trivial':
+      return 2;
+    case 'minor':
+      return 5;
+    case 'standard':
+      return 10;
+    case 'major':
+      return 20;
+    case 'legendary':
+      return 40;
+  }
+}
+
 interface LevelUpState {
   oldLevel: number;
   newLevel: number;
@@ -157,6 +173,8 @@ export default function QuestDetail() {
   const [editRecurrenceUnit, setEditRecurrenceUnit] = useState<RecurrenceUnit>('days');
   const [editBuff, setEditBuff] = useState<BuffDraft>(emptyBuffDraft());
   const [editCampaignId, setEditCampaignId] = useState<string | null>(null);
+  // Per-quest campaign contribution %; string for TextInput, parsed at save.
+  const [editCampaignContributionPct, setEditCampaignContributionPct] = useState<string>('10');
   const [editFactionId, setEditFactionId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -342,6 +360,11 @@ export default function QuestDetail() {
     setEditRecurrenceUnit((quest.recurrence_unit as RecurrenceUnit) ?? 'days');
     setEditBuff(buffDraftFromQuest(quest));
     setEditCampaignId(quest.campaign_id);
+    setEditCampaignContributionPct(
+      quest.campaign_contribution_pct != null
+        ? String(quest.campaign_contribution_pct)
+        : String(defaultPctForTier(quest.tier)),
+    );
     setEditFactionId(quest.faction_id);
     setActionError(null);
     setEditMode(true);
@@ -387,6 +410,18 @@ export default function QuestDetail() {
         setBusy(null);
         return;
       }
+      // Validate + clamp campaign % when a campaign is linked.
+      let parsedPct: number | null = null;
+      if (editCampaignId) {
+        const raw = Math.floor(Number(editCampaignContributionPct) || 0);
+        if (raw < 1 || raw > 100) {
+          playSfx('error');
+          setActionError('Campaign contribution must be between 1 and 100.');
+          setBusy(null);
+          return;
+        }
+        parsedPct = raw;
+      }
       const updated = await updateQuest(quest.id, {
         title: editTitle.trim(),
         description: editDescription.trim() ? editDescription.trim() : null,
@@ -398,6 +433,7 @@ export default function QuestDetail() {
         recurrenceUnit: editRecurrence === 'custom' ? editRecurrenceUnit : null,
         grantedBuff: buffDraftToPayload(editBuff),
         campaignId: editCampaignId,
+        campaignContributionPct: parsedPct,
         factionId: editFactionId,
         objectives: editObjectives
           .map((o) => ({ ...o, text: o.text.trim() }))
@@ -555,23 +591,44 @@ export default function QuestDetail() {
           />
         </View>
 
-        <View className="mb-6">
-          <Text className="mb-2 font-body text-xl text-stone-700">Faction (optional)</Text>
-          <FactionPicker
-            value={editFactionId}
-            onChange={setEditFactionId}
-            disabled={busy === 'save-edits'}
-          />
-        </View>
-
-        <View className="mb-6">
-          <Text className="mb-2 font-body text-xl text-stone-700">Campaign (optional)</Text>
-          <CampaignPicker
-            value={editCampaignId}
-            onChange={setEditCampaignId}
-            disabled={busy === 'save-edits'}
-          />
-        </View>
+        {/* Faction + Campaign pickers carry their own labels via DropdownPicker. */}
+        <FactionPicker
+          value={editFactionId}
+          onChange={setEditFactionId}
+          disabled={busy === 'save-edits'}
+        />
+        <CampaignPicker
+          value={editCampaignId}
+          onChange={(next) => {
+            setEditCampaignId(next);
+            if (next && (!editCampaignId || editCampaignContributionPct === '')) {
+              setEditCampaignContributionPct(String(defaultPctForTier(editTier)));
+            }
+          }}
+          disabled={busy === 'save-edits'}
+        />
+        {editCampaignId ? (
+          <View className="mb-4 rounded-md border border-amber-900/40 bg-amber-50/40 p-4">
+            <Text className="mb-2 font-body text-base text-stone-600">
+              Completing this quest advances the campaign by…
+            </Text>
+            <View className="flex-row items-center gap-2">
+              <TextInput
+                value={editCampaignContributionPct}
+                onChangeText={(t) =>
+                  setEditCampaignContributionPct(t.replace(/[^0-9]/g, '').slice(0, 3))
+                }
+                keyboardType="number-pad"
+                editable={busy !== 'save-edits'}
+                className="w-20 rounded-md border border-stone-700 bg-amber-50/40 px-3 py-2 font-body text-xl text-stone-900"
+              />
+              <Text className="font-body text-xl text-stone-700">%</Text>
+            </View>
+            <Text className="mt-2 font-body text-sm italic text-stone-500">
+              1–100. The campaign auto-closes the moment progress reaches 100%.
+            </Text>
+          </View>
+        ) : null}
 
         <Text className="mb-2 font-body text-xl text-stone-700">Granted buff (optional)</Text>
         <View className="mb-6">
