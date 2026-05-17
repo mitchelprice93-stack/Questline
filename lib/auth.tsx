@@ -144,12 +144,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // `detectSessionInUrl: false` in lib/supabase.ts and no equivalent of
   // window.location to read from. So we parse the URL ourselves and
   // hand the tokens to supabase.auth.setSession (implicit/hash flow) or
-  // exchangeCodeForSession (PKCE flow). That call fires PASSWORD_RECOVERY,
-  // which the gate above turns into a redirect to /reset-password, and
-  // gives updateUser() a valid session to mutate.
+  // exchangeCodeForSession (PKCE flow).
+  //
+  // Important subtlety: manually calling setSession fires SIGNED_IN, NOT
+  // PASSWORD_RECOVERY — that event only ever fires from the built-in URL
+  // detection path which we have disabled. So when we detect type=recovery
+  // (or the URL targets /reset-password) we ALSO flip inPasswordRecovery
+  // ourselves so the route gate pins the user on /reset-password. Without
+  // this, a logged-in user who taps the recovery link from Settings would
+  // get a refreshed session and bounce straight back to Quest Board.
   useEffect(() => {
     const handleUrl = async (url: string | null) => {
       if (!url) return;
+
+      const isRecovery =
+        /[?&#]type=recovery(&|$)/.test(url) || /\/reset-password(\?|#|$)/.test(url);
 
       // PKCE flow: ?code=... in the query string. Newer Supabase default.
       const codeMatch = url.match(/[?&]code=([^&#]+)/);
@@ -157,7 +166,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const { error } = await supabase.auth.exchangeCodeForSession(
           decodeURIComponent(codeMatch[1]),
         );
-        if (error) console.warn('exchangeCodeForSession failed', error);
+        if (error) {
+          console.warn('exchangeCodeForSession failed', error);
+        } else if (isRecovery) {
+          setInPasswordRecovery(true);
+        }
         return;
       }
 
@@ -168,12 +181,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const params = new URLSearchParams(hash);
       const accessToken = params.get('access_token');
       const refreshToken = params.get('refresh_token');
+      const type = params.get('type');
       if (accessToken && refreshToken) {
         const { error } = await supabase.auth.setSession({
           access_token: accessToken,
           refresh_token: refreshToken,
         });
-        if (error) console.warn('setSession from deep link failed', error);
+        if (error) {
+          console.warn('setSession from deep link failed', error);
+        } else if (type === 'recovery' || isRecovery) {
+          setInPasswordRecovery(true);
+        }
       }
     };
 
