@@ -18,6 +18,14 @@ expo-env.d.ts
 *.key
 *.mobileprovision
 
+# Credentials (service accounts, JSON keys, etc.)
+# Defense in depth — secrets should live OUTSIDE the repo (e.g. ~/secrets/),
+# but if one ever lands here by accident, git won't track it.
+secrets/
+*credentials*.json
+*service-account*.json
+*-revenuecat-*.json
+
 # Metro
 .metro-health-check*
 

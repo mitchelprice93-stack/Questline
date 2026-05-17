@@ -8,9 +8,9 @@
 // Persistence (whether the user has seen the tutorial) lives in lib/tutorial.ts
 // — this module is just the in-flight UI state.
 
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
-import type { ReactNode } from 'react';
-import { InteractionManager } from 'react-native';
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import type { MutableRefObject, ReactNode } from 'react';
+import { InteractionManager, View } from 'react-native';
 
 import { hasSeenTutorial, markTutorialSeen, resetTutorial } from './tutorial';
 
@@ -33,6 +33,14 @@ interface TutorialContextValue {
   registerTarget: (id: string, rect: TargetRect | null) => void;
   /** Read the most recent rect for an id, or null if unregistered. */
   getTarget: (id: string) => TargetRect | null;
+  /**
+   * Ref to the layout View that contains the TutorialOverlay. All target
+   * rects are measured relative to this View's window-space position so
+   * the spotlight coordinates match the overlay's paint coordinates
+   * exactly — no manual yShift / mode hacks. The (main) layout assigns
+   * this ref to its flex-1 wrapper View.
+   */
+  anchorRef: MutableRefObject<View | null>;
 }
 
 const TutorialContext = createContext<TutorialContextValue | null>(null);
@@ -57,6 +65,11 @@ export function TutorialProvider({ children, totalSteps, onStart }: ProviderProp
   // re-render when a rect comes in. Holding raw refs would not trigger the
   // overlay to re-measure when the child finishes laying out.
   const [targets, setTargets] = useState<Record<string, TargetRect>>({});
+  // Stable ref handed back to (main) layout for its flex-1 wrapper View.
+  // TutorialTarget measures children relative to this anchor; the
+  // TutorialOverlay sits inside the same wrapper. Both share an origin,
+  // so the spotlight always lands where the target paints.
+  const anchorRef = useRef<View | null>(null);
 
   const activate = useCallback(() => {
     setStep(0);
@@ -149,6 +162,7 @@ export function TutorialProvider({ children, totalSteps, onStart }: ProviderProp
       skip,
       registerTarget,
       getTarget,
+      anchorRef,
     }),
     [step, start, next, skip, registerTarget, getTarget],
   );

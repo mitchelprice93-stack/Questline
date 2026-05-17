@@ -53,8 +53,12 @@ export interface CreateQuestInput {
   deadline: string | null; // ISO timestamp; pass null to skip
   /** Optional checklist. Pass empty / omit for no objectives. */
   objectives?: QuestObjective[];
-  /** null = one-shot. 'daily' / 'weekly' = auto-recurring with streak tracking. */
+  /** null = one-shot. 'daily'/'weekly'/'monthly'/'yearly' = auto-recurring
+   *  with streak tracking. 'custom' requires recurrenceInterval + recurrenceUnit. */
   recurrence?: QuestRecurrence;
+  /** Required for recurrence='custom', null otherwise. The DB enforces this. */
+  recurrenceInterval?: number | null;
+  recurrenceUnit?: 'days' | 'weeks' | 'months' | null;
   /** Optional pre-declared buff awarded on completion if its condition is met. */
   grantedBuff?: GrantedBuff | null;
   /** Optional campaign this quest contributes to. Completing the quest
@@ -63,6 +67,25 @@ export interface CreateQuestInput {
   /** Optional faction this quest counts toward. Completing the quest
    *  auto-increments the faction's reputation_count via DB trigger. */
   factionId?: string | null;
+}
+
+/** Normalize recurrence interval + unit so non-custom recurrences always
+ *  send (null, null) regardless of what the caller passed. Keeps the DB
+ *  CHECK constraint happy without forcing every caller to remember it. */
+function recurrenceColumns(input: {
+  recurrence?: QuestRecurrence;
+  recurrenceInterval?: number | null;
+  recurrenceUnit?: 'days' | 'weeks' | 'months' | null;
+}) {
+  const rec = input.recurrence ?? null;
+  if (rec !== 'custom') {
+    return { recurrence: rec, recurrence_interval: null, recurrence_unit: null };
+  }
+  return {
+    recurrence: 'custom',
+    recurrence_interval: input.recurrenceInterval ?? null,
+    recurrence_unit: input.recurrenceUnit ?? null,
+  };
 }
 
 function buffColumns(buff: GrantedBuff | null | undefined) {
@@ -154,7 +177,7 @@ export async function createQuest(input: CreateQuestInput): Promise<Quest> {
       xp_reward,
       deadline: input.deadline,
       objectives: input.objectives ?? [],
-      recurrence: input.recurrence ?? null,
+      ...recurrenceColumns(input),
       campaign_id: input.campaignId ?? null,
       faction_id: input.factionId ?? null,
       ...buffColumns(input.grantedBuff),
@@ -345,6 +368,9 @@ export interface UpdateQuestInput {
   deadline: string | null;
   objectives: QuestObjective[];
   recurrence: QuestRecurrence;
+  /** Required when recurrence='custom', null otherwise. */
+  recurrenceInterval?: number | null;
+  recurrenceUnit?: 'days' | 'weeks' | 'months' | null;
   /** Pass null to remove the granted buff; omit to leave unchanged. */
   grantedBuff?: GrantedBuff | null;
   /** Pass null to detach the quest from its campaign, or undefined to
@@ -377,7 +403,7 @@ export async function updateQuest(questId: string, input: UpdateQuestInput): Pro
     xp_reward,
     deadline: input.deadline,
     objectives: input.objectives,
-    recurrence: input.recurrence,
+    ...recurrenceColumns(input),
     ...(input.grantedBuff !== undefined ? buffColumns(input.grantedBuff) : {}),
     ...(input.campaignId !== undefined ? { campaign_id: input.campaignId } : {}),
     ...(input.factionId !== undefined ? { faction_id: input.factionId } : {}),

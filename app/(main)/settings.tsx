@@ -1,7 +1,8 @@
+import Constants from 'expo-constants';
 import { useRouter } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import { useEffect, useState } from 'react';
-import { Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import { Linking, Platform, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 
 import {
   deleteAccount,
@@ -100,6 +101,60 @@ export default function Settings() {
   // Until then the buttons surface a "coming soon" message.
   const privacyUrl = process.env.EXPO_PUBLIC_PRIVACY_URL ?? null;
   const termsUrl = process.env.EXPO_PUBLIC_TERMS_URL ?? null;
+
+  // Bug report — opens the user's email client with a structured,
+  // pre-filled message to the support inbox. Auto-fills app version,
+  // platform, and the chronicler's email so we can locate their account
+  // and reproduce on the same build. Zero backend; just leverages mailto:.
+  //
+  // Future upgrade path: replace mailto with an in-app form that posts
+  // to a Supabase bug_reports table + sends a Resend notification — gives
+  // structured data and removes the dependency on the user having a mail
+  // client configured. For v1 closed-alpha this simpler path is enough.
+  const onReportBug = async () => {
+    const version = Constants.expoConfig?.version ?? 'unknown';
+    const subject = `Questline bug report (v${version})`;
+    const body = [
+      'Tell us what happened, in the chronicler\'s own words:',
+      '',
+      '',
+      '',
+      'What were you expecting?',
+      '',
+      '',
+      '',
+      'Steps to reproduce (if you can):',
+      '1. ',
+      '2. ',
+      '3. ',
+      '',
+      '— — — — — — — — — — — — — — — —',
+      'Do not edit below this line — the Archivist needs it for the audit:',
+      `App version: ${version}`,
+      `Platform:    ${Platform.OS} ${Platform.Version}`,
+      `Account:     ${session?.user.email ?? 'unknown'}`,
+    ].join('\n');
+    const url = `mailto:questline.customerservice@gmail.com?subject=${encodeURIComponent(
+      subject,
+    )}&body=${encodeURIComponent(body)}`;
+    try {
+      const supported = await Linking.canOpenURL(url);
+      if (!supported) {
+        await showInfoMessage(
+          'No mail app found',
+          'Could not open an email client on this device. Send your report to questline.customerservice@gmail.com directly.',
+        );
+        return;
+      }
+      await Linking.openURL(url);
+    } catch (e) {
+      console.warn('[settings] bug report mailto failed', e);
+      await showInfoMessage(
+        'Could not open mail',
+        'Send your report to questline.customerservice@gmail.com directly.',
+      );
+    }
+  };
 
   const onOpenLegal = async (url: string | null, label: string) => {
     if (!url) {
@@ -581,6 +636,21 @@ export default function Settings() {
           />
         </View>
       </Pressable>
+
+      {/* Help & feedback. Bug report opens the user's mail client with a
+          structured, pre-filled report addressed to the support inbox. */}
+      <View className="mt-8">
+        <SectionHeader>Help & Feedback</SectionHeader>
+        <Pressable
+          onPress={onReportBug}
+          className="mb-3 rounded-md border border-stone-700 bg-amber-50/40 px-4 py-3 active:bg-amber-100/60"
+        >
+          <Text className="text-center font-body text-lg text-stone-800">Report a bug</Text>
+        </Pressable>
+        <Text className="mb-8 px-2 font-body text-sm italic text-stone-500">
+          Opens your mail app with a pre-filled report. The Archivist reads every dispatch.
+        </Text>
+      </View>
 
       {/* Legal */}
       <View className="mt-8">

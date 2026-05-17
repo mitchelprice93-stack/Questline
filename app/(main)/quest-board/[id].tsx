@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import Animated, { FadeIn, FadeInDown, FadeOut } from 'react-native-reanimated';
 
+import { DropdownPicker } from '../../../components/dropdown-picker';
 import { useAuth } from '../../../lib/auth';
 import {
   deadlineUrgency,
@@ -58,8 +59,44 @@ import { ObjectivesEditor } from './_objectives-editor';
 
 const TIERS: QuestTier[] = ['trivial', 'minor', 'standard', 'major', 'legendary'];
 const CLASSIFICATIONS: QuestClassification[] = ['daily', 'side', 'main', 'legendary'];
-type RecurrenceChoice = 'none' | 'daily' | 'weekly';
-const RECURRENCES: RecurrenceChoice[] = ['none', 'daily', 'weekly'];
+type RecurrenceChoice = 'none' | 'daily' | 'weekly' | 'monthly' | 'yearly' | 'custom';
+const RECURRENCES: RecurrenceChoice[] = ['none', 'daily', 'weekly', 'monthly', 'yearly', 'custom'];
+
+// Display + description tables shared with the new-quest form's dropdowns.
+// Keep in sync with app/(main)/quest-board/new.tsx — divergence would
+// mean the chronicler sees different copy when creating vs editing,
+// which is jarring.
+const RECURRENCE_LABELS: Record<RecurrenceChoice, string> = {
+  none: 'One-time',
+  daily: 'Daily',
+  weekly: 'Weekly',
+  monthly: 'Monthly',
+  yearly: 'Yearly',
+  custom: 'Custom',
+};
+const RECURRENCE_DESCRIPTIONS: Record<RecurrenceChoice, string> = {
+  none: 'Completes once and goes to the log.',
+  daily: 'Resets each day. Consecutive completions build a streak.',
+  weekly: 'Resets each week. Consecutive completions build a streak.',
+  monthly: 'Resets each month. Consecutive completions build a streak.',
+  yearly: 'Resets each year. Consecutive completions build a streak.',
+  custom: 'Repeats on the cadence you choose below.',
+};
+
+type RecurrenceUnit = 'days' | 'weeks' | 'months';
+const RECURRENCE_UNITS: RecurrenceUnit[] = ['days', 'weeks', 'months'];
+const RECURRENCE_UNIT_LABELS: Record<RecurrenceUnit, string> = {
+  days: 'Days',
+  weeks: 'Weeks',
+  months: 'Months',
+};
+
+const CLASSIFICATION_DESCRIPTIONS: Record<QuestClassification, string> = {
+  daily: 'Routine work, done in minutes.',
+  side: 'A standalone thread, away from the main path.',
+  main: 'Important work that drives the chronicle.',
+  legendary: 'A magnum opus — multi-day or harder.',
+};
 
 function recurrenceForDb(choice: RecurrenceChoice): QuestRecurrence {
   return choice === 'none' ? null : choice;
@@ -115,6 +152,9 @@ export default function QuestDetail() {
   const [editObjectives, setEditObjectives] = useState<QuestObjective[]>([]);
   const [editDeadline, setEditDeadline] = useState('');
   const [editRecurrence, setEditRecurrence] = useState<RecurrenceChoice>('none');
+  // Custom-cadence config — only meaningful when editRecurrence === 'custom'.
+  const [editRecurrenceInterval, setEditRecurrenceInterval] = useState<string>('3');
+  const [editRecurrenceUnit, setEditRecurrenceUnit] = useState<RecurrenceUnit>('days');
   const [editBuff, setEditBuff] = useState<BuffDraft>(emptyBuffDraft());
   const [editCampaignId, setEditCampaignId] = useState<string | null>(null);
   const [editFactionId, setEditFactionId] = useState<string | null>(null);
@@ -295,6 +335,11 @@ export default function QuestDetail() {
     // Pre-fill with the human-readable form so the user can re-edit naturally.
     setEditDeadline(formatDeadline(quest.deadline) ?? '');
     setEditRecurrence(recurrenceForUi(quest.recurrence));
+    // Pre-fill custom-cadence inputs from the persisted values. Defaults
+    // to "every 3 days" when the quest isn't custom so the conditional
+    // UI has something sensible if the user switches to Custom.
+    setEditRecurrenceInterval(String(quest.recurrence_interval ?? 3));
+    setEditRecurrenceUnit((quest.recurrence_unit as RecurrenceUnit) ?? 'days');
     setEditBuff(buffDraftFromQuest(quest));
     setEditCampaignId(quest.campaign_id);
     setEditFactionId(quest.faction_id);
@@ -331,6 +376,17 @@ export default function QuestDetail() {
     setBusy('save-edits');
     setActionError(null);
     try {
+      // Validate custom-cadence inputs.
+      const parsedInterval =
+        editRecurrence === 'custom'
+          ? Math.max(1, Math.floor(Number(editRecurrenceInterval) || 0))
+          : null;
+      if (editRecurrence === 'custom' && (!parsedInterval || parsedInterval < 1)) {
+        playSfx('error');
+        setActionError('Custom cadence needs a positive number for the interval.');
+        setBusy(null);
+        return;
+      }
       const updated = await updateQuest(quest.id, {
         title: editTitle.trim(),
         description: editDescription.trim() ? editDescription.trim() : null,
@@ -338,6 +394,8 @@ export default function QuestDetail() {
         classification: editClassification,
         deadline: deadlineIso,
         recurrence: recurrenceForDb(editRecurrence),
+        recurrenceInterval: parsedInterval,
+        recurrenceUnit: editRecurrence === 'custom' ? editRecurrenceUnit : null,
         grantedBuff: buffDraftToPayload(editBuff),
         campaignId: editCampaignId,
         factionId: editFactionId,
@@ -418,45 +476,75 @@ export default function QuestDetail() {
           className="mb-4 min-h-[112px] rounded-md border border-stone-700 bg-amber-50/40 px-4 py-3 font-body text-stone-900"
         />
 
-        <Text className="mb-2 font-body text-xl text-stone-700">
-          Tier · grants {xpForTier(editTier)} XP
-        </Text>
-        <View className="mb-4 flex-row flex-wrap gap-2">
-          {TIERS.map((t) => (
-            <Chip key={t} label={t} selected={editTier === t} onPress={() => setEditTier(t)} />
-          ))}
-        </View>
+        <DropdownPicker
+          label="Tier"
+          value={editTier}
+          onChange={setEditTier}
+          disabled={busy === 'save-edits'}
+          headerInMenu="Choose the tier"
+          options={TIERS.map((t) => ({
+            value: t,
+            label: t,
+            rightLabel: `${xpForTier(t)} XP`,
+          }))}
+        />
 
-        <Text className="mb-2 font-body text-xl text-stone-700">Classification</Text>
-        <View className="mb-4 flex-row flex-wrap gap-2">
-          {CLASSIFICATIONS.map((c) => (
-            <Chip
-              key={c}
-              label={c}
-              selected={editClassification === c}
-              onPress={() => setEditClassification(c)}
-            />
-          ))}
-        </View>
+        <DropdownPicker
+          label="Classification"
+          value={editClassification}
+          onChange={setEditClassification}
+          disabled={busy === 'save-edits'}
+          headerInMenu="Choose the classification"
+          options={CLASSIFICATIONS.map((c) => ({
+            value: c,
+            label: c,
+            description: CLASSIFICATION_DESCRIPTIONS[c],
+          }))}
+        />
 
-        <Text className="mb-2 font-body text-xl text-stone-700">Recurrence</Text>
-        <View className="mb-1 flex-row flex-wrap gap-2">
-          {RECURRENCES.map((r) => (
-            <Chip
-              key={r}
-              label={r}
-              selected={editRecurrence === r}
-              onPress={() => setEditRecurrence(r)}
-            />
-          ))}
-        </View>
-        <Text className="mb-4 font-body text-lg text-stone-500">
-          {editRecurrence === 'none'
-            ? 'A one-time quest. Completes once and goes to the log.'
-            : editRecurrence === 'daily'
-              ? 'Resets each day. Streak grows on consecutive days.'
-              : 'Resets each week. Streak grows on consecutive weeks.'}
-        </Text>
+        <DropdownPicker
+          label="Recurrence"
+          value={editRecurrence}
+          onChange={setEditRecurrence}
+          disabled={busy === 'save-edits'}
+          headerInMenu="Choose the cadence"
+          options={RECURRENCES.map((r) => ({
+            value: r,
+            label: RECURRENCE_LABELS[r],
+            description: RECURRENCE_DESCRIPTIONS[r],
+          }))}
+        />
+
+        {editRecurrence === 'custom' ? (
+          <View className="mb-4 rounded-md border border-amber-900/40 bg-amber-50/40 p-4">
+            <Text className="mb-2 font-body text-base text-stone-600">Repeat every…</Text>
+            <View className="flex-row gap-2">
+              <TextInput
+                value={editRecurrenceInterval}
+                onChangeText={(t) =>
+                  setEditRecurrenceInterval(t.replace(/[^0-9]/g, '').slice(0, 4))
+                }
+                keyboardType="number-pad"
+                editable={busy !== 'save-edits'}
+                className="w-24 rounded-md border border-stone-700 bg-amber-50/40 px-3 py-2 font-body text-xl text-stone-900"
+              />
+              <View className="flex-1">
+                <DropdownPicker
+                  label=""
+                  value={editRecurrenceUnit}
+                  onChange={setEditRecurrenceUnit}
+                  disabled={busy === 'save-edits'}
+                  headerInMenu="Choose the unit"
+                  options={RECURRENCE_UNITS.map((u) => ({
+                    value: u,
+                    label: RECURRENCE_UNIT_LABELS[u],
+                  }))}
+                  showSelectedRightLabel={false}
+                />
+              </View>
+            </View>
+          </View>
+        ) : null}
 
         <Text className="mb-2 font-body text-xl text-stone-700">Objectives</Text>
         <View className="mb-6">
@@ -537,8 +625,20 @@ export default function QuestDetail() {
   }
 
   // View mode — read-only display + actions.
-  const onCooldown = isCompletedThisPeriod(quest.recurrence, quest.last_completed_at);
-  const cooldownLabel = recurrenceStatusLabel(quest.recurrence, quest.last_completed_at);
+  const onCooldown = isCompletedThisPeriod(
+    quest.recurrence,
+    quest.last_completed_at,
+    new Date(),
+    quest.recurrence_interval,
+    quest.recurrence_unit,
+  );
+  const cooldownLabel = recurrenceStatusLabel(
+    quest.recurrence,
+    quest.last_completed_at,
+    new Date(),
+    quest.recurrence_interval,
+    quest.recurrence_unit,
+  );
   const isActive = quest.status === 'active';
   const lifecycleStamp =
     quest.status === 'completed' && quest.completed_at
@@ -588,12 +688,27 @@ export default function QuestDetail() {
       {quest.recurrence ? (
         <View className="mb-6 rounded-md border border-amber-900/50 bg-amber-50/40 p-4">
           <Text className="font-display text-lg uppercase tracking-widest text-amber-800">
-            {quest.recurrence === 'daily' ? 'Daily quest' : 'Weekly quest'}
+            {quest.recurrence === 'daily' && 'Daily quest'}
+            {quest.recurrence === 'weekly' && 'Weekly quest'}
+            {quest.recurrence === 'monthly' && 'Monthly quest'}
+            {quest.recurrence === 'yearly' && 'Yearly quest'}
+            {quest.recurrence === 'custom' &&
+              `Every ${quest.recurrence_interval} ${quest.recurrence_unit}`}
           </Text>
           <View className="mt-1 flex-row items-baseline justify-between">
             <Text className="font-body text-xl text-stone-700">
               {quest.streak_count > 0
-                ? `Streak · ${quest.streak_count} ${quest.recurrence === 'daily' ? 'days' : 'weeks'}`
+                ? `Streak · ${quest.streak_count} ${
+                    quest.recurrence === 'daily'
+                      ? 'days'
+                      : quest.recurrence === 'weekly'
+                        ? 'weeks'
+                        : quest.recurrence === 'monthly'
+                          ? 'months'
+                          : quest.recurrence === 'yearly'
+                            ? 'years'
+                            : 'cycles'
+                  }`
                 : 'No streak yet — complete to start one'}
             </Text>
             {cooldownLabel ? (

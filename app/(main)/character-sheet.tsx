@@ -1,6 +1,6 @@
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Modal, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import Animated, {
   Easing,
   useAnimatedStyle,
@@ -55,6 +55,17 @@ interface SheetData {
 
 const DIFFICULTIES: Difficulty[] = ['apprentice', 'adept', 'master', 'legendary'];
 
+// XP modifiers per difficulty — surfaced next to each option in the
+// difficulty picker so the trade-off is visible at the moment of choice.
+// Source of truth for the actual modifier math lives in lib/engine/xp.ts;
+// this constant is display-only.
+const DIFFICULTY_XP_MULTIPLIERS: Record<Difficulty, string> = {
+  apprentice: '1.5×',
+  adept: '1.25×',
+  master: '1.0×',
+  legendary: '0.75×',
+};
+
 // Sentinel for "user is composing a new row"; kept separate from a real id so
 // we never confuse a draft with a saved record.
 const DRAFT_ID = '__draft__';
@@ -70,6 +81,9 @@ export default function CharacterSheet() {
   const [editingFactionId, setEditingFactionId] = useState<string | null>(null);
   const [editingCampaignId, setEditingCampaignId] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  // Dropdown state for the Difficulty selector. Modal opens on trigger
+  // press; tapping an option closes it and applies the change.
+  const [difficultyOpen, setDifficultyOpen] = useState(false);
 
   // Tick the displayed XP from its previous value to the new total when
   // a quest completes. Must be called before any early returns to satisfy
@@ -279,25 +293,50 @@ export default function CharacterSheet() {
         <Text className="mt-1 font-body text-base text-amber-800">View the ledger →</Text>
       </Pressable>
 
+      {/* Perk Tree — placeholder for v1.1+. Non-interactive teaser that
+          seeds anticipation for both free chroniclers (a glimpse of what
+          Hero will unlock) and Hero subscribers (signaling that more is
+          on the way). Visually dimmer than the active sections so it
+          reads as "coming, not here yet" without an explicit lock icon. */}
+      <View className="mb-8 rounded-md border border-amber-900/30 bg-amber-50/20 p-4">
+        <View className="mb-2 flex-row items-center justify-between">
+          <Text className="font-display text-lg uppercase tracking-widest text-stone-700">
+            Perk Tree
+          </Text>
+          <View className="rounded-full border border-amber-700 bg-amber-100/60 px-2.5 py-0.5">
+            <Text className="font-display text-xs uppercase tracking-widest text-amber-800">
+              Coming Soon
+            </Text>
+          </View>
+        </View>
+        <Text className="font-body text-lg italic text-stone-600">
+          The Archivist is weaving a new branch of boons into the chronicle. Soon, each chronicler
+          will chart their own path of power.
+        </Text>
+      </View>
+
       {/* Buffs — earned by completing quests under their granted-buff
           conditions. Persist for a tier-scaled lifetime; stack while
-          active. Hidden when none are active. */}
-      {buffs.length > 0 ? (
-        <>
-          <Text className="mb-2 font-display text-lg uppercase tracking-widest text-stone-700">
-            Buffs
+          active. Always render the section with an empty state so the
+          layout matches Debuffs below — consistency was a tester request. */}
+      <Text className="mb-2 font-display text-lg uppercase tracking-widest text-stone-700">
+        Buffs
+      </Text>
+      <View className="mb-8 gap-2">
+        {buffs.length === 0 ? (
+          <Text className="font-body italic text-stone-500">
+            No buffs. Earn them by completing quests on time.
           </Text>
-          <View className="mb-8 gap-2">
-            {buffs.map((b) => (
-              <ModifierCard
-                key={b.id}
-                modifier={b}
-                remainingLabel={formatBuffRemaining(b.expires_at)}
-              />
-            ))}
-          </View>
-        </>
-      ) : null}
+        ) : (
+          buffs.map((b) => (
+            <ModifierCard
+              key={b.id}
+              modifier={b}
+              remainingLabel={formatBuffRemaining(b.expires_at)}
+            />
+          ))
+        )}
+      </View>
 
       {/* Debuffs — visible whenever any are active. Rest button always
           renders but disables on cooldown. */}
@@ -399,7 +438,12 @@ export default function CharacterSheet() {
               className="rounded-md border border-stone-800 bg-amber-50/40 px-4 py-3 active:bg-amber-100/60"
             >
               <View className="flex-row items-baseline justify-between">
-                <Text className="font-body-medium text-2xl text-stone-900">{f.name}</Text>
+                <Text
+                  numberOfLines={1}
+                  className="flex-1 pr-3 font-body-medium text-2xl text-stone-900"
+                >
+                  {f.name}
+                </Text>
                 <Text className="font-display text-base uppercase tracking-widest text-amber-800">
                   {f.reputation_title}
                 </Text>
@@ -547,40 +591,75 @@ export default function CharacterSheet() {
         ) : null}
       </View>
 
-      {/* Difficulty — segmented control. Tapping persists immediately and
-          refetches the profile so XP-modifier changes go live everywhere. */}
+      {/* Difficulty — dropdown selector. Tapping persists immediately and
+          refetches the profile so XP-modifier changes go live everywhere.
+          Used to be a 4-button segmented control but the labels (especially
+          LEGENDARY) crowded the row on narrow phones, so it's now a single
+          trigger + Modal-based option list. */}
       <Text className="mb-2 font-display text-lg uppercase tracking-widest text-stone-700">
         Difficulty
       </Text>
-      <View className="mb-2 flex-row gap-2">
-        {DIFFICULTIES.map((d) => {
-          const selected = profile?.difficulty === d;
-          return (
-            <Pressable
-              key={d}
-              onPress={() => onSetDifficulty(d)}
-              disabled={busy}
-              className={`flex-1 rounded-md border px-2 py-2 ${
-                selected
-                  ? 'border-amber-600 bg-amber-900/40'
-                  : 'border-stone-800 bg-amber-50/40 active:bg-amber-100/60'
-              }`}
-            >
-              <Text
-                className={`text-center font-body-medium text-lg uppercase tracking-widest ${
-                  selected ? 'text-amber-800' : 'text-stone-700'
-                }`}
-              >
-                {d}
-              </Text>
-            </Pressable>
-          );
-        })}
-      </View>
-      <Text className="font-body text-lg text-stone-500">
-        XP modifier: apprentice 1.5× · adept 1.25× · master 1.0× · legendary 0.75×. Harder
-        difficulty earns less XP per quest.
-      </Text>
+      <Pressable
+        onPress={() => setDifficultyOpen(true)}
+        disabled={busy}
+        className="mb-2 flex-row items-center justify-between rounded-md border border-stone-800 bg-amber-50/40 px-4 py-3 active:bg-amber-100/60"
+      >
+        <Text className="font-display text-2xl uppercase tracking-widest text-amber-800">
+          {profile?.difficulty ?? 'apprentice'}
+        </Text>
+        <Text className="font-body text-xl text-stone-600">▾</Text>
+      </Pressable>
+
+      <Modal
+        visible={difficultyOpen}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setDifficultyOpen(false)}
+      >
+        <Pressable
+          onPress={() => setDifficultyOpen(false)}
+          className="flex-1 items-center justify-center bg-stone-950/70 px-6"
+        >
+          <View className="w-full max-w-md rounded-md border border-amber-900 bg-amber-50 p-2">
+            <Text className="mb-2 px-2 pt-2 font-display text-base uppercase tracking-widest text-stone-500">
+              Choose your difficulty
+            </Text>
+            {DIFFICULTIES.map((d) => {
+              const selected = profile?.difficulty === d;
+              return (
+                <Pressable
+                  key={d}
+                  onPress={() => {
+                    setDifficultyOpen(false);
+                    if (!selected) void onSetDifficulty(d);
+                  }}
+                  className={`flex-row items-center justify-between rounded-md px-4 py-3 ${
+                    selected ? 'bg-amber-900/30' : 'active:bg-amber-100/80'
+                  }`}
+                >
+                  <Text
+                    className={`font-body-medium text-2xl uppercase tracking-widest ${
+                      selected ? 'text-amber-800' : 'text-stone-700'
+                    }`}
+                  >
+                    {d}
+                  </Text>
+                  <Text
+                    className={`font-display text-lg ${
+                      selected ? 'text-amber-800' : 'text-stone-500'
+                    }`}
+                  >
+                    {DIFFICULTY_XP_MULTIPLIERS[d]} XP
+                  </Text>
+                </Pressable>
+              );
+            })}
+            <Text className="mt-2 px-2 pb-2 font-body text-sm italic text-stone-500">
+              Harder difficulty earns less XP per quest.
+            </Text>
+          </View>
+        </Pressable>
+      </Modal>
       </ScrollView>
     </ParchmentScreen>
   );

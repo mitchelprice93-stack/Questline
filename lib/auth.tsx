@@ -4,7 +4,9 @@ import { createContext, useCallback, useContext, useEffect, useState, type React
 
 import {
   hasSeenCinematic,
+  hasSeenCinematicOnDevice,
   markCinematicSeen as markSeenAsync,
+  markCinematicSeenOnDevice as markDeviceSeenAsync,
   resetCinematicSeen as resetSeenAsync,
 } from './cinematic';
 import { onUserLogin } from './engine/achievementTriggers';
@@ -25,6 +27,12 @@ interface AuthContextValue {
   profileLoading: boolean;
   /** null until the first cinematic-seen check resolves, then true/false. */
   cinematicSeen: boolean | null;
+  /** Device-level flag — null until the first check resolves. Used to
+   *  gate the pre-auth cinematic for first-time visitors. */
+  cinematicSeenOnDevice: boolean | null;
+  /** Mark the device flag (used when an unauthenticated visitor finishes
+   *  the pre-auth cinematic). Idempotent. */
+  markCinematicSeenOnDevice: () => Promise<void>;
   /** null until the first subscription fetch resolves. */
   subscription: SubscriptionStatus | null;
   signIn: (email: string, password: string) => Promise<{ error: AuthError | null }>;
@@ -48,6 +56,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [profileLoading, setProfileLoading] = useState(true);
   const [cinematicSeen, setCinematicSeen] = useState<boolean | null>(null);
+  const [cinematicSeenOnDevice, setCinematicSeenOnDevice] = useState<boolean | null>(null);
   const [subscription, setSubscription] = useState<SubscriptionStatus | null>(null);
 
   const refetchProfile = useCallback(async () => {
@@ -86,6 +95,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setCinematicSeen(false);
   }, [session?.user.id]);
 
+  const markCinematicSeenOnDevice = useCallback(async () => {
+    await markDeviceSeenAsync();
+    setCinematicSeenOnDevice(true);
+  }, []);
+
   useEffect(() => {
     let mounted = true;
 
@@ -119,6 +133,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     refetchProfile();
   }, [session?.user.id, loading, refetchProfile]);
 
+  // Load the device-level cinematic flag once on mount. Doesn't depend on
+  // session — it gates the pre-auth cinematic for first-time visitors.
+  useEffect(() => {
+    hasSeenCinematicOnDevice().then(setCinematicSeenOnDevice);
+  }, []);
+
   // Load cinematic-seen flag when session changes.
   useEffect(() => {
     if (loading) return;
@@ -126,7 +146,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setCinematicSeen(null);
       return;
     }
-    hasSeenCinematic(session.user.id).then(setCinematicSeen);
+    hasSeenCinematic(session.user.id).then(async (userSeen) => {
+      // Promote the device flag to the per-user flag: if the visitor
+      // watched the pre-auth cinematic and just signed up, don't make
+      // them sit through it again before character creation. Per-user
+      // flag is still authoritative for the Settings → Replay flow.
+      if (!userSeen) {
+        const deviceSeen = await hasSeenCinematicOnDevice();
+        if (deviceSeen) {
+          await markSeenAsync(session.user.id);
+          setCinematicSeen(true);
+          return;
+        }
+      }
+      setCinematicSeen(userSeen);
+    });
   }, [session?.user.id, loading]);
 
   // Refetch subscription whenever the session changes.
@@ -157,6 +191,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     loading,
     profileLoading,
     cinematicSeen,
+    cinematicSeenOnDevice,
+    markCinematicSeenOnDevice,
     subscription,
     signIn: async (email, password) => {
       const { error } = await supabase.auth.signInWithPassword({ email, password });
@@ -195,14 +231,16 @@ export function useAuth(): AuthContextValue {
  * Segment-aware redirect gate. Mount once inside <AuthProvider>.
  *
  * Rules:
- *   - no session, outside (auth)        → /login
- *   - session, inside (auth)            → next onboarding step (or /quest-board if done)
+ *   - no session, never seen cinematic on device → /cinematic (pre-auth buy-in)
+ *   - no session, seen cinematic, outside (auth) → /login
+ *   - session, inside (auth)                     → next onboarding step (or /quest-board if done)
  *   - session, no character, not in (onboarding) → next onboarding step
  *
  * Onboarding order: cinematic (first run) → character-creation → quest-board.
  */
 export function useProtectedRoute() {
-  const { session, profile, loading, profileLoading, cinematicSeen } = useAuth();
+  const { session, profile, loading, profileLoading, cinematicSeen, cinematicSeenOnDevice } =
+    useAuth();
   const segments = useSegments();
   const router = useRouter();
 
@@ -212,6 +250,9 @@ export function useProtectedRoute() {
     // redirect — we'd bounce the user prematurely.
     if (session && profileLoading) return;
     if (session && cinematicSeen === null) return;
+    // For no-session users, wait until the device-level cinematic flag
+    // has resolved so we know whether to send them to /cinematic or /login.
+    if (!session && cinematicSeenOnDevice === null) return;
 
     const inAuthGroup = segments[0] === '(auth)';
     const inOnboarding = segments[0] === '(onboarding)';
@@ -225,7 +266,14 @@ export function useProtectedRoute() {
 
     let target: GateRoute | null = null;
     if (!session) {
-      if (!inAuthGroup) target = '/login';
+      // Pre-auth cinematic gating: first-time visitors see the cinematic
+      // BEFORE the login screen for emotional buy-in. Once they've watched
+      // it (device flag set), subsequent visits land on login as before.
+      if (!cinematicSeenOnDevice && !onCinematic) {
+        target = '/cinematic';
+      } else if (cinematicSeenOnDevice && !inAuthGroup) {
+        target = '/login';
+      }
     } else if (inAuthGroup) {
       target = hasCharacter ? '/quest-board' : nextOnboardingStep();
     } else if (hasCharacter && onCharacterCreation) {
@@ -243,5 +291,14 @@ export function useProtectedRoute() {
     // (the Settings → Replay opening cinematic button uses this).
 
     if (target) router.replace(target);
-  }, [session, profile, segments, loading, profileLoading, cinematicSeen, router]);
+  }, [
+    session,
+    profile,
+    segments,
+    loading,
+    profileLoading,
+    cinematicSeen,
+    cinematicSeenOnDevice,
+    router,
+  ]);
 }

@@ -8,7 +8,9 @@ import { confirmDestructive, showInfoMessage } from '../../lib/dialogs';
 import { errorMessage } from '../../lib/errors';
 import { ParchmentScreen } from '../../lib/parchment';
 import {
+  configurePurchases,
   getHeroPackages,
+  getLastConfigureError,
   isPurchasesReady,
   purchasePackageById,
   restorePurchases,
@@ -38,17 +40,30 @@ async function loadRCPaywallView() {
  */
 export default function Paywall() {
   const router = useRouter();
-  const { refetchSubscription } = useAuth();
+  const { refetchSubscription, session } = useAuth();
 
   const [packages, setPackages] = useState<PaywallPackage[] | null>(null);
   const [selected, setSelected] = useState<string | null>(null);
   const [busy, setBusy] = useState<'purchase' | 'restore' | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [RCPaywall, setRCPaywall] = useState<unknown>(null);
+  // Loading gate: blocks both the RC PaywallView and the custom fallback
+  // from rendering until we know which path to use. Without this, the
+  // custom fallback flashes for ~200ms while RC's UI is async-loading,
+  // then gets replaced — a visible "double screen" jolt to the user.
+  const [resolving, setResolving] = useState(true);
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
+      // Defensive retry: if the RC SDK isn't configured yet (e.g. the
+      // initial configurePurchases call in AuthProvider lost a race or
+      // hit a transient network error), retry now before fetching
+      // packages. configurePurchases is idempotent — calling it when
+      // already configured is a no-op.
+      if (!isPurchasesReady() && session?.user.id) {
+        await configurePurchases(session.user.id);
+      }
       const [pkgs, RcUi] = await Promise.all([getHeroPackages(), loadRCPaywallView()]);
       if (cancelled) return;
       setPackages(pkgs);
@@ -60,19 +75,34 @@ export default function Paywall() {
       if (RcUi && isPurchasesReady() && pkgs.length > 0 && !pkgs[0]?.identifier.endsWith('_stub')) {
         setRCPaywall(() => RcUi);
       }
+      setResolving(false);
     })();
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [session?.user.id]);
+
+  // While we're figuring out which paywall to show, render a neutral
+  // loading state so the user doesn't see the custom fallback flash.
+  if (resolving) {
+    return (
+      <View className="flex-1 items-center justify-center bg-stone-950">
+        <ActivityIndicator color="#92400e" />
+      </View>
+    );
+  }
 
   const onPurchase = async (packageId?: string) => {
     const id = packageId ?? selected;
     if (!id) return;
     if (!isPurchasesReady()) {
+      // Surface the actual configure() error so we (and the chronicler
+      // reporting it) can see what's broken instead of a generic message.
+      const diag = getLastConfigureError();
+      const detail = diag ? `\n\nDiagnostic: ${diag}` : '';
       await showInfoMessage(
-        'Pledge unavailable',
-        'Hero subscriptions are wired but the SDK only initializes on native. Run `eas build --profile development` to test the real flow.',
+        'The registry is unreachable',
+        `The Archivist could not reach the registry of pledges. Force-close the app and reopen it — that often clears the silence. If the problem persists, send a dispatch via Settings → Report a bug.${detail}`,
       );
       return;
     }
@@ -105,7 +135,7 @@ export default function Paywall() {
     if (!isPurchasesReady()) {
       await showInfoMessage(
         'Restore unavailable',
-        'Restore lights up on TestFlight / production builds.',
+        'The registry of past pledges is unreachable. Force-close and reopen the app, or report it via Settings → Report a bug if it persists.',
       );
       return;
     }
@@ -136,7 +166,9 @@ export default function Paywall() {
       'Leave the gates?',
       'You can return any time from Settings. The Tome remains as it is.',
     );
-    if (proceed) router.back();
+    // router.back() unwinds to the initial tab in Expo Router Tabs setup.
+    // Paywall is reached from Settings → Pledge, so route there explicitly.
+    if (proceed) router.replace('/settings');
   };
 
   // ---- RC PaywallView path (native + configured) -------------------------
@@ -165,7 +197,7 @@ export default function Paywall() {
             await refetchSubscription();
             router.replace('/hero-cinematic');
           }}
-          onDismiss={() => router.back()}
+          onDismiss={() => router.replace('/settings')}
         />
       </View>
     );
@@ -175,7 +207,10 @@ export default function Paywall() {
   return (
     <ParchmentScreen>
       <ScrollView className="flex-1" contentContainerClassName="px-6 pt-20 pb-12">
-        <Pressable onPress={() => router.back()} className="mb-3 self-start active:opacity-60">
+        <Pressable
+          onPress={() => router.replace('/settings')}
+          className="mb-3 self-start active:opacity-60"
+        >
           <Text className="font-body text-xl text-amber-800">← Back</Text>
         </Pressable>
 
@@ -287,10 +322,13 @@ function PackageCard({
   return (
     <Pressable
       onPress={onPress}
+      // Unified amber palette so selected and unselected borders sit in
+      // the same color family — previously the jump from stone-700 to
+      // amber-700 on selection felt jarring across the three cards.
       className={`rounded-md border-2 p-4 ${
         selected
-          ? 'border-amber-700 bg-amber-100/60'
-          : 'border-stone-700 bg-amber-50/40 active:bg-amber-100/40'
+          ? 'border-amber-600 bg-amber-100/60'
+          : 'border-amber-900/30 bg-amber-50/40 active:bg-amber-100/40'
       }`}
     >
       <View className="flex-row items-baseline justify-between">

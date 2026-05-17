@@ -22,14 +22,17 @@
       "adaptiveIcon": {
         "backgroundColor": "#3f2e1d",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
-        "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
       "permissions": [
         "android.permission.RECORD_AUDIO",
-        "android.permission.MODIFY_AUDIO_SETTINGS"
+        "android.permission.MODIFY_AUDIO_SETTINGS",
+        "com.android.vending.BILLING",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.MODIFY_AUDIO_SETTINGS",
+        "com.android.vending.BILLING"
       ]
     },
     "web": {
@@ -65,6 +68,12 @@
         "projectId": "20350a4b-d890-4499-b99f-ff6e5153f8de"
       }
     },
-    "owner": "mitchelprice93"
+    "owner": "mitchelprice93",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/20350a4b-d890-4499-b99f-ff6e5153f8de"
+    }
   }
 }

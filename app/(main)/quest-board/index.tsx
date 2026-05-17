@@ -134,9 +134,12 @@ export default function QuestBoard() {
         </TutorialTarget>
       </View>
 
-      {/* Status tabs */}
+      {/* Status tabs. mb-3 lives on an outer wrapper, not inside the
+          TutorialTarget — keeps the tutorial spotlight measuring only the
+          actual row of tab buttons, not the spacing below it. */}
+      <View className="mb-3">
       <TutorialTarget id="quest-status-tabs">
-      <View className="mb-3 flex-row gap-2">
+      <View className="flex-row gap-2">
         {STATUS_TABS.map((tab) => {
           const selected = status === tab.key;
           return (
@@ -153,6 +156,9 @@ export default function QuestBoard() {
               }`}
             >
               <Text
+                numberOfLines={1}
+                adjustsFontSizeToFit
+                minimumFontScale={0.7}
                 className={`text-center font-body-medium text-lg uppercase tracking-widest ${
                   selected ? 'text-amber-800' : 'text-stone-700'
                 }`}
@@ -164,6 +170,7 @@ export default function QuestBoard() {
         })}
       </View>
       </TutorialTarget>
+      </View>
 
       {/* Search + filters toggle */}
       <View className="mb-3 flex-row gap-2">
@@ -325,7 +332,13 @@ function QuestRow({ quest, status }: { quest: Quest; status: QuestStatus }) {
   const urgency = deadlineUrgency(quest.deadline);
   const palette = urgency ? urgencyClasses[urgency] : urgencyClasses.normal;
   const relative = urgency ? formatDeadlineRelative(quest.deadline) : null;
-  const cooldownLabel = recurrenceStatusLabel(quest.recurrence, quest.last_completed_at);
+  const cooldownLabel = recurrenceStatusLabel(
+    quest.recurrence,
+    quest.last_completed_at,
+    new Date(),
+    quest.recurrence_interval,
+    quest.recurrence_unit,
+  );
 
   // Build the meta line piece-by-piece so we can dedupe when classification
   // and recurrence say the same thing (e.g. classification='daily' +
@@ -333,9 +346,35 @@ function QuestRow({ quest, status }: { quest: Quest; status: QuestStatus }) {
   const metaParts: string[] = [];
   if (quest.recurrence !== quest.classification) metaParts.push(quest.classification);
   if (quest.recurrence) {
-    metaParts.push(quest.recurrence === 'daily' ? 'Daily' : 'Weekly');
+    metaParts.push(
+      quest.recurrence === 'daily'
+        ? 'Daily'
+        : quest.recurrence === 'weekly'
+          ? 'Weekly'
+          : quest.recurrence === 'monthly'
+            ? 'Monthly'
+            : quest.recurrence === 'yearly'
+              ? 'Yearly'
+              : `Every ${quest.recurrence_interval} ${quest.recurrence_unit}`,
+    );
     if (quest.streak_count > 0) {
-      metaParts.push(`${quest.streak_count}${quest.recurrence === 'daily' ? 'd' : 'w'} streak`);
+      // Streak suffix: short letter for the cadence (d/w/m/y) or generic
+      // "streak" for custom. Keeps the meta row compact.
+      const streakSuffix =
+        quest.recurrence === 'daily'
+          ? 'd'
+          : quest.recurrence === 'weekly'
+            ? 'w'
+            : quest.recurrence === 'monthly'
+              ? 'mo'
+              : quest.recurrence === 'yearly'
+                ? 'y'
+                : '';
+      metaParts.push(
+        streakSuffix
+          ? `${quest.streak_count}${streakSuffix} streak`
+          : `${quest.streak_count} streak`,
+      );
     }
   }
   const metaLine = metaParts.join(' · ');

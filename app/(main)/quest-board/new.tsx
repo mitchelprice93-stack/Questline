@@ -3,9 +3,16 @@ import { useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import Animated, { Easing, withTiming } from 'react-native-reanimated';
 
+import { DropdownPicker } from '../../../components/dropdown-picker';
 import { parseDeadline } from '../../../lib/dates';
 import { xpForTier, type QuestTier } from '../../../lib/engine/xp';
 import { errorMessage } from '../../../lib/errors';
+import {
+  getPermissionStatus,
+  hasShownAutoPrompt,
+  markAutoPromptShown,
+  requestPermission,
+} from '../../../lib/notifications';
 import { ParchmentScreen } from '../../../lib/parchment';
 import { generateQuest, type GeneratedQuest } from '../../../lib/quest-generation';
 import { createQuest } from '../../../lib/quests';
@@ -28,8 +35,40 @@ import { ObjectivesEditor } from './_objectives-editor';
 
 const TIERS: QuestTier[] = ['trivial', 'minor', 'standard', 'major', 'legendary'];
 const CLASSIFICATIONS: QuestClassification[] = ['daily', 'side', 'main', 'legendary'];
-type RecurrenceChoice = 'none' | 'daily' | 'weekly';
-const RECURRENCES: RecurrenceChoice[] = ['none', 'daily', 'weekly'];
+type RecurrenceChoice = 'none' | 'daily' | 'weekly' | 'monthly' | 'yearly' | 'custom';
+const RECURRENCES: RecurrenceChoice[] = ['none', 'daily', 'weekly', 'monthly', 'yearly', 'custom'];
+
+const RECURRENCE_LABELS: Record<RecurrenceChoice, string> = {
+  none: 'One-time',
+  daily: 'Daily',
+  weekly: 'Weekly',
+  monthly: 'Monthly',
+  yearly: 'Yearly',
+  custom: 'Custom',
+};
+const RECURRENCE_DESCRIPTIONS: Record<RecurrenceChoice, string> = {
+  none: 'Completes once and goes to the log.',
+  daily: 'Resets each day. Consecutive completions build a streak.',
+  weekly: 'Resets each week. Consecutive completions build a streak.',
+  monthly: 'Resets each month. Consecutive completions build a streak.',
+  yearly: 'Resets each year. Consecutive completions build a streak.',
+  custom: 'Repeats on the cadence you choose below.',
+};
+
+type RecurrenceUnit = 'days' | 'weeks' | 'months';
+const RECURRENCE_UNITS: RecurrenceUnit[] = ['days', 'weeks', 'months'];
+const RECURRENCE_UNIT_LABELS: Record<RecurrenceUnit, string> = {
+  days: 'Days',
+  weeks: 'Weeks',
+  months: 'Months',
+};
+
+const CLASSIFICATION_DESCRIPTIONS: Record<QuestClassification, string> = {
+  daily: 'Routine work, done in minutes.',
+  side: 'A standalone thread, away from the main path.',
+  main: 'Important work that drives the chronicle.',
+  legendary: 'A magnum opus — multi-day or harder.',
+};
 
 function recurrenceForDb(choice: RecurrenceChoice): QuestRecurrence {
   return choice === 'none' ? null : choice;
@@ -67,6 +106,11 @@ export default function NewQuest() {
   const [objectives, setObjectives] = useState<QuestObjective[]>([]);
   const [deadlineRaw, setDeadlineRaw] = useState('');
   const [recurrence, setRecurrence] = useState<RecurrenceChoice>('none');
+  // Custom-cadence config — only meaningful when recurrence === 'custom'.
+  // Defaults to "every 3 days" so the conditional UI doesn't appear empty
+  // on first reveal.
+  const [recurrenceInterval, setRecurrenceInterval] = useState<string>('3');
+  const [recurrenceUnit, setRecurrenceUnit] = useState<RecurrenceUnit>('days');
   const [buff, setBuff] = useState<BuffDraft>(emptyBuffDraft());
   const [campaignId, setCampaignId] = useState<string | null>(null);
   const [factionId, setFactionId] = useState<string | null>(null);
@@ -102,6 +146,10 @@ export default function NewQuest() {
       // match. User can override in the picker.
       setCampaignId(generated.suggested_campaign_id);
       setFactionId(generated.suggested_faction_id);
+      // Apply the AI's recurrence inference. The AI never returns 'custom'
+      // (too ambiguous to infer); the user picks that manually if they
+      // want a specific interval.
+      setRecurrence(generated.suggested_recurrence);
       setPhase('review');
     } catch (e) {
       stopLoopSfx('quill_scratch');
@@ -138,6 +186,15 @@ export default function NewQuest() {
     setSubmitting(true);
     setError(null);
     try {
+      // Validate custom-cadence inputs before submit so the DB CHECK
+      // constraint doesn't bounce us with a confusing error.
+      const parsedInterval =
+        recurrence === 'custom' ? Math.max(1, Math.floor(Number(recurrenceInterval) || 0)) : null;
+      if (recurrence === 'custom' && (!parsedInterval || parsedInterval < 1)) {
+        playSfx('error');
+        setError('Custom cadence needs a positive number for the interval.');
+        return;
+      }
       await createQuest({
         title: title.trim(),
         description: description.trim() ? description.trim() : null,
@@ -145,6 +202,8 @@ export default function NewQuest() {
         classification,
         deadline: deadlineIso,
         recurrence: recurrenceForDb(recurrence),
+        recurrenceInterval: parsedInterval,
+        recurrenceUnit: recurrence === 'custom' ? recurrenceUnit : null,
         grantedBuff: buffDraftToPayload(buff),
         campaignId,
         factionId,
@@ -154,6 +213,25 @@ export default function NewQuest() {
       });
       // The Tome inscribes a new entry — ceremonial scratch.
       playSfx('quest_create');
+      // Auto-prompt for notification permission on the chronicler's FIRST
+      // recurring quest — that's the moment notifications start being
+      // useful (deadline reminders, recurrence streak nudges). Only ever
+      // fires once per device; subsequent recurring quests don't re-prompt.
+      // Decliners can re-enable from Settings. Fire-and-forget — the quest
+      // already saved successfully, no reason to block on this UX bonus.
+      if (recurrence !== 'none') {
+        void (async () => {
+          const shown = await hasShownAutoPrompt();
+          if (shown) return;
+          const status = await getPermissionStatus();
+          // Only prompt when status is 'undetermined' — if already granted
+          // or denied, the OS sheet doesn't re-show.
+          if (status === 'undetermined') {
+            await requestPermission();
+          }
+          await markAutoPromptShown();
+        })();
+      }
       // router.back() is a no-op when there's no history (deep link or
       // browser refresh) — without the canGoBack guard, the user is left
       // staring at a "Saving…" button while the quest already saved.
@@ -261,40 +339,73 @@ export default function NewQuest() {
         className="mb-4 min-h-[112px] rounded-md border border-stone-700 bg-amber-50/40 px-4 py-3 font-body text-stone-900"
       />
 
-      <Text className="mb-2 font-body text-xl text-stone-700">
-        Tier · grants {xpForTier(tier)} XP
-      </Text>
-      <View className="mb-4 flex-row flex-wrap gap-2">
-        {TIERS.map((t) => (
-          <Chip key={t} label={t} selected={tier === t} onPress={() => setTier(t)} />
-        ))}
-      </View>
+      <DropdownPicker
+        label="Tier"
+        value={tier}
+        onChange={setTier}
+        disabled={submitting}
+        headerInMenu="Choose the tier"
+        options={TIERS.map((t) => ({
+          value: t,
+          label: t,
+          rightLabel: `${xpForTier(t)} XP`,
+        }))}
+      />
 
-      <Text className="mb-2 font-body text-xl text-stone-700">Classification</Text>
-      <View className="mb-4 flex-row flex-wrap gap-2">
-        {CLASSIFICATIONS.map((c) => (
-          <Chip
-            key={c}
-            label={c}
-            selected={classification === c}
-            onPress={() => setClassification(c)}
-          />
-        ))}
-      </View>
+      <DropdownPicker
+        label="Classification"
+        value={classification}
+        onChange={setClassification}
+        disabled={submitting}
+        headerInMenu="Choose the classification"
+        options={CLASSIFICATIONS.map((c) => ({
+          value: c,
+          label: c,
+          description: CLASSIFICATION_DESCRIPTIONS[c],
+        }))}
+      />
 
-      <Text className="mb-2 font-body text-xl text-stone-700">Recurrence</Text>
-      <View className="mb-1 flex-row flex-wrap gap-2">
-        {RECURRENCES.map((r) => (
-          <Chip key={r} label={r} selected={recurrence === r} onPress={() => setRecurrence(r)} />
-        ))}
-      </View>
-      <Text className="mb-4 font-body text-lg text-stone-500">
-        {recurrence === 'none'
-          ? 'A one-time quest. Completes once and goes to the log.'
-          : recurrence === 'daily'
-            ? 'Resets each day. Completing it on consecutive days builds a streak.'
-            : 'Resets each week. Completing it on consecutive weeks builds a streak.'}
-      </Text>
+      <DropdownPicker
+        label="Recurrence"
+        value={recurrence}
+        onChange={setRecurrence}
+        disabled={submitting}
+        headerInMenu="Choose the cadence"
+        options={RECURRENCES.map((r) => ({
+          value: r,
+          label: RECURRENCE_LABELS[r],
+          description: RECURRENCE_DESCRIPTIONS[r],
+        }))}
+      />
+
+      {recurrence === 'custom' ? (
+        <View className="mb-4 rounded-md border border-amber-900/40 bg-amber-50/40 p-4">
+          <Text className="mb-2 font-body text-base text-stone-600">Repeat every…</Text>
+          <View className="flex-row gap-2">
+            <TextInput
+              value={recurrenceInterval}
+              onChangeText={(t) => setRecurrenceInterval(t.replace(/[^0-9]/g, '').slice(0, 4))}
+              keyboardType="number-pad"
+              editable={!submitting}
+              className="w-24 rounded-md border border-stone-700 bg-amber-50/40 px-3 py-2 font-body text-xl text-stone-900"
+            />
+            <View className="flex-1">
+              <DropdownPicker
+                label=""
+                value={recurrenceUnit}
+                onChange={setRecurrenceUnit}
+                disabled={submitting}
+                headerInMenu="Choose the unit"
+                options={RECURRENCE_UNITS.map((u) => ({
+                  value: u,
+                  label: RECURRENCE_UNIT_LABELS[u],
+                }))}
+                showSelectedRightLabel={false}
+              />
+            </View>
+          </View>
+        </View>
+      ) : null}
 
       <View className="mb-6">
         <Text className="mb-2 font-body text-xl text-stone-700">Faction (optional)</Text>

@@ -20,7 +20,7 @@ type Phase = 'idle' | 'intro' | 'loop';
 
 export default function Cinematic() {
   const router = useRouter();
-  const { markCinematicSeen, profile } = useAuth();
+  const { markCinematicSeen, markCinematicSeenOnDevice, profile, session } = useAuth();
 
   // 'idle' = pre-tap (web autoplay-with-audio is blocked without a user
   // gesture). 'intro' = narrated video playing through. 'loop' = ambient
@@ -81,6 +81,17 @@ export default function Cinematic() {
   };
 
   const onContinue = async () => {
+    // Always mark the device-level flag so the pre-auth cinematic doesn't
+    // replay on next launch regardless of whether the visitor signs up.
+    await markCinematicSeenOnDevice();
+    if (!session) {
+      // Pre-auth visitor — they've had their emotional buy-in moment.
+      // Send them to the login screen to make the commitment.
+      router.replace('/login');
+      return;
+    }
+    // Signed-in case: mark the per-user flag too so Settings → Replay
+    // still controls whether the cinematic replays for THIS account.
     await markCinematicSeen();
     // Replay case: user already has a character, send them home.
     router.replace(profile?.character_name ? '/quest-board' : '/character-creation');
@@ -91,7 +102,11 @@ export default function Cinematic() {
       <VideoView
         player={player}
         style={StyleSheet.absoluteFillObject}
-        contentFit="cover"
+        // `contain` shows the full video frame and letterboxes (small black
+        // bars) when the phone's aspect ratio differs from the video's. We
+        // avoid `cover` here because it crops overflow on tall phones
+        // (19.5:9 / 20:9), which made the intro appear zoomed in.
+        contentFit="contain"
         nativeControls={false}
         pointerEvents="none"
       />

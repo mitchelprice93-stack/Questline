@@ -20,18 +20,6 @@ interface Step {
   title: string;
   body: string;
   nextLabel: string;
-  /**
-   * 'tight' (default): asymmetric pad (2px top, 6px bottom) with no Y shift —
-   * suits real DOM-measured targets (the + button, status tabs).
-   * 'loose': symmetric pad with a 10px downward translation — suits the
-   * virtual tab-bar rect computed from screen.height that sits a touch high
-   * versus where the bar actually paints.
-   */
-  spotlightMode?: 'tight' | 'loose';
-  /** Per-step Y override added on top of the mode's default shift, in
-   *  pixels. Negative pushes the spotlight up. Used for one-offs where
-   *  the standard mode lands a few pixels off for a specific target. */
-  yShiftOverride?: number;
 }
 
 export const TUTORIAL_STEPS: Step[] = [
@@ -61,9 +49,6 @@ export const TUTORIAL_STEPS: Step[] = [
       'Every quest passes through these three states. Active is the work at hand; ' +
       "Completed is the work the Tome has inscribed; Abandoned is the work you've set aside.",
     nextLabel: 'Continue',
-    // Status-tabs row sits a few px lower than measureInWindow reports
-    // on this layout — the + button doesn't need this. -6 nudges up.
-    yShiftOverride: -6,
   },
   {
     targetId: 'tab-bar',
@@ -73,7 +58,6 @@ export const TUTORIAL_STEPS: Step[] = [
       'The Quest Board sits beside your Character — your level, factions, campaigns, and any ' +
       'modifiers in play — and Settings, where audio, notifications, and your chronicle export live.',
     nextLabel: 'Continue',
-    spotlightMode: 'loose',
   },
   {
     targetId: null,
@@ -116,12 +100,7 @@ export function TutorialOverlay() {
       style={[StyleSheet.absoluteFillObject, styles.layer]}
     >
       {target ? (
-        <SpotlightScrim
-          target={target}
-          screen={screen}
-          mode={current.spotlightMode ?? 'tight'}
-          yShiftOverride={current.yShiftOverride}
-        />
+        <SpotlightScrim target={target} screen={screen} />
       ) : (
         <View style={[StyleSheet.absoluteFillObject, styles.fullScrim]} pointerEvents="auto" />
       )}
@@ -145,25 +124,24 @@ export function TutorialOverlay() {
 interface SpotlightScrimProps {
   target: TargetRect;
   screen: { width: number; height: number };
-  mode: 'tight' | 'loose';
-  yShiftOverride?: number;
 }
 
-function SpotlightScrim({ target, screen, mode, yShiftOverride }: SpotlightScrimProps) {
-  // Two padding profiles. 'tight' hugs DOM-measured targets (+ button,
-  // status tabs); 'loose' suits virtual rects (tab bar) that sit a touch
-  // high vs where the element actually paints, so we add a downward shift.
-  // Per-step yShiftOverride wins over the mode default for one-off
-  // adjustments (some targets land slightly off even within the same mode).
-  const padX = 6;
-  const padTop = mode === 'tight' ? 2 : 4;
-  const padBottom = mode === 'tight' ? 6 : 4;
-  const baseShift = mode === 'tight' ? 0 : 10;
-  const yShift = yShiftOverride ?? baseShift;
+function SpotlightScrim({ target, screen }: SpotlightScrimProps) {
+  // Target rects are now measured RELATIVE TO THE TUTORIAL ANCHOR (see
+  // TutorialTarget and TabBarTutorialAnchor in (main)/_layout.tsx), which
+  // is the same View the overlay sits inside. That means target.x/y are
+  // already in the overlay's coordinate space — no mode-based shift, no
+  // per-step override, no measurement compensation. Just symmetric padding
+  // around the actual target rect. 2px keeps the hole tight against the
+  // button edge; the glow ring (top: y - 2 in the JSX below) adds another
+  // 2px outset so the total gap between the visible button and the glow
+  // is 4px — present but unobtrusive.
+  const padX = 2;
+  const padY = 2;
   const x = Math.max(0, target.x - padX);
-  const y = Math.max(0, target.y - padTop + yShift);
+  const y = Math.max(0, target.y - padY);
   const w = Math.min(screen.width - x, target.width + padX * 2);
-  const h = Math.min(screen.height - y, target.height + padTop + padBottom);
+  const h = Math.min(screen.height - y, target.height + padY * 2);
 
   return (
     <>
@@ -255,8 +233,11 @@ function Tooltip({
   }
 
   // Decide whether the tooltip sits above or below the highlighted target.
-  // Estimate ~280px tall; if there's room below, prefer below.
-  const estimatedHeight = 280;
+  // Empirically the rendered card is ~360-400px tall depending on body
+  // length (eyebrow + title + 3-4 body lines + dots + Next btn + optional
+  // Skip btn + paddings). 380 covers the common case without leaving so
+  // much slack that we falsely place-above when below would fit cleanly.
+  const estimatedHeight = 380;
   const spaceBelow = screen.height - (target.y + target.height);
   const placeBelow = spaceBelow >= estimatedHeight + TOOLTIP_GAP * 2;
 

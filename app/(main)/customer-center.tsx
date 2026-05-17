@@ -1,84 +1,89 @@
 import { useRouter } from 'expo-router';
-import { useEffect, useState } from 'react';
-import { ActivityIndicator, Platform, Pressable, ScrollView, Text, View } from 'react-native';
+import { Linking, Platform, Pressable, ScrollView, Text, View } from 'react-native';
 
 import { ParchmentScreen } from '../../lib/parchment';
-import { isPurchasesReady } from '../../lib/purchases';
 
-// react-native-purchases-ui CustomerCenter is native-only. Lazy-import
-// behind a Platform guard.
-async function loadCustomerCenter() {
-  if (Platform.OS !== 'ios' && Platform.OS !== 'android') return null;
-  try {
-    const mod = await import('react-native-purchases-ui');
-    return mod.default;
-  } catch {
-    return null;
-  }
-}
+// Deep links to the platform's native subscription management page,
+// scoped to Questline where the platform supports it.
+//
+// Android: opens Play Store subscriptions, filtered to our subscription
+// product if the user has a Hero subscription active.
+// iOS: opens the App Store account subscriptions list (Apple doesn't
+// support per-app filtering on this URL).
+const ANDROID_SUBSCRIPTION_URL =
+  'https://play.google.com/store/account/subscriptions?sku=hero_pro&package=com.mitchelprice.questline';
+const IOS_SUBSCRIPTION_URL = 'https://apps.apple.com/account/subscriptions';
 
 /**
- * RC's drop-in subscription management UI. Lets the user view their plan,
- * cancel, restore, see receipts. Only meaningful for Hero subscribers —
- * Settings hides the entry point for free users.
+ * Subscription management screen.
+ *
+ * Previously this rendered RC's native CustomerCenter overlay via
+ * react-native-purchases-ui, but that component has known compatibility
+ * issues with React Native's new architecture (newArchEnabled: true) and
+ * was causing the app to freeze on open. Replaced with a custom in-app
+ * screen that deep-links to the platform's native subscription settings
+ * — which is what users want to do anyway (cancel, change payment,
+ * restore prior purchase) and avoids the broken overlay entirely.
+ *
+ * Trade-off: we no longer surface receipt history or RC's built-in help
+ * center in-app. For v1 closed-alpha this is acceptable; if users ask for
+ * those flows we can build minimal versions natively.
  */
 export default function CustomerCenter() {
   const router = useRouter();
-  const [RCUi, setRCUi] = useState<unknown>(null);
-  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    let cancelled = false;
-    loadCustomerCenter().then((mod) => {
-      if (cancelled) return;
-      if (mod && isPurchasesReady()) setRCUi(() => mod);
-      setLoading(false);
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  if (loading) {
-    return (
-      <ParchmentScreen>
-        <View className="flex-1 items-center justify-center">
-          <ActivityIndicator color="#92400e" />
-        </View>
-      </ParchmentScreen>
-    );
-  }
-
-  if (RCUi) {
-    interface CustomerCenterProps {
-      onDismiss?: () => void;
+  const openPlatformSubscriptions = async () => {
+    const url = Platform.OS === 'ios' ? IOS_SUBSCRIPTION_URL : ANDROID_SUBSCRIPTION_URL;
+    try {
+      await Linking.openURL(url);
+    } catch (e) {
+      console.warn('[customer-center] failed to open platform subscriptions URL', e);
     }
-    const CustomerCenterComponent = (
-      RCUi as { CustomerCenter: React.ComponentType<CustomerCenterProps> }
-    ).CustomerCenter;
-    return (
-      <View className="flex-1 bg-stone-950">
-        <CustomerCenterComponent onDismiss={() => router.back()} />
-      </View>
-    );
-  }
+  };
 
-  // Web / unconfigured fallback — point the user at the platform's native
-  // subscription settings since we can't deep-link from here.
   return (
     <ParchmentScreen>
       <ScrollView className="flex-1" contentContainerClassName="px-6 pt-20 pb-12">
-        <Pressable onPress={() => router.back()} className="mb-3 self-start active:opacity-60">
+        {/* Explicit route to /settings — router.back() in an Expo Router
+            Tabs setup unwinds to the initial tab (Quest Board) rather than
+            the previous screen. Customer center is only reached from the
+            Settings → Manage subscription button. */}
+        <Pressable
+          onPress={() => router.replace('/settings')}
+          className="mb-3 self-start active:opacity-60"
+        >
           <Text className="font-body text-xl text-amber-800">← Back</Text>
         </Pressable>
-        <Text className="mb-6 font-display text-4xl text-stone-900">Manage subscription</Text>
-        <Text className="mb-4 font-body text-xl leading-relaxed text-stone-800">
-          The Customer Center opens on iOS and Android once the app is built natively. From there
-          you can view your active pledge, cancel, restore prior purchases, or contact support.
+
+        <Text className="mb-2 font-display text-4xl text-stone-900">Manage subscription</Text>
+        <Text className="mb-8 font-body text-base text-amber-800">
+          {Platform.OS === 'ios' ? 'Apple App Store' : 'Google Play'}
         </Text>
-        <Text className="font-body text-lg leading-relaxed text-stone-700">
-          On web, head to the App Store or Google Play subscription settings to manage your
-          pledge. Cancellations take effect at the end of the current billing period.
+
+        <Text className="mb-6 font-body text-xl leading-relaxed text-stone-800">
+          Subscriptions are managed through {Platform.OS === 'ios' ? "Apple's" : "Google's"}{' '}
+          subscription settings. From there you can:
+        </Text>
+
+        <View className="mb-8 ml-2 gap-3">
+          <Text className="font-body text-lg text-stone-700">· View your active pledge</Text>
+          <Text className="font-body text-lg text-stone-700">· Cancel your subscription</Text>
+          <Text className="font-body text-lg text-stone-700">· Change your payment method</Text>
+          <Text className="font-body text-lg text-stone-700">· Restore prior purchases</Text>
+        </View>
+
+        <Pressable
+          onPress={openPlatformSubscriptions}
+          className="mb-3 rounded-md bg-amber-600 px-4 py-4 active:bg-amber-700"
+        >
+          <Text className="text-center font-display text-2xl text-stone-100">
+            Open {Platform.OS === 'ios' ? 'App Store' : 'Play Store'} subscriptions
+          </Text>
+        </Pressable>
+
+        <Text className="mt-6 font-body text-base leading-relaxed text-stone-600">
+          Cancellations take effect at the end of the current billing period. Your Hero entitlement
+          remains active until expiry — the Tome stays generous to the end.
         </Text>
       </ScrollView>
     </ParchmentScreen>

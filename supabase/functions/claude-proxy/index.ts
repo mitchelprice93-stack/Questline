@@ -181,6 +181,19 @@ const QUEST_GENERATION_SCHEMA = {
       description:
         "If this endeavor naturally belongs to one of the chronicler's factions — judged from the faction's name and real_world_domain — return that faction's id verbatim. Empty string when no faction fits or the chronicler has no factions. Carpentry quests should land on a carpenter faction, code quests on a software faction, lesson plans on a teaching faction, and so on.",
     },
+    suggested_recurrence: {
+      type: 'string',
+      enum: ['none', 'daily', 'weekly', 'monthly', 'yearly'],
+      description:
+        "Detect whether this endeavor is meant to repeat, and at what cadence. " +
+        "'daily' when the input mentions any of: 'every day', 'each day', 'daily', 'every morning', 'every evening', 'each morning', 'every night', or implies a once-a-day habit ('drink 8 glasses of water', 'do 50 pushups'). " +
+        "'weekly' when the input mentions: 'every week', 'each week', 'weekly', 'every Monday'/'every Tuesday'/etc., 'once a week', or implies a once-a-week cadence ('grocery run', 'clean the kitchen on Sundays'). " +
+        "'monthly' when the input mentions: 'every month', 'monthly', 'each month', 'first of the month', or implies a once-a-month cadence ('pay the rent', 'monthly inventory'). " +
+        "'yearly' when the input mentions: 'every year', 'annually', 'yearly', 'every January'/'every December'/etc., 'annual', or implies a once-a-year cadence ('renew the registration', 'birthday'). " +
+        "'none' for one-shot endeavors with no obvious cadence ('finish the lab report', 'call the dentist', 'plan the trip'). " +
+        "When in doubt, prefer 'none' — the chronicler can opt into recurrence on the review screen if they want. " +
+        "Do NOT return 'custom' here — custom intervals are too ambiguous to infer reliably; the chronicler picks those manually.",
+    },
   },
   required: [
     'title',
@@ -192,6 +205,7 @@ const QUEST_GENERATION_SCHEMA = {
     'granted_buff',
     'suggested_campaign_id',
     'suggested_faction_id',
+    'suggested_recurrence',
   ],
 };
 
@@ -411,9 +425,12 @@ interface EndpointInferenceConfig {
 const ENDPOINT_INFERENCE: Record<ProxyRequest['endpoint'], EndpointInferenceConfig> = {
   // Rich narrative, once-per-lifetime — let the model think.
   character_creation: { thinking: { type: 'adaptive' }, max_tokens: 4096 },
-  // Decomposition task fired up to 50x/day. Disabled thinking keeps it snappy
-  // on Sonnet 4.6 — the schema does the structural work.
-  quest_generation: { thinking: { type: 'disabled' }, max_tokens: 2048 },
+  // Decomposition task fired up to 50x/day. Already on Haiku 4.5 with
+  // thinking disabled; reduced max_tokens from 2048 → 1500 to tighten the
+  // generation tail — typical quest payloads come in around 800-1200
+  // tokens, so 1500 is comfortable headroom without giving the model
+  // license to ramble. Trims ~10-20% off observed latency.
+  quest_generation: { thinking: { type: 'disabled' }, max_tokens: 1500 },
   // Short narrative, fires only on a level-up — relatively rare. Keep
   // thinking off for snappy display; cap tokens tight since output is
   // 2-3 sentences.

@@ -20,6 +20,30 @@ import { supabase } from './supabase';
 const KEY_QUEST_NOTIFICATIONS = 'questline.notifications.questIds'; // map quest_id -> [scheduledIds]
 const KEY_CHECK_IN_TIME = 'questline.notifications.checkInTime'; // 'HH:MM' or 'off'
 const KEY_CHECK_IN_NOTIF = 'questline.notifications.checkInId'; // current scheduled id
+const KEY_AUTO_PROMPT_SHOWN = 'questline.notifications.autoPromptShown'; // boolean
+
+/**
+ * Has the just-in-time permission prompt already been shown to this device?
+ * Used by the quest-creation flow to prompt for notifications the FIRST
+ * time a chronicler creates a recurring (daily/weekly) quest — that's the
+ * moment notifications actually matter. After that, they can toggle from
+ * Settings if they declined.
+ */
+export async function hasShownAutoPrompt(): Promise<boolean> {
+  try {
+    return (await AsyncStorage.getItem(KEY_AUTO_PROMPT_SHOWN)) === '1';
+  } catch {
+    return false;
+  }
+}
+
+export async function markAutoPromptShown(): Promise<void> {
+  try {
+    await AsyncStorage.setItem(KEY_AUTO_PROMPT_SHOWN, '1');
+  } catch {
+    // best-effort; worst case the user is prompted twice
+  }
+}
 
 const isNative = Platform.OS === 'ios' || Platform.OS === 'android';
 

@@ -141,7 +141,14 @@ export default function AchievementsScreen() {
   return (
     <ParchmentScreen>
       <ScrollView className="flex-1" contentContainerClassName="px-6 pt-20 pb-12">
-        <Pressable onPress={() => router.back()} className="mb-4 active:opacity-60">
+        {/* Explicit route to /character-sheet — router.back() in an Expo
+            Router Tabs setup unwinds to the initial tab (Quest Board), not
+            the previous screen. Achievements is only reached from the
+            character sheet's Achievements card. */}
+        <Pressable
+          onPress={() => router.replace('/character-sheet')}
+          className="mb-4 active:opacity-60"
+        >
           <Text className="font-body text-lg text-amber-800">← Back</Text>
         </Pressable>
 

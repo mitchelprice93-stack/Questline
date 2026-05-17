@@ -80,12 +80,18 @@ export function deadlineUrgency(
 /**
  * Tailwind class fragments keyed by urgency. Caller composes them into
  * className strings for borders, backgrounds, and text.
+ *
+ * Text colors are calibrated for the parchment background (light cream) —
+ * previous values (text-red-300, text-orange-300, etc.) were tuned for
+ * dark backgrounds and blended into the parchment, making "Due tomorrow"
+ * essentially invisible. Switched to darker variants that pop against
+ * cream while keeping the same urgency hierarchy: red → orange → amber → stone.
  */
 export const urgencyClasses: Record<DeadlineUrgency, { border: string; text: string }> = {
-  overdue: { border: 'border-red-500/60', text: 'text-red-300' },
-  urgent: { border: 'border-orange-500/60', text: 'text-orange-300' },
-  soon: { border: 'border-amber-500/40', text: 'text-amber-300' },
-  normal: { border: 'border-stone-800', text: 'text-stone-300' },
+  overdue: { border: 'border-red-500/60', text: 'text-red-800' },
+  urgent: { border: 'border-orange-500/60', text: 'text-orange-700' },
+  soon: { border: 'border-amber-500/40', text: 'text-amber-700' },
+  normal: { border: 'border-stone-800', text: 'text-stone-600' },
 };
 
 // ---- Recurring quest period helpers ----------------------------------------
@@ -112,21 +118,68 @@ function utcWeekKey(d: Date): string {
   return utcDayKey(monday);
 }
 
+/** UTC YYYY-MM key (e.g. "2026-05") for monthly recurrence comparisons. */
+function utcMonthKey(d: Date): string {
+  return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`;
+}
+
+/** UTC year key (e.g. "2026") for yearly recurrence comparisons. */
+function utcYearKey(d: Date): string {
+  return `${d.getUTCFullYear()}`;
+}
+
+/** Convert a custom interval + unit to milliseconds. Months use 30 days as
+ *  an approximation — this drives client-side cooldown UI only; the server
+ *  uses Postgres's interval arithmetic for the canonical check, so a
+ *  small mismatch at month boundaries is acceptable. */
+function customIntervalMs(interval: number, unit: 'days' | 'weeks' | 'months'): number {
+  const dayMs = 86_400_000;
+  switch (unit) {
+    case 'days':
+      return interval * dayMs;
+    case 'weeks':
+      return interval * 7 * dayMs;
+    case 'months':
+      return interval * 30 * dayMs;
+  }
+}
+
+type RecurrenceLike =
+  | 'daily'
+  | 'weekly'
+  | 'monthly'
+  | 'yearly'
+  | 'custom'
+  | null;
+
 /**
- * True when the last_completed_at timestamp falls in the same period (day
- * for 'daily', ISO week for 'weekly') as `now`. Returns false for one-shot
- * quests and quests that have never been completed.
+ * True when the last_completed_at timestamp falls in the same period as
+ * `now`. For custom cadence, requires interval + unit. Returns false for
+ * one-shot quests and quests that have never been completed.
  */
 export function isCompletedThisPeriod(
-  recurrence: 'daily' | 'weekly' | null,
+  recurrence: RecurrenceLike,
   lastCompletedAt: string | null,
   now: Date = new Date(),
+  customInterval?: number | null,
+  customUnit?: 'days' | 'weeks' | 'months' | null,
 ): boolean {
   if (!recurrence || !lastCompletedAt) return false;
   const last = new Date(lastCompletedAt);
   if (isNaN(last.getTime())) return false;
-  if (recurrence === 'daily') return utcDayKey(last) === utcDayKey(now);
-  return utcWeekKey(last) === utcWeekKey(now);
+  switch (recurrence) {
+    case 'daily':
+      return utcDayKey(last) === utcDayKey(now);
+    case 'weekly':
+      return utcWeekKey(last) === utcWeekKey(now);
+    case 'monthly':
+      return utcMonthKey(last) === utcMonthKey(now);
+    case 'yearly':
+      return utcYearKey(last) === utcYearKey(now);
+    case 'custom':
+      if (!customInterval || !customUnit) return false;
+      return now.getTime() - last.getTime() < customIntervalMs(customInterval, customUnit);
+  }
 }
 
 /**
@@ -134,10 +187,27 @@ export function isCompletedThisPeriod(
  * "Done this week", or null when the quest is ready to be completed.
  */
 export function recurrenceStatusLabel(
-  recurrence: 'daily' | 'weekly' | null,
+  recurrence: RecurrenceLike,
   lastCompletedAt: string | null,
   now: Date = new Date(),
+  customInterval?: number | null,
+  customUnit?: 'days' | 'weeks' | 'months' | null,
 ): string | null {
-  if (!isCompletedThisPeriod(recurrence, lastCompletedAt, now)) return null;
-  return recurrence === 'daily' ? 'Done today' : 'Done this week';
+  if (!isCompletedThisPeriod(recurrence, lastCompletedAt, now, customInterval, customUnit)) {
+    return null;
+  }
+  switch (recurrence) {
+    case 'daily':
+      return 'Done today';
+    case 'weekly':
+      return 'Done this week';
+    case 'monthly':
+      return 'Done this month';
+    case 'yearly':
+      return 'Done this year';
+    case 'custom':
+      return 'Done this cycle';
+    default:
+      return null;
+  }
 }

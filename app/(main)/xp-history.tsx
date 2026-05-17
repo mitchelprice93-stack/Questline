@@ -36,7 +36,14 @@ export default function XpHistory() {
       <View className="flex-1 px-6 pt-20">
       <View className="mb-2 flex-row items-baseline justify-between">
         <Text className="font-display text-4xl text-stone-900">XP History</Text>
-        <Pressable onPress={() => router.back()} className="active:opacity-60">
+        {/* Explicit route to /character-sheet because router.back() in an
+            Expo Router Tabs setup unwinds to the initial tab (Quest Board),
+            not the screen the user came from. xp-history is only ever
+            reached from the character sheet. */}
+        <Pressable
+          onPress={() => router.replace('/character-sheet')}
+          className="active:opacity-60"
+        >
           <Text className="font-body text-xl text-amber-800">Back</Text>
         </Pressable>
       </View>

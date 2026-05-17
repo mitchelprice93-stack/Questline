@@ -25,6 +25,10 @@ export const HERO_ENTITLEMENT_ID = 'Questline Pro';
 type PurchasesModule = typeof import('react-native-purchases');
 let Purchases: PurchasesModule['default'] | null = null;
 let configured = false;
+// Last error from a configure() attempt — surfaced through the paywall
+// when configured is false, so the chronicler (and Mitchel) can see
+// what's actually broken instead of a generic "unreachable" message.
+let lastConfigureError: string | null = null;
 
 async function loadPurchases(): Promise<PurchasesModule['default'] | null> {
   if (!IS_NATIVE) return null;
@@ -57,21 +61,50 @@ export async function configurePurchases(userId?: string): Promise<void> {
       ? process.env.EXPO_PUBLIC_REVENUECAT_IOS_KEY
       : process.env.EXPO_PUBLIC_REVENUECAT_ANDROID_KEY;
   if (!apiKey) {
-    console.warn(
-      '[purchases] no RevenueCat API key set; skipping init. ' +
-        'Add EXPO_PUBLIC_REVENUECAT_IOS_KEY / _ANDROID_KEY to .env.local.',
-    );
+    const msg =
+      'No RevenueCat API key in build. EXPO_PUBLIC_REVENUECAT_ANDROID_KEY is missing from the AAB env.';
+    console.warn('[purchases]', msg);
+    lastConfigureError = msg;
+    return;
+  }
+
+  // RC's native SDK force-closes production builds that try to configure with
+  // a sandbox `test_*` key — they refuse to mix test keys into production
+  // surface area for purchase-security reasons. If we detect one, skip init
+  // entirely: the paywall falls back to its STUB_PACKAGES path, no purchases
+  // work, but the app doesn't crash on launch. Swap to `goog_*` / `appl_*`
+  // production keys (RC dashboard → Project → API keys) to re-enable purchases.
+  if (apiKey.startsWith('test_')) {
+    const msg =
+      'Test RC key (test_*) detected in production build. SDK init skipped to prevent crash. Need a goog_* key.';
+    console.warn('[purchases]', msg);
+    lastConfigureError = msg;
     return;
   }
 
   const p = await loadPurchases();
-  if (!p) return;
+  if (!p) {
+    const msg = 'Failed to load react-native-purchases module (lazy import returned null).';
+    console.warn('[purchases]', msg);
+    lastConfigureError = msg;
+    return;
+  }
   try {
     await p.configure({ apiKey, appUserID: userId ?? null });
     configured = true;
+    lastConfigureError = null;
   } catch (e) {
-    console.warn('[purchases] configure failed', errorMessage(e));
+    const msg = `configure() threw: ${errorMessage(e)} (key prefix: ${apiKey.slice(0, 5)}…)`;
+    console.warn('[purchases]', msg);
+    lastConfigureError = msg;
   }
+}
+
+/** Last error from a configure() attempt, or null if it succeeded.
+ *  The paywall uses this to surface the actual reason for SDK
+ *  unavailability instead of a generic message. */
+export function getLastConfigureError(): string | null {
+  return lastConfigureError;
 }
 
 /** Tell RevenueCat which user is signed in. Call this after signIn so RC
@@ -120,15 +153,19 @@ export interface PaywallPackage {
  * Stub packages shown when RC isn't initialized (web, missing keys, etc.)
  * so the custom paywall has something to render. Replaced by real RC
  * offerings once the SDK is configured AND the dashboard has products.
+ *
+ * Order: monthly → yearly → lifetime. Matches the Play Console subscription
+ * management page so users see tiers in the same sequence across both
+ * surfaces. Yearly stays in the middle as the recommended "best value"
+ * anchor — see the default-selected logic in paywall.tsx.
  */
 const STUB_PACKAGES: PaywallPackage[] = [
   {
-    identifier: 'lifetime_stub',
-    duration: 'lifetime',
-    title: 'Hero · Lifetime',
-    priceString: '$59.99',
-    period: null,
-    caption: 'One pledge, forever',
+    identifier: 'monthly_stub',
+    duration: 'monthly',
+    title: 'Hero · Monthly',
+    priceString: '$2.99',
+    period: 'month',
   },
   {
     identifier: 'yearly_stub',
@@ -139,17 +176,19 @@ const STUB_PACKAGES: PaywallPackage[] = [
     caption: 'Best value — save 17% vs monthly',
   },
   {
-    identifier: 'monthly_stub',
-    duration: 'monthly',
-    title: 'Hero · Monthly',
-    priceString: '$2.99',
-    period: 'month',
+    identifier: 'lifetime_stub',
+    duration: 'lifetime',
+    title: 'Hero · Lifetime',
+    priceString: '$59.99',
+    period: null,
+    caption: 'One pledge, forever',
   },
 ];
 
 /**
  * Fetch every available package in the current Hero offering, ordered
- * lifetime → yearly → monthly. Returns stubs when RC isn't configured.
+ * monthly → yearly → lifetime to match the Play Console management page.
+ * Returns stubs when RC isn't configured.
  */
 export async function getHeroPackages(): Promise<PaywallPackage[]> {
   if (!IS_NATIVE || !configured) return STUB_PACKAGES;
@@ -161,9 +200,9 @@ export async function getHeroPackages(): Promise<PaywallPackage[]> {
     if (!current) return STUB_PACKAGES;
 
     const result: PaywallPackage[] = [];
-    if (current.lifetime) result.push(toPaywallPackage(current.lifetime, 'lifetime'));
-    if (current.annual) result.push(toPaywallPackage(current.annual, 'yearly'));
     if (current.monthly) result.push(toPaywallPackage(current.monthly, 'monthly'));
+    if (current.annual) result.push(toPaywallPackage(current.annual, 'yearly'));
+    if (current.lifetime) result.push(toPaywallPackage(current.lifetime, 'lifetime'));
 
     // If the offering doesn't slot into the standard lifetime/annual/monthly
     // buckets, fall back to walking availablePackages and best-effort

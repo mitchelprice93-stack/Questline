@@ -31,13 +31,19 @@ export default function Signup() {
   if (pendingConfirmation) {
     return (
       <View className="flex-1 justify-center bg-stone-950 px-6">
-        <Text className="mb-2 font-display text-3xl text-stone-100">Check your inbox</Text>
-        <Text className="mb-6 font-body text-stone-400">
-          The Archivist has sent a sealed message to{' '}
-          <Text className="font-body-medium text-stone-200">{email.trim()}</Text>. Confirm your
-          address, then return and sign in.
+        <Text className="mb-2 text-center font-display text-3xl text-stone-100">
+          Check your inbox
         </Text>
-        <Link href="/login" className="font-body-medium text-amber-400">
+        <Text className="mb-3 text-center font-body text-stone-400">
+          The Archivist has sent a sealed message to:
+        </Text>
+        <Text className="mb-6 text-center font-body-medium text-lg text-stone-200">
+          {email.trim()}
+        </Text>
+        <Text className="mb-6 text-center font-body text-stone-400">
+          Confirm your address, then return and sign in.
+        </Text>
+        <Link href="/login" className="text-center font-body-medium text-amber-400">
           Back to sign in
         </Link>
       </View>

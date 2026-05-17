@@ -6,7 +6,11 @@ import type { Difficulty, QuestTier } from '../engine/xp';
 
 export type QuestClassification = 'daily' | 'side' | 'main' | 'legendary';
 export type QuestStatus = 'active' | 'completed' | 'abandoned';
-export type QuestRecurrence = 'daily' | 'weekly' | null;
+export type QuestRecurrence = 'daily' | 'weekly' | 'monthly' | 'yearly' | 'custom' | null;
+/** For `recurrence = 'custom'` only — both fields are required (non-null,
+ *  positive int) when recurrence is custom and null otherwise. The DB
+ *  enforces this invariant via a CHECK constraint. */
+export type QuestRecurrenceUnit = 'days' | 'weeks' | 'months';
 export type GrantedBuffCondition = 'on_complete' | 'on_time' | 'all_objectives';
 
 export interface QuestObjective {
@@ -31,6 +35,10 @@ export interface Quest {
   xp_reward: number;
   status: QuestStatus;
   recurrence: QuestRecurrence;
+  /** Custom cadence: how many units between completions. Null unless recurrence='custom'. */
+  recurrence_interval: number | null;
+  /** Custom cadence: the unit ('days', 'weeks', 'months'). Null unless recurrence='custom'. */
+  recurrence_unit: QuestRecurrenceUnit | null;
   streak_count: number;
   deadline: string | null;
   /** Set when a one-shot quest reaches `completed` status. */

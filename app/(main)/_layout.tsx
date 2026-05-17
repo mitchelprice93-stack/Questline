@@ -1,3 +1,4 @@
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Tabs, useRouter } from 'expo-router';
 import { useCallback, useEffect } from 'react';
 import { Dimensions, View } from 'react-native';
@@ -31,7 +32,7 @@ export default function MainLayout() {
 
   return (
     <TutorialProvider totalSteps={TUTORIAL_STEPS.length} onStart={onTutorialStart}>
-      <View className="flex-1">
+      <AnchoredLayoutRoot>
         {/* Ambient music bed — only mounts inside the main app, not during
             the cinematic or onboarding (which have their own audio). */}
         <AmbientAudioRoot />
@@ -51,7 +52,9 @@ export default function MainLayout() {
             },
             tabBarLabelStyle: {
               fontFamily: 'Cinzel_400Regular',
-              fontSize: 19,
+              // Reduced from 19 to 16 so "CHARACTER" (9 chars + wide tracking)
+              // fits a 1/3-screen tab without truncating to "CHARACTE".
+              fontSize: 16,
               textTransform: 'uppercase',
               letterSpacing: 1.5,
               marginTop: 2,
@@ -61,9 +64,33 @@ export default function MainLayout() {
             tabPress: () => playSfx('tab_switch'),
           }}
         >
-          <Tabs.Screen name="quest-board" options={{ title: 'Quests' }} />
-          <Tabs.Screen name="character-sheet" options={{ title: 'Character' }} />
-          <Tabs.Screen name="settings" options={{ title: 'Settings' }} />
+          <Tabs.Screen
+            name="quest-board"
+            options={{
+              title: 'Quests',
+              tabBarIcon: ({ color, size }) => (
+                <MaterialCommunityIcons name="book-open-page-variant" size={size} color={color} />
+              ),
+            }}
+          />
+          <Tabs.Screen
+            name="character-sheet"
+            options={{
+              title: 'Character',
+              tabBarIcon: ({ color, size }) => (
+                <MaterialCommunityIcons name="shield-account" size={size} color={color} />
+              ),
+            }}
+          />
+          <Tabs.Screen
+            name="settings"
+            options={{
+              title: 'Settings',
+              tabBarIcon: ({ color, size }) => (
+                <MaterialCommunityIcons name="cog" size={size} color={color} />
+              ),
+            }}
+          />
           {/* xp-history is reachable only from the Character Sheet — hide it
               from the tab bar so it doesn't take a top-level slot. */}
           <Tabs.Screen name="xp-history" options={{ href: null }} />
@@ -85,32 +112,58 @@ export default function MainLayout() {
             feed; mounted once at the root so it overlays whichever tab
             the user happens to be on when an achievement fires. */}
         <AchievementSurface />
-      </View>
+      </AnchoredLayoutRoot>
     </TutorialProvider>
+  );
+}
+
+/**
+ * Wraps the main layout's flex-1 View with a ref handed to the tutorial
+ * context. TutorialTarget measures children relative to THIS View, and
+ * TutorialOverlay sits inside it — same coordinate origin for both, no
+ * window/safe-area mismatch to compensate for.
+ *
+ * collapsable={false} prevents Android from optimizing the wrapper away,
+ * which would invalidate the ref.
+ */
+function AnchoredLayoutRoot({ children }: { children: React.ReactNode }) {
+  const { anchorRef } = useTutorial();
+  return (
+    <View ref={anchorRef} collapsable={false} className="flex-1">
+      {children}
+    </View>
   );
 }
 
 /**
  * The Expo Router Tabs component renders the tab bar internally, so we
  * can't wrap it in <TutorialTarget>. This component publishes a virtual
- * rect for the tab bar instead — its fixed height + the screen width
- * give us the geometry the spotlight needs.
+ * rect for the tab bar instead — measured from the tutorial anchor View's
+ * bounds (not Dimensions.get('window')) so the rect lives in the same
+ * coordinate system as the overlay paints.
  */
 function TabBarTutorialAnchor() {
-  const { registerTarget } = useTutorial();
+  const { registerTarget, anchorRef } = useTutorial();
   useEffect(() => {
     const publish = () => {
-      const { width, height } = Dimensions.get('window');
-      registerTarget('tab-bar', {
-        x: 0,
-        y: Math.max(0, height - TAB_BAR_HEIGHT),
-        width,
-        height: TAB_BAR_HEIGHT,
+      const anchor = anchorRef.current;
+      if (!anchor) return;
+      anchor.measureInWindow((_x, _y, width, height) => {
+        registerTarget('tab-bar', {
+          x: 0,
+          y: Math.max(0, height - TAB_BAR_HEIGHT),
+          width,
+          height: TAB_BAR_HEIGHT,
+        });
       });
     };
-    publish();
+    // Defer to next frame so the anchor has its layout pass done.
+    const handle = requestAnimationFrame(publish);
     const sub = Dimensions.addEventListener('change', publish);
-    return () => sub.remove();
-  }, [registerTarget]);
+    return () => {
+      cancelAnimationFrame(handle);
+      sub.remove();
+    };
+  }, [registerTarget, anchorRef]);
   return null;
 }

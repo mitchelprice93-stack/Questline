@@ -2,7 +2,9 @@ import { Link } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, Text, TextInput, View } from 'react-native';
 
+import { requestPasswordReset } from '../../lib/account';
 import { useAuth } from '../../lib/auth';
+import { errorMessage } from '../../lib/errors';
 
 export default function Login() {
   const { signIn } = useAuth();
@@ -10,6 +12,7 @@ export default function Login() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [resetSent, setResetSent] = useState(false);
 
   const onSubmit = async () => {
     setLoading(true);
@@ -17,6 +20,24 @@ export default function Login() {
     const result = await signIn(email.trim(), password);
     if (result.error) setError(result.error.message);
     setLoading(false);
+  };
+
+  const onForgotPassword = async () => {
+    const trimmed = email.trim();
+    if (!trimmed) {
+      setError('Enter your email above first, then tap "Forgot password?".');
+      return;
+    }
+    setLoading(true);
+    setError(null);
+    try {
+      await requestPasswordReset(trimmed);
+      setResetSent(true);
+    } catch (e) {
+      setError(errorMessage(e));
+    } finally {
+      setLoading(false);
+    }
   };
 
   const disabled = loading || email.trim().length === 0 || password.length === 0;
@@ -51,6 +72,11 @@ export default function Login() {
       />
 
       {error ? <Text className="mb-4 font-body text-sm text-red-400">{error}</Text> : null}
+      {resetSent ? (
+        <Text className="mb-4 font-body text-sm text-amber-400">
+          A reset letter has been sent to {email.trim()}. Check your inbox (and spam) for the link.
+        </Text>
+      ) : null}
 
       <Pressable
         onPress={onSubmit}
@@ -60,6 +86,14 @@ export default function Login() {
         <Text className="text-center font-body-medium text-base text-stone-100">
           {loading ? 'Signing in…' : 'Sign in'}
         </Text>
+      </Pressable>
+
+      <Pressable
+        onPress={onForgotPassword}
+        disabled={loading}
+        className="mt-3 self-center active:opacity-60"
+      >
+        <Text className="font-body text-sm text-amber-400">Forgot your password?</Text>
       </Pressable>
 
       <View className="mt-6 flex-row justify-center">

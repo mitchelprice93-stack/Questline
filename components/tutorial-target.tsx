@@ -4,6 +4,12 @@
 //
 // The wrapper renders a transparent View around its children so layout +
 // position are measurable; it adds no visual styling of its own.
+//
+// Positions are measured RELATIVE TO THE TUTORIAL ANCHOR — the (main)
+// layout's flex-1 wrapper View, which is also the overlay's direct parent.
+// This guarantees the spotlight paints exactly where the target sits,
+// regardless of safe-area insets, edge-to-edge offsets, or any other
+// wrapper math between the window root and the overlay's container.
 
 import { useCallback, useEffect, useRef } from 'react';
 import { View } from 'react-native';
@@ -20,31 +26,54 @@ interface Props {
 }
 
 export function TutorialTarget({ id, children, enabled = true }: Props) {
-  const { registerTarget, isActive } = useTutorial();
+  const { registerTarget, isActive, anchorRef, step } = useTutorial();
   const ref = useRef<View>(null);
 
   const measure = useCallback(() => {
     if (!enabled) return;
     const node = ref.current;
     if (!node) return;
-    // measureInWindow gives screen-relative coords, which is what we want
-    // for the overlay (it lives at the (main) layout root).
+    const anchor = anchorRef.current;
+    // Measure target in window-space, then subtract the anchor's
+    // window-space position to get coords RELATIVE TO THE ANCHOR. Since
+    // the overlay sits inside the same anchor with absoluteFillObject,
+    // those coords are exactly where it paints.
+    if (anchor) {
+      anchor.measureInWindow((ox, oy) => {
+        node.measureInWindow((x, y, width, height) => {
+          if (width <= 0 || height <= 0) return;
+          registerTarget(id, {
+            x: x - ox,
+            y: y - oy,
+            width,
+            height,
+          });
+        });
+      });
+      return;
+    }
+    // Fallback when anchor hasn't mounted yet — use raw window coords.
+    // This races on first launch but self-corrects on the next layout
+    // pass once the anchor is set.
     node.measureInWindow((x, y, width, height) => {
-      // Some platforms briefly report 0×0 during transitions; ignore those
-      // so we don't draw a tiny hole at the origin.
       if (width <= 0 || height <= 0) return;
       registerTarget(id, { x, y, width, height });
     });
-  }, [id, enabled, registerTarget]);
+  }, [id, enabled, registerTarget, anchorRef]);
 
-  // Re-measure when the tutorial activates — the target may have been
-  // mounted before the overlay decided to highlight it.
+  // Re-measure when the tutorial activates AND on every step advance.
+  //
+  // The step-change re-measure was added to fix tablet first-time spotlights
+  // that landed on stale positions. By the time the user has clicked Next
+  // to advance the tutorial, any layout settling (font loading, async data,
+  // tab transitions) is done, so re-measuring per step catches the final
+  // resting position even on slower hardware where the initial mount-time
+  // measurement caught the screen mid-settle.
   useEffect(() => {
     if (!isActive || !enabled) return;
-    // Defer to the next frame so layout has settled.
     const handle = requestAnimationFrame(measure);
     return () => cancelAnimationFrame(handle);
-  }, [isActive, enabled, measure]);
+  }, [isActive, step, enabled, measure]);
 
   // Clean up on unmount so the overlay doesn't keep a stale rect around.
   useEffect(() => {

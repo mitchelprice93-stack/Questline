@@ -54,6 +54,11 @@ export interface GeneratedQuest {
   /** Faction id the AI thinks this quest counts toward, if any. Same
    *  validation pattern as suggested_campaign_id. */
   suggested_faction_id: string | null;
+  /** Recurrence cadence inferred from input context ("every day", "weekly",
+   *  "monthly", "annually", etc). 'none' for one-shot endeavors. Custom
+   *  intervals aren't inferred — the chronicler picks those manually on
+   *  the review screen. */
+  suggested_recurrence: 'none' | 'daily' | 'weekly' | 'monthly' | 'yearly';
   /** True when the AI call failed and we fell back to a stub. */
   fromFallback: boolean;
 }
@@ -132,6 +137,7 @@ function templatedFallback(input: string): GeneratedQuest {
     },
     suggested_campaign_id: null,
     suggested_faction_id: null,
+    suggested_recurrence: 'none',
     fromFallback: true,
   };
 }
@@ -159,6 +165,7 @@ export async function generateQuest(input: string): Promise<GeneratedQuest> {
         granted_buff: GeneratedBuff;
         suggested_campaign_id: string;
         suggested_faction_id: string;
+        suggested_recurrence: 'none' | 'daily' | 'weekly' | 'monthly' | 'yearly';
       }>('quest_generation', payload),
       AI_TIMEOUT_MS,
       'quest_generation',
