@@ -33,6 +33,12 @@ interface AuthContextValue {
   /** Mark the device flag (used when an unauthenticated visitor finishes
    *  the pre-auth cinematic). Idempotent. */
   markCinematicSeenOnDevice: () => Promise<void>;
+  /** True between Supabase firing PASSWORD_RECOVERY (user tapped the reset
+   *  link) and the user setting a new password. While true, useProtectedRoute
+   *  pins the user on /reset-password regardless of normal session-based
+   *  routing rules. Cleared by clearPasswordRecovery (call after success). */
+  inPasswordRecovery: boolean;
+  clearPasswordRecovery: () => void;
   /** null until the first subscription fetch resolves. */
   subscription: SubscriptionStatus | null;
   signIn: (email: string, password: string) => Promise<{ error: AuthError | null }>;
@@ -58,6 +64,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [cinematicSeen, setCinematicSeen] = useState<boolean | null>(null);
   const [cinematicSeenOnDevice, setCinematicSeenOnDevice] = useState<boolean | null>(null);
   const [subscription, setSubscription] = useState<SubscriptionStatus | null>(null);
+  const [inPasswordRecovery, setInPasswordRecovery] = useState(false);
 
   const refetchProfile = useCallback(async () => {
     setProfileLoading(true);
@@ -111,9 +118,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     // Renamed from `subscription` to avoid clashing with the
     // `subscription` state variable below (RevenueCat tier).
-    const { data: authSub } = supabase.auth.onAuthStateChange((_event, newSession) => {
+    const { data: authSub } = supabase.auth.onAuthStateChange((event, newSession) => {
       setSession(newSession);
       setLoading(false);
+      // PASSWORD_RECOVERY fires when the user taps the reset link from
+      // their email and the deep-link returns them to the app. They have
+      // a special short-lived session that lets them call updateUser()
+      // with a new password; useProtectedRoute pins them to the
+      // /reset-password screen until they finish.
+      if (event === 'PASSWORD_RECOVERY') {
+        setInPasswordRecovery(true);
+      }
     });
 
     return () => {
@@ -193,6 +208,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     cinematicSeen,
     cinematicSeenOnDevice,
     markCinematicSeenOnDevice,
+    inPasswordRecovery,
+    clearPasswordRecovery: () => setInPasswordRecovery(false),
     subscription,
     signIn: async (email, password) => {
       const { error } = await supabase.auth.signInWithPassword({ email, password });
@@ -239,8 +256,15 @@ export function useAuth(): AuthContextValue {
  * Onboarding order: cinematic (first run) → character-creation → quest-board.
  */
 export function useProtectedRoute() {
-  const { session, profile, loading, profileLoading, cinematicSeen, cinematicSeenOnDevice } =
-    useAuth();
+  const {
+    session,
+    profile,
+    loading,
+    profileLoading,
+    cinematicSeen,
+    cinematicSeenOnDevice,
+    inPasswordRecovery,
+  } = useAuth();
   const segments = useSegments();
   const router = useRouter();
 
@@ -258,11 +282,27 @@ export function useProtectedRoute() {
     const inOnboarding = segments[0] === '(onboarding)';
     const onCinematic = inOnboarding && segments[1] === 'cinematic';
     const onCharacterCreation = inOnboarding && segments[1] === 'character-creation';
+    const onResetPassword = inAuthGroup && segments[1] === 'reset-password';
     const hasCharacter = !!profile?.character_name;
 
-    type GateRoute = '/login' | '/quest-board' | '/character-creation' | '/cinematic';
+    type GateRoute =
+      | '/login'
+      | '/quest-board'
+      | '/character-creation'
+      | '/cinematic'
+      | '/reset-password';
     const nextOnboardingStep = (): GateRoute =>
       cinematicSeen ? '/character-creation' : '/cinematic';
+
+    // Password recovery takes priority over every other gate. The user has
+    // a special short-lived session and they MUST set a new password
+    // before any other navigation makes sense.
+    if (inPasswordRecovery) {
+      if (!onResetPassword) {
+        router.replace('/reset-password');
+      }
+      return;
+    }
 
     let target: GateRoute | null = null;
     if (!session) {
@@ -299,6 +339,7 @@ export function useProtectedRoute() {
     profileLoading,
     cinematicSeen,
     cinematicSeenOnDevice,
+    inPasswordRecovery,
     router,
   ]);
 }

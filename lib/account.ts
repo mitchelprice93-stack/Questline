@@ -9,12 +9,31 @@ import { asError } from './errors';
 import { supabase } from './supabase';
 
 /**
- * Send a password-reset email. The user clicks the link, sets a new
- * password, and is signed back in. Cleaner than asking for the new
- * password inline because we don't have to handle the form state.
+ * Send a password-reset email. The user taps the link, the app opens via
+ * deep link, the AuthProvider catches the PASSWORD_RECOVERY event and
+ * routes to /reset-password, where the user enters their new password.
+ *
+ * redirectTo MUST match an entry in Supabase dashboard →
+ * Authentication → URL Configuration → Redirect URLs, or the email link
+ * will silently fall back to the Site URL.
  */
 export async function requestPasswordReset(email: string): Promise<void> {
-  const { error } = await supabase.auth.resetPasswordForEmail(email);
+  const { error } = await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: 'questline://reset-password',
+  });
+  if (error) throw asError(error);
+}
+
+/**
+ * Update the signed-in user's password. Used by the reset-password screen
+ * after Supabase has put the auth state into PASSWORD_RECOVERY mode.
+ * Returns nothing on success; throws on validation or network errors.
+ */
+export async function updatePassword(newPassword: string): Promise<void> {
+  if (!newPassword || newPassword.length < 6) {
+    throw new Error('Password must be at least 6 characters.');
+  }
+  const { error } = await supabase.auth.updateUser({ password: newPassword });
   if (error) throw asError(error);
 }
 

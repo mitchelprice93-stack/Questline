@@ -2,6 +2,7 @@ import { Link } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, Text, TextInput, View } from 'react-native';
 
+import { PasswordInput } from '../../components/password-input';
 import { requestPasswordReset } from '../../lib/account';
 import { useAuth } from '../../lib/auth';
 import { errorMessage } from '../../lib/errors';
@@ -60,14 +61,10 @@ export default function Login() {
       />
 
       <Text className="mb-2 font-body text-sm text-stone-300">Password</Text>
-      <TextInput
+      <PasswordInput
         value={password}
         onChangeText={setPassword}
-        secureTextEntry
-        autoCapitalize="none"
         autoComplete="current-password"
-        className="mb-4 rounded-md border border-stone-700 bg-stone-900 px-4 py-3 font-body text-stone-100"
-        placeholderTextColor="#78716c"
         editable={!loading}
       />
 

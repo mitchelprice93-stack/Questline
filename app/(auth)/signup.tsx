@@ -2,12 +2,14 @@ import { Link } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, Text, TextInput, View } from 'react-native';
 
+import { PasswordInput } from '../../components/password-input';
 import { useAuth } from '../../lib/auth';
 
 export default function Signup() {
   const { signUp } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirm, setConfirm] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [pendingConfirmation, setPendingConfirmation] = useState(false);
@@ -50,7 +52,10 @@ export default function Signup() {
     );
   }
 
-  const disabled = loading || email.trim().length === 0 || password.length < 6;
+  const tooShort = password.length > 0 && password.length < 6;
+  const mismatch = confirm.length > 0 && password !== confirm;
+  const disabled =
+    loading || email.trim().length === 0 || password.length < 6 || password !== confirm;
 
   return (
     <View className="flex-1 justify-center bg-stone-950 px-6">
@@ -72,17 +77,30 @@ export default function Signup() {
       />
 
       <Text className="mb-2 font-body text-sm text-stone-300">Password</Text>
-      <TextInput
+      <PasswordInput
         value={password}
         onChangeText={setPassword}
-        secureTextEntry
-        autoCapitalize="none"
         autoComplete="new-password"
-        className="mb-1 rounded-md border border-stone-700 bg-stone-900 px-4 py-3 font-body text-stone-100"
-        placeholderTextColor="#78716c"
         editable={!loading}
+        placeholder="At least 6 characters"
       />
-      <Text className="mb-4 font-body text-xs text-stone-500">At least 6 characters.</Text>
+      {tooShort ? (
+        <Text className="-mt-3 mb-3 font-body text-sm text-amber-500">
+          Must be at least 6 characters.
+        </Text>
+      ) : null}
+
+      <Text className="mb-2 font-body text-sm text-stone-300">Confirm password</Text>
+      <PasswordInput
+        value={confirm}
+        onChangeText={setConfirm}
+        autoComplete="new-password"
+        editable={!loading}
+        placeholder="Re-enter to confirm"
+      />
+      {mismatch ? (
+        <Text className="-mt-3 mb-3 font-body text-sm text-red-400">Passwords don&apos;t match.</Text>
+      ) : null}
 
       {error ? <Text className="mb-4 font-body text-sm text-red-400">{error}</Text> : null}
 
