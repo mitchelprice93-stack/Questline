@@ -1,4 +1,5 @@
 import type { AuthError, Session } from '@supabase/supabase-js';
+import * as Linking from 'expo-linking';
 import { useRouter, useSegments } from 'expo-router';
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react';
 
@@ -135,6 +136,52 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       mounted = false;
       authSub.subscription.unsubscribe();
     };
+  }, []);
+
+  // Deep-link handler: when the app is opened via questline:// URLs
+  // (notably the password-recovery email link), the Supabase JS client
+  // does NOT auto-detect tokens in the URL on React Native — we have
+  // `detectSessionInUrl: false` in lib/supabase.ts and no equivalent of
+  // window.location to read from. So we parse the URL ourselves and
+  // hand the tokens to supabase.auth.setSession (implicit/hash flow) or
+  // exchangeCodeForSession (PKCE flow). That call fires PASSWORD_RECOVERY,
+  // which the gate above turns into a redirect to /reset-password, and
+  // gives updateUser() a valid session to mutate.
+  useEffect(() => {
+    const handleUrl = async (url: string | null) => {
+      if (!url) return;
+
+      // PKCE flow: ?code=... in the query string. Newer Supabase default.
+      const codeMatch = url.match(/[?&]code=([^&#]+)/);
+      if (codeMatch) {
+        const { error } = await supabase.auth.exchangeCodeForSession(
+          decodeURIComponent(codeMatch[1]),
+        );
+        if (error) console.warn('exchangeCodeForSession failed', error);
+        return;
+      }
+
+      // Implicit flow: #access_token=...&refresh_token=...&type=recovery
+      const hashIndex = url.indexOf('#');
+      if (hashIndex === -1) return;
+      const hash = url.slice(hashIndex + 1);
+      const params = new URLSearchParams(hash);
+      const accessToken = params.get('access_token');
+      const refreshToken = params.get('refresh_token');
+      if (accessToken && refreshToken) {
+        const { error } = await supabase.auth.setSession({
+          access_token: accessToken,
+          refresh_token: refreshToken,
+        });
+        if (error) console.warn('setSession from deep link failed', error);
+      }
+    };
+
+    // Cold launch — the link that opened the app.
+    Linking.getInitialURL().then(handleUrl);
+    // Warm launch — links delivered while the app is already running.
+    const sub = Linking.addEventListener('url', (event) => handleUrl(event.url));
+    return () => sub.remove();
   }, []);
 
   // Refetch profile whenever the session changes (sign in / sign out / token refresh on a fresh user).
