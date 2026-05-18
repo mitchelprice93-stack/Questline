@@ -393,11 +393,16 @@ function QuestRow({ quest, status }: { quest: Quest; status: QuestStatus }) {
       <Pressable
         className={`rounded-md border bg-amber-50/40 p-4 active:bg-amber-100/60 ${palette.border}`}
       >
-        <View className="flex-row items-center justify-between">
-          <Text className="flex-1 font-display text-2xl text-stone-900" numberOfLines={1}>
+        <View className="flex-row items-start justify-between">
+          <Text
+            className="flex-1 font-display text-2xl leading-7 text-stone-900"
+            numberOfLines={2}
+            adjustsFontSizeToFit
+            minimumFontScale={0.75}
+          >
             {quest.title}
           </Text>
-          <Text className="ml-3 font-display text-lg uppercase tracking-widest text-amber-800">
+          <Text className="ml-3 mt-1 font-display text-lg uppercase tracking-widest text-amber-800">
             {quest.tier}
           </Text>
         </View>
