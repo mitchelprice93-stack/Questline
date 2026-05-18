@@ -2,6 +2,7 @@ import { Link, useFocusEffect } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, Text, TextInput, View } from 'react-native';
 
+import { DropdownPicker, type DropdownOption } from '../../../components/dropdown-picker';
 import { TutorialTarget } from '../../../components/tutorial-target';
 import { useAuth } from '../../../lib/auth';
 import {
@@ -29,20 +30,73 @@ const STATUS_TABS: { key: QuestStatus; label: string }[] = [
   { key: 'abandoned', label: 'Abandoned' },
 ];
 
-const TIER_OPTIONS: (QuestTier | 'all')[] = [
-  'all',
-  'trivial',
-  'minor',
-  'standard',
-  'major',
-  'legendary',
+const TIER_FILTER_OPTIONS: DropdownOption<QuestTier | 'all'>[] = [
+  { value: 'all', label: 'All tiers' },
+  { value: 'trivial', label: 'Trivial' },
+  { value: 'minor', label: 'Minor' },
+  { value: 'standard', label: 'Standard' },
+  { value: 'major', label: 'Major' },
+  { value: 'legendary', label: 'Legendary' },
 ];
 
-const TIME_RANGE_OPTIONS: { key: TimeRange; label: string }[] = [
-  { key: 'all', label: 'All time' },
-  { key: '30d', label: '30 days' },
-  { key: '7d', label: '7 days' },
+const TIME_RANGE_OPTIONS: DropdownOption<TimeRange>[] = [
+  { value: 'all', label: 'All time' },
+  { value: '30d', label: 'Last 30 days' },
+  { value: '7d', label: 'Last 7 days' },
 ];
+
+// Client-side sort. 'default' preserves the server's lifecycle-timestamp
+// ordering (most recently created/completed/abandoned first).
+type SortKey =
+  | 'default'
+  | 'title_asc'
+  | 'tier_desc'
+  | 'xp_desc'
+  | 'deadline_soonest';
+
+const SORT_OPTIONS: DropdownOption<SortKey>[] = [
+  { value: 'default', label: 'Default', description: 'Most recent first.' },
+  { value: 'title_asc', label: 'Alphabetical', description: 'Title A to Z.' },
+  {
+    value: 'tier_desc',
+    label: 'Tier',
+    description: 'Legendary down to Trivial.',
+  },
+  { value: 'xp_desc', label: 'XP', description: 'Biggest XP reward first.' },
+  {
+    value: 'deadline_soonest',
+    label: 'Deadline',
+    description: 'Soonest deadline first; undated last.',
+  },
+];
+
+const TIER_WEIGHT: Record<QuestTier, number> = {
+  trivial: 1,
+  minor: 2,
+  standard: 3,
+  major: 4,
+  legendary: 5,
+};
+
+function applySort(quests: Quest[], key: SortKey): Quest[] {
+  if (key === 'default') return quests;
+  const arr = [...quests];
+  if (key === 'title_asc') {
+    arr.sort((a, b) => a.title.localeCompare(b.title, undefined, { sensitivity: 'base' }));
+  } else if (key === 'tier_desc') {
+    arr.sort((a, b) => (TIER_WEIGHT[b.tier] ?? 0) - (TIER_WEIGHT[a.tier] ?? 0));
+  } else if (key === 'xp_desc') {
+    arr.sort((a, b) => (b.xp_reward ?? 0) - (a.xp_reward ?? 0));
+  } else if (key === 'deadline_soonest') {
+    arr.sort((a, b) => {
+      // Quests with no deadline sort to the bottom.
+      const ad = a.deadline ? new Date(a.deadline).getTime() : Number.POSITIVE_INFINITY;
+      const bd = b.deadline ? new Date(b.deadline).getTime() : Number.POSITIVE_INFINITY;
+      return ad - bd;
+    });
+  }
+  return arr;
+}
 
 export default function QuestBoard() {
   const { subscription } = useAuth();
@@ -58,6 +112,7 @@ export default function QuestBoard() {
   const [tierFilter, setTierFilter] = useState<QuestTier | 'all'>('all');
   const [factionFilter, setFactionFilter] = useState<string>('all');
   const [timeRange, setTimeRange] = useState<TimeRange>('all');
+  const [sortKey, setSortKey] = useState<SortKey>('default');
   const [filtersOpen, setFiltersOpen] = useState(false);
 
   // Refetch when the active tab changes — simpler than caching three lists
@@ -96,22 +151,38 @@ export default function QuestBoard() {
   );
 
   const filtered = useMemo(
-    () => (quests ? applyQuestFilters(quests, filters) : null),
-    [quests, filters],
+    () => {
+      if (!quests) return null;
+      return applySort(applyQuestFilters(quests, filters), sortKey);
+    },
+    [quests, filters, sortKey],
   );
 
   const activeFilterCount =
     (searchText ? 1 : 0) +
     (tierFilter !== 'all' ? 1 : 0) +
     (factionFilter !== 'all' ? 1 : 0) +
-    (status !== 'active' && timeRange !== 'all' ? 1 : 0);
+    (status !== 'active' && timeRange !== 'all' ? 1 : 0) +
+    (sortKey !== 'default' ? 1 : 0);
 
   const onClearFilters = () => {
     setSearchText('');
     setTierFilter('all');
     setFactionFilter('all');
     setTimeRange('all');
+    setSortKey('default');
   };
+
+  // Build the Faction dropdown options dynamically from the user's
+  // factions. "All" and "Unaffiliated" are sentinel values.
+  const factionFilterOptions: DropdownOption<string>[] = useMemo(
+    () => [
+      { value: 'all', label: 'All factions' },
+      { value: 'none', label: 'Unaffiliated only' },
+      ...factions.map((f) => ({ value: f.id, label: f.name })),
+    ],
+    [factions],
+  );
 
   return (
     <ParchmentScreen>
@@ -199,64 +270,37 @@ export default function QuestBoard() {
 
       {filtersOpen ? (
         <View className="mb-3 rounded-md border border-stone-800 bg-amber-50/60 p-3">
-          <Text className="mb-1 font-display text-[10px] uppercase tracking-widest text-stone-500">
-            Tier
-          </Text>
-          <View className="mb-2 flex-row flex-wrap gap-1.5">
-            {TIER_OPTIONS.map((t) => (
-              <FilterChip
-                key={t}
-                label={t === 'all' ? 'All' : t}
-                selected={tierFilter === t}
-                onPress={() => setTierFilter(t)}
-              />
-            ))}
-          </View>
-
-          <Text className="mb-1 font-display text-[10px] uppercase tracking-widest text-stone-500">
-            Faction
-          </Text>
-          <View className="mb-2 flex-row flex-wrap gap-1.5">
-            <FilterChip
-              label="All"
-              selected={factionFilter === 'all'}
-              onPress={() => setFactionFilter('all')}
-            />
-            <FilterChip
-              label="Unaffiliated"
-              selected={factionFilter === 'none'}
-              onPress={() => setFactionFilter('none')}
-            />
-            {factions.map((f) => (
-              <FilterChip
-                key={f.id}
-                label={f.name}
-                selected={factionFilter === f.id}
-                onPress={() => setFactionFilter(f.id)}
-              />
-            ))}
-          </View>
-
+          <DropdownPicker
+            label="Tier"
+            value={tierFilter}
+            onChange={setTierFilter}
+            options={TIER_FILTER_OPTIONS}
+          />
+          <DropdownPicker
+            label="Faction"
+            value={factionFilter}
+            onChange={setFactionFilter}
+            options={factionFilterOptions}
+          />
           {status !== 'active' ? (
-            <>
-              <Text className="mb-1 font-display text-[10px] uppercase tracking-widest text-stone-500">
-                Time range
-              </Text>
-              <View className="mb-2 flex-row flex-wrap gap-1.5">
-                {TIME_RANGE_OPTIONS.map((opt) => (
-                  <FilterChip
-                    key={opt.key}
-                    label={opt.label}
-                    selected={timeRange === opt.key}
-                    onPress={() => setTimeRange(opt.key)}
-                  />
-                ))}
-              </View>
-            </>
+            <DropdownPicker
+              label="Time range"
+              value={timeRange}
+              onChange={setTimeRange}
+              options={TIME_RANGE_OPTIONS}
+            />
           ) : null}
-
+          <DropdownPicker
+            label="Sort by"
+            value={sortKey}
+            onChange={setSortKey}
+            options={SORT_OPTIONS}
+          />
           {activeFilterCount > 0 ? (
-            <Pressable onPress={onClearFilters} className="mt-1 self-end px-2 py-1 active:opacity-60">
+            <Pressable
+              onPress={onClearFilters}
+              className="mt-1 self-end px-2 py-1 active:opacity-60"
+            >
               <Text className="font-body text-lg text-amber-800">Clear filters</Text>
             </Pressable>
           ) : null}
@@ -299,33 +343,6 @@ function emptyCopyForStatus(status: QuestStatus): string {
     case 'abandoned':
       return 'Nothing has been abandoned. Yet.';
   }
-}
-
-function FilterChip({
-  label,
-  selected,
-  onPress,
-}: {
-  label: string;
-  selected: boolean;
-  onPress: () => void;
-}) {
-  return (
-    <Pressable
-      onPress={onPress}
-      className={`rounded-full border px-2.5 py-1 ${
-        selected ? 'border-amber-500 bg-amber-600/20' : 'border-stone-700 bg-amber-50/40'
-      }`}
-    >
-      <Text
-        className={`font-body-medium text-lg capitalize ${
-          selected ? 'text-amber-800' : 'text-stone-700'
-        }`}
-      >
-        {label}
-      </Text>
-    </Pressable>
-  );
 }
 
 function QuestRow({ quest, status }: { quest: Quest; status: QuestStatus }) {

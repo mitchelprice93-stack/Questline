@@ -2,6 +2,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Tabs, useRouter } from 'expo-router';
 import { useCallback, useEffect } from 'react';
 import { Dimensions, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AchievementSurface } from '../../components/AchievementSurface';
 import { TUTORIAL_STEPS, TutorialOverlay } from '../../components/tutorial-overlay';
@@ -13,10 +14,20 @@ import '../../lib/quests';
 import { playSfx } from '../../lib/sfx';
 import { TutorialProvider, useTutorial } from '../../lib/tutorial-context';
 
-const TAB_BAR_HEIGHT = 92;
+// Bar visuals: 92px for the icon + Cinzel label. On Android with the
+// 3-button nav bar visible, we also need to extend below by insets.bottom
+// so the labels and tap targets clear the system buttons. The tutorial
+// spotlight rect uses the SAME effective height so it tracks the live bar.
+const TAB_BAR_HEIGHT_BASE = 92;
 
 export default function MainLayout() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
+  // Extend the bar by the bottom safe-area inset so the tab labels and tap
+  // targets clear the Android 3-button nav bar (or the home indicator on
+  // iOS). On devices with gesture nav / no inset, this collapses to 0 and
+  // the bar stays at its base size.
+  const tabBarHeight = TAB_BAR_HEIGHT_BASE + insets.bottom;
   const onTutorialStart = useCallback(() => {
     // The tutorial walks through Quest Board UI first; route there in case
     // the user is on Settings or Character when they tap "Replay orientation".
@@ -45,10 +56,11 @@ export default function MainLayout() {
             tabBarStyle: {
               backgroundColor: '#3f2e1d', // dark sepia, like leather binding
               borderTopColor: '#78350f', // amber-900
-              // Bigger bar to fit the larger Cinzel label.
-              height: TAB_BAR_HEIGHT,
+              // Bigger bar to fit the larger Cinzel label, plus inset so the
+              // labels clear the Android nav buttons.
+              height: tabBarHeight,
               paddingTop: 12,
-              paddingBottom: 16,
+              paddingBottom: 16 + insets.bottom,
             },
             tabBarLabelStyle: {
               fontFamily: 'Cinzel_400Regular',
@@ -103,7 +115,7 @@ export default function MainLayout() {
               "Achievements: N / 24" line, hidden from the tab bar. */}
           <Tabs.Screen name="achievements" options={{ href: null }} />
         </Tabs>
-        <TabBarTutorialAnchor />
+        <TabBarTutorialAnchor height={tabBarHeight} />
         {/* First-launch orientation. Renders nothing once the user has
             dismissed it; lives at the layout root so it can overlay any
             tab the user happens to be on. */}
@@ -142,7 +154,7 @@ function AnchoredLayoutRoot({ children }: { children: React.ReactNode }) {
  * bounds (not Dimensions.get('window')) so the rect lives in the same
  * coordinate system as the overlay paints.
  */
-function TabBarTutorialAnchor() {
+function TabBarTutorialAnchor({ height: barHeight }: { height: number }) {
   const { registerTarget, anchorRef } = useTutorial();
   useEffect(() => {
     const publish = () => {
@@ -151,9 +163,9 @@ function TabBarTutorialAnchor() {
       anchor.measureInWindow((_x, _y, width, height) => {
         registerTarget('tab-bar', {
           x: 0,
-          y: Math.max(0, height - TAB_BAR_HEIGHT),
+          y: Math.max(0, height - barHeight),
           width,
-          height: TAB_BAR_HEIGHT,
+          height: barHeight,
         });
       });
     };
@@ -164,6 +176,6 @@ function TabBarTutorialAnchor() {
       cancelAnimationFrame(handle);
       sub.remove();
     };
-  }, [registerTarget, anchorRef]);
+  }, [registerTarget, anchorRef, barHeight]);
   return null;
 }
