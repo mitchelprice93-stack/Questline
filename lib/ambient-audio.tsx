@@ -16,7 +16,8 @@ const AMBIENT_SOURCE = require('../assets/audio/ambient-loop.mp3');
 
 /**
  * Mount this once near the (main) layout root. Plays the ambient bed at
- * 35% volume on a seamless loop. Respects the audio-mute pref. Renders
+ * 18% volume on a seamless loop (halved from 35% on tester feedback so
+ * SFX cut through more clearly). Respects the audio-mute pref. Renders
  * nothing — the player is purely audio.
  */
 export function AmbientAudioRoot() {
@@ -28,7 +29,7 @@ export function AmbientAudioRoot() {
     // source, so setting these on every render is wasteful — bind in a
     // mount effect instead.
     player.loop = true;
-    player.volume = 0.35;
+    player.volume = 0.18;
   }, [player]);
 
   useEffect(() => {
