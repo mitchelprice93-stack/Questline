@@ -18,8 +18,10 @@ import { supabase } from './supabase';
 
 // AsyncStorage keys.
 const KEY_QUEST_NOTIFICATIONS = 'questline.notifications.questIds'; // map quest_id -> [scheduledIds]
-const KEY_CHECK_IN_TIME = 'questline.notifications.checkInTime'; // 'HH:MM' or 'off'
-const KEY_CHECK_IN_NOTIF = 'questline.notifications.checkInId'; // current scheduled id
+const KEY_CHECK_IN_TIME = 'questline.notifications.checkInTime'; // LEGACY 'HH:MM' or 'off' — migrated on first read
+const KEY_CHECK_IN_NOTIF = 'questline.notifications.checkInId'; // LEGACY single scheduled id — migrated on first read
+const KEY_CHECK_IN_SCHEDULE = 'questline.notifications.checkInSchedule'; // JSON of CheckInSchedule
+const KEY_CHECK_IN_NOTIF_IDS = 'questline.notifications.checkInIds'; // JSON array of scheduled ids
 const KEY_AUTO_PROMPT_SHOWN = 'questline.notifications.autoPromptShown'; // boolean
 
 /**
@@ -243,53 +245,179 @@ export async function scheduleDeadlineReminders(
   }
 }
 
-// ---- Daily check-in --------------------------------------------------------
+// ---- Check-in schedule -----------------------------------------------------
+//
+// The check-in nudge supports four cadences: off, daily, weekly (one weekday),
+// and custom (any subset of weekdays). All cadences share one time-of-day —
+// per-day times would mean a row-per-day editor and a more complex schedule
+// shape; revisit if testers ask for it. Day indices use the JS Date.getDay()
+// convention: 0 = Sunday … 6 = Saturday. The expo-notifications CALENDAR
+// trigger uses 1 = Sunday … 7 = Saturday, so we offset by +1 when scheduling.
 
-/** Returns 'HH:MM' or 'off'. Default 'off' until the user opts in. */
-export async function getCheckInTime(): Promise<string> {
-  return (await AsyncStorage.getItem(KEY_CHECK_IN_TIME)) ?? 'off';
+export type CheckInSchedule =
+  | { cadence: 'off' }
+  | { cadence: 'daily'; time: string }
+  | { cadence: 'weekly'; time: string; weekday: number }
+  | { cadence: 'custom'; time: string; days: number[] };
+
+const DEFAULT_SCHEDULE: CheckInSchedule = { cadence: 'off' };
+
+/**
+ * Read the current schedule. Migrates the legacy `KEY_CHECK_IN_TIME` shape
+ * (a bare 'HH:MM' or 'off' string) to the new JSON shape on first read so
+ * users coming from an older OTA don't lose their existing time preference.
+ */
+export async function getCheckInSchedule(): Promise<CheckInSchedule> {
+  try {
+    const raw = await AsyncStorage.getItem(KEY_CHECK_IN_SCHEDULE);
+    if (raw) {
+      const parsed = JSON.parse(raw) as CheckInSchedule;
+      // Light shape check — anything malformed falls back to 'off'.
+      if (parsed && typeof parsed === 'object' && 'cadence' in parsed) {
+        return parsed;
+      }
+    }
+    // Migrate legacy 'HH:MM' / 'off' string.
+    const legacy = await AsyncStorage.getItem(KEY_CHECK_IN_TIME);
+    if (legacy && legacy !== 'off' && /^\d{2}:\d{2}$/.test(legacy)) {
+      const migrated: CheckInSchedule = { cadence: 'daily', time: legacy };
+      await AsyncStorage.setItem(KEY_CHECK_IN_SCHEDULE, JSON.stringify(migrated));
+      return migrated;
+    }
+  } catch {
+    // fall through to default
+  }
+  return DEFAULT_SCHEDULE;
 }
 
 /**
- * Persist the user's preferred daily check-in time and (re)schedule the
- * recurring local notification. Pass 'off' to disable.
+ * LEGACY shim — older callers may still import this. Returns 'off' or
+ * 'HH:MM' derived from the new schedule. Daily/weekly/custom all surface
+ * the underlying time; off returns 'off'.
  */
-export async function setCheckInTime(time: 'off' | string): Promise<void> {
-  await AsyncStorage.setItem(KEY_CHECK_IN_TIME, time);
+export async function getCheckInTime(): Promise<string> {
+  const s = await getCheckInSchedule();
+  return s.cadence === 'off' ? 'off' : s.time;
+}
 
+async function cancelExistingCheckInNotifs(): Promise<void> {
   if (!isNative) return;
-
-  // Cancel any existing scheduled check-in.
-  const prev = await AsyncStorage.getItem(KEY_CHECK_IN_NOTIF);
-  if (prev) {
-    await Notifications.cancelScheduledNotificationAsync(prev).catch(() => undefined);
+  // New shape (JSON array of ids).
+  try {
+    const raw = await AsyncStorage.getItem(KEY_CHECK_IN_NOTIF_IDS);
+    if (raw) {
+      const ids = JSON.parse(raw) as string[];
+      await Promise.all(
+        ids.map((id) =>
+          Notifications.cancelScheduledNotificationAsync(id).catch(() => undefined),
+        ),
+      );
+      await AsyncStorage.removeItem(KEY_CHECK_IN_NOTIF_IDS);
+    }
+  } catch {
+    // ignore
+  }
+  // Legacy single id.
+  const legacyId = await AsyncStorage.getItem(KEY_CHECK_IN_NOTIF);
+  if (legacyId) {
+    await Notifications.cancelScheduledNotificationAsync(legacyId).catch(() => undefined);
     await AsyncStorage.removeItem(KEY_CHECK_IN_NOTIF);
   }
-  if (time === 'off') return;
+}
+
+const CHECK_IN_CONTENT = {
+  title: 'The Tome stirs',
+  body: 'A new day awaits inscription. What will you set your hand to?',
+};
+
+/**
+ * Persist the schedule and (re)schedule the corresponding local notifications.
+ * Single source of truth for both writes — callers don't need to cancel first.
+ */
+export async function setCheckInSchedule(schedule: CheckInSchedule): Promise<void> {
+  await AsyncStorage.setItem(KEY_CHECK_IN_SCHEDULE, JSON.stringify(schedule));
+  // Keep the legacy time key roughly in sync so any stale consumer still
+  // reading it sees a sane value. Safe to drop entirely after one release.
+  await AsyncStorage.setItem(
+    KEY_CHECK_IN_TIME,
+    schedule.cadence === 'off' ? 'off' : schedule.time,
+  );
+
+  if (!isNative) return;
+  await cancelExistingCheckInNotifs();
+  if (schedule.cadence === 'off') return;
 
   const status = await getPermissionStatus();
   if (status !== 'granted') return;
 
-  const [hourStr, minuteStr] = time.split(':');
+  const [hourStr, minuteStr] = schedule.time.split(':');
   const hour = parseInt(hourStr ?? '8', 10);
   const minute = parseInt(minuteStr ?? '0', 10);
   if (isNaN(hour) || isNaN(minute)) return;
 
+  // expo-notifications weekday: 1=Sunday..7=Saturday. JS Date: 0=Sunday..6=Saturday.
+  const toExpoWeekday = (jsDay: number) => ((jsDay % 7) + 1);
+
+  const ids: string[] = [];
   try {
-    const id = await Notifications.scheduleNotificationAsync({
-      content: {
-        title: 'The Tome stirs',
-        body: 'A new day awaits inscription. What will you set your hand to?',
-      },
-      trigger: {
-        type: Notifications.SchedulableTriggerInputTypes.CALENDAR,
-        hour,
-        minute,
-        repeats: true,
-      },
-    });
-    await AsyncStorage.setItem(KEY_CHECK_IN_NOTIF, id);
+    if (schedule.cadence === 'daily') {
+      const id = await Notifications.scheduleNotificationAsync({
+        content: CHECK_IN_CONTENT,
+        trigger: {
+          type: Notifications.SchedulableTriggerInputTypes.CALENDAR,
+          hour,
+          minute,
+          repeats: true,
+        },
+      });
+      ids.push(id);
+    } else if (schedule.cadence === 'weekly') {
+      const id = await Notifications.scheduleNotificationAsync({
+        content: CHECK_IN_CONTENT,
+        trigger: {
+          type: Notifications.SchedulableTriggerInputTypes.CALENDAR,
+          weekday: toExpoWeekday(schedule.weekday),
+          hour,
+          minute,
+          repeats: true,
+        },
+      });
+      ids.push(id);
+    } else if (schedule.cadence === 'custom') {
+      // One repeating notification per selected weekday. Dedupe defensively.
+      const uniq = Array.from(new Set(schedule.days)).filter(
+        (d) => Number.isInteger(d) && d >= 0 && d <= 6,
+      );
+      for (const day of uniq) {
+        const id = await Notifications.scheduleNotificationAsync({
+          content: CHECK_IN_CONTENT,
+          trigger: {
+            type: Notifications.SchedulableTriggerInputTypes.CALENDAR,
+            weekday: toExpoWeekday(day),
+            hour,
+            minute,
+            repeats: true,
+          },
+        });
+        ids.push(id);
+      }
+    }
+    if (ids.length > 0) {
+      await AsyncStorage.setItem(KEY_CHECK_IN_NOTIF_IDS, JSON.stringify(ids));
+    }
   } catch (e) {
-    console.warn('setCheckInTime schedule failed', errorMessage(e));
+    console.warn('setCheckInSchedule schedule failed', errorMessage(e));
   }
+}
+
+/**
+ * LEGACY shim — keeps the older single-time API working. Maps 'HH:MM' to
+ * a daily cadence and 'off' to off. Internally calls setCheckInSchedule.
+ */
+export async function setCheckInTime(time: 'off' | string): Promise<void> {
+  if (time === 'off') {
+    await setCheckInSchedule({ cadence: 'off' });
+    return;
+  }
+  await setCheckInSchedule({ cadence: 'daily', time });
 }
