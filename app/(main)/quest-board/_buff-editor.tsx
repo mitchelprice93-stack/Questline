@@ -4,6 +4,7 @@
 
 import { Pressable, Text, TextInput, View } from 'react-native';
 
+import { DropdownPicker, type DropdownOption } from '../../../components/dropdown-picker';
 import { buffDurationDaysForTier, type QuestTier } from '../../../lib/engine/xp';
 import type { GrantedBuffCondition } from '../../../lib/types/models';
 
@@ -15,13 +16,21 @@ export interface BuffDraft {
   condition: GrantedBuffCondition;
 }
 
-const CONDITIONS: { key: GrantedBuffCondition; label: string; help: string }[] = [
-  { key: 'on_complete', label: 'On complete', help: 'Earned whenever the quest is finished.' },
-  { key: 'on_time', label: 'Before deadline', help: 'Earned only if you finish before the deadline.' },
+const CONDITION_OPTIONS: DropdownOption<GrantedBuffCondition>[] = [
   {
-    key: 'all_objectives',
+    value: 'on_complete',
+    label: 'On complete',
+    description: 'Earned whenever the quest is finished.',
+  },
+  {
+    value: 'on_time',
+    label: 'Before deadline',
+    description: 'Earned only if you finish before the deadline.',
+  },
+  {
+    value: 'all_objectives',
     label: 'All objectives',
-    help: 'Earned only if every objective box is checked.',
+    description: 'Earned only if every objective box is checked.',
   },
 ];
 
@@ -85,7 +94,8 @@ interface Props {
 export function BuffEditor({ draft, onChange, questTier, disabled }: Props) {
   const update = (partial: Partial<BuffDraft>) => onChange({ ...draft, ...partial });
 
-  const conditionHelp = CONDITIONS.find((c) => c.key === draft.condition)?.help ?? '';
+  const conditionHelp =
+    CONDITION_OPTIONS.find((c) => c.value === draft.condition)?.description ?? '';
   const durationDays = buffDurationDaysForTier(questTier);
 
   if (!draft.enabled) {
@@ -156,33 +166,14 @@ export function BuffEditor({ draft, onChange, questTier, disabled }: Props) {
         className="mb-3 rounded-md border border-stone-700 bg-amber-50/60 px-3 py-2 font-body text-stone-900"
       />
 
-      <Text className="mb-1 font-display text-base uppercase tracking-widest text-stone-500">
-        Condition
-      </Text>
-      <View className="mb-1 flex-row flex-wrap gap-2">
-        {CONDITIONS.map((c) => {
-          const selected = draft.condition === c.key;
-          return (
-            <Pressable
-              key={c.key}
-              onPress={() => update({ condition: c.key })}
-              disabled={disabled}
-              className={`rounded-full border px-3 py-1.5 ${
-                selected ? 'border-amber-500 bg-amber-600/20' : 'border-stone-700 bg-amber-50/60'
-              }`}
-            >
-              <Text
-                className={`font-body-medium text-lg ${
-                  selected ? 'text-amber-800' : 'text-stone-700'
-                }`}
-              >
-                {c.label}
-              </Text>
-            </Pressable>
-          );
-        })}
-      </View>
-      <Text className="mb-2 font-body text-lg text-stone-500">{conditionHelp}</Text>
+      <DropdownPicker
+        label="Condition"
+        value={draft.condition}
+        onChange={(condition) => update({ condition })}
+        options={CONDITION_OPTIONS}
+        disabled={disabled}
+      />
+      <Text className="-mt-2 mb-2 font-body text-lg italic text-stone-500">{conditionHelp}</Text>
       <Text className="font-body text-lg text-amber-800/80">
         Lasts {durationDays} day{durationDays === 1 ? '' : 's'} once earned ·
         scales with quest tier ({questTier}).
