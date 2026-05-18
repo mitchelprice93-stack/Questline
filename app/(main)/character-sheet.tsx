@@ -293,6 +293,49 @@ export default function CharacterSheet() {
         <Text className="mt-1 font-body text-base text-amber-800">View the ledger →</Text>
       </Pressable>
 
+      {/* Attributes — placeholder for v1.1+. Same dimmed "coming soon" treatment
+          as Perk Tree below. D&D-style six (STR/DEX/CON/INT/WIS/CHA) since the
+          chronicler asked for "DnD and Fallout" style — the six are the most
+          universally recognized. Values render as em-dashes so it reads as a
+          real stat sheet that isn't filled in yet, not an empty placeholder. */}
+      <View className="mb-4 rounded-md border border-amber-900/30 bg-amber-50/20 p-4">
+        <View className="mb-3 flex-row items-center justify-between">
+          <Text className="font-display text-lg uppercase tracking-widest text-stone-700">
+            Attributes
+          </Text>
+          <View className="rounded-full border border-amber-700 bg-amber-100/60 px-2.5 py-0.5">
+            <Text className="font-display text-xs uppercase tracking-widest text-amber-800">
+              Coming Soon
+            </Text>
+          </View>
+        </View>
+        <View className="mb-3 flex-row flex-wrap">
+          {[
+            { key: 'STR', name: 'Strength' },
+            { key: 'DEX', name: 'Dexterity' },
+            { key: 'CON', name: 'Constitution' },
+            { key: 'INT', name: 'Intellect' },
+            { key: 'WIS', name: 'Wisdom' },
+            { key: 'CHA', name: 'Charisma' },
+          ].map((attr) => (
+            <View
+              key={attr.key}
+              className="mb-2 w-1/3 items-center"
+            >
+              <Text className="font-display text-xs uppercase tracking-widest text-amber-800/70">
+                {attr.key}
+              </Text>
+              <Text className="font-display-bold text-2xl text-stone-500">—</Text>
+              <Text className="font-body text-xs italic text-stone-500">{attr.name}</Text>
+            </View>
+          ))}
+        </View>
+        <Text className="font-body text-lg italic text-stone-600">
+          Quests will one day temper the chronicler's traits — sharpened wit from study, hardened
+          sinew from labor, silvered tongue from parley. The Archivist still measures the weights.
+        </Text>
+      </View>
+
       {/* Perk Tree — placeholder for v1.1+. Non-interactive teaser that
           seeds anticipation for both free chroniclers (a glimpse of what
           Hero will unlock) and Hero subscribers (signaling that more is
