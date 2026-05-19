@@ -195,6 +195,13 @@ export default function QuestDetail() {
   const [editClassification, setEditClassification] = useState<QuestClassification>('side');
   const [editObjectives, setEditObjectives] = useState<QuestObjective[]>([]);
   const [editDeadline, setEditDeadline] = useState('');
+  // Tracks whether the chronicler actually typed in the deadline field.
+  // If they entered edit mode and tapped Save without touching it, we keep
+  // the existing ISO untouched, this avoids a chrono round-trip parse error
+  // when the prefilled "May 15, 2026 at 1:00 PM" display string doesn't
+  // re-parse cleanly. Set true on any onChangeText, cleared on edit-mode
+  // entry.
+  const [editDeadlineDirty, setEditDeadlineDirty] = useState(false);
   const [editRecurrence, setEditRecurrence] = useState<RecurrenceChoice>('none');
   // Custom-cadence config, only meaningful when editRecurrence === 'custom'.
   const [editRecurrenceInterval, setEditRecurrenceInterval] = useState<string>('3');
@@ -388,6 +395,7 @@ export default function QuestDetail() {
     setEditObjectives(quest.objectives);
     // Pre-fill with the human-readable form so the user can re-edit naturally.
     setEditDeadline(formatDeadline(quest.deadline) ?? '');
+    setEditDeadlineDirty(false);
     setEditRecurrence(recurrenceForUi(quest.recurrence));
     // Pre-fill custom-cadence inputs from the persisted values. Defaults
     // to "every 3 days" when the quest isn't custom so the conditional
@@ -422,17 +430,26 @@ export default function QuestDetail() {
 
   const onSaveEdits = async () => {
     if (!quest) return;
-    let deadlineIso: string | null = null;
-    if (editDeadline.trim()) {
-      const parsed = parseDeadline(editDeadline);
-      if (!parsed) {
-        playSfx('error');
-        setActionError(
-          `Couldn't read "${editDeadline.trim()}" as a date. Try something like "May 15, 2026", "5/15/26", or "next Friday".`,
-        );
-        return;
+    // Deadline policy:
+    //   - User never touched the field -> keep the existing ISO. Avoids a
+    //     chrono round-trip parse error on the prefilled display string.
+    //   - User typed and the field is now empty -> deadline removed.
+    //   - User typed something -> parse it. Show error on parse fail.
+    let deadlineIso: string | null = quest.deadline;
+    if (editDeadlineDirty) {
+      if (!editDeadline.trim()) {
+        deadlineIso = null;
+      } else {
+        const parsed = parseDeadline(editDeadline);
+        if (!parsed) {
+          playSfx('error');
+          setActionError(
+            `Couldn't read "${editDeadline.trim()}" as a date. Try something like "May 15, 2026", "5/15/26", or "next Friday".`,
+          );
+          return;
+        }
+        deadlineIso = parsed.toISOString();
       }
-      deadlineIso = parsed.toISOString();
     }
     setBusy('save-edits');
     setActionError(null);
@@ -701,7 +718,10 @@ export default function QuestDetail() {
         <Text className="mb-2 font-body text-xl text-stone-700">Deadline (optional)</Text>
         <TextInput
           value={editDeadline}
-          onChangeText={setEditDeadline}
+          onChangeText={(text) => {
+            setEditDeadline(text);
+            setEditDeadlineDirty(true);
+          }}
           autoCapitalize="none"
           placeholder="e.g., May 15, 2026 · 5/15/26 · next Friday"
           placeholderTextColor="#57534e"
