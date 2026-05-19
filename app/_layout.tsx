@@ -7,6 +7,7 @@ import {
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { ActivityIndicator, View } from 'react-native';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import { AuthProvider, useProtectedRoute } from '../lib/auth';
 import '../global.css';
@@ -44,9 +45,15 @@ export default function RootLayout() {
   }
 
   return (
-    <AuthProvider>
-      <RootLayoutNav />
-      <StatusBar style="dark" />
-    </AuthProvider>
+    // GestureHandlerRootView is required on Android for react-native-gesture-handler
+    // gestures to fire. Expo Router auto-wraps in recent versions, but adding it
+    // explicitly here is idempotent and removes any doubt about gesture delivery
+    // (used by the objectives drag-to-reorder handle on quest forms).
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <AuthProvider>
+        <RootLayoutNav />
+        <StatusBar style="dark" />
+      </AuthProvider>
+    </GestureHandlerRootView>
   );
 }

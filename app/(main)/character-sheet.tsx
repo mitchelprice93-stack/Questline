@@ -681,7 +681,10 @@ export default function CharacterSheet() {
                   }`}
                 >
                   <Text
-                    className={`font-body-medium text-2xl uppercase tracking-widest ${
+                    numberOfLines={1}
+                    adjustsFontSizeToFit
+                    minimumFontScale={0.75}
+                    className={`mr-2 flex-1 font-body-medium text-2xl uppercase tracking-widest ${
                       selected ? 'text-amber-800' : 'text-stone-700'
                     }`}
                   >
