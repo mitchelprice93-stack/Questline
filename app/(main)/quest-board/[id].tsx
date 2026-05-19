@@ -8,6 +8,7 @@ import {
 import { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
+  Keyboard,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -195,6 +196,13 @@ export default function QuestDetail() {
   const [editClassification, setEditClassification] = useState<QuestClassification>('side');
   const [editObjectives, setEditObjectives] = useState<QuestObjective[]>([]);
   const [editDeadline, setEditDeadline] = useState('');
+  // Mirrors editDeadline synchronously so the save handler can read the
+  // very latest value even when Android's IME has uncommitted composing
+  // text. Without this, the first Save tap blurs the input (committing
+  // composed text via onChangeText) but the closure-captured editDeadline
+  // is still the pre-commit value, so the user has to tap Save twice.
+  // Updated in onChangeText alongside setEditDeadline.
+  const editDeadlineRef = useRef('');
   const [editRecurrence, setEditRecurrence] = useState<RecurrenceChoice>('none');
   // Custom-cadence config, only meaningful when editRecurrence === 'custom'.
   const [editRecurrenceInterval, setEditRecurrenceInterval] = useState<string>('3');
@@ -387,7 +395,9 @@ export default function QuestDetail() {
     setEditClassification(quest.classification);
     setEditObjectives(quest.objectives);
     // Pre-fill with the human-readable form so the user can re-edit naturally.
-    setEditDeadline(formatDeadline(quest.deadline) ?? '');
+    const prefill = formatDeadline(quest.deadline) ?? '';
+    setEditDeadline(prefill);
+    editDeadlineRef.current = prefill;
     setEditRecurrence(recurrenceForUi(quest.recurrence));
     // Pre-fill custom-cadence inputs from the persisted values. Defaults
     // to "every 3 days" when the quest isn't custom so the conditional
@@ -422,6 +432,18 @@ export default function QuestDetail() {
 
   const onSaveEdits = async () => {
     if (!quest) return;
+    // Flush any uncommitted IME / autocorrect / swipe-typing text BEFORE
+    // reading the deadline field. Android keyboards routinely hold
+    // composing text that hasn't fired onChangeText yet. Dismissing the
+    // keyboard blurs the active input, which forces the IME to commit
+    // that text. Without this, the first Save tap captured stale state
+    // and the chronicler had to tap Save twice.
+    Keyboard.dismiss();
+    // Tiny wait so the commit can propagate through the bridge and update
+    // editDeadlineRef.current (we update the ref synchronously in
+    // onChangeText). 60ms is well under perceptible latency.
+    await new Promise((resolve) => setTimeout(resolve, 60));
+
     // Deadline policy (chronicler's spec):
     //   - Whatever is in the input box at save time wins.
     //   - Empty -> deadline removed (null).
@@ -429,7 +451,9 @@ export default function QuestDetail() {
     //   - Has text but won't parse -> keep the existing ISO so the rest of
     //     the edits still go through, and show a non-blocking note so the
     //     chronicler knows their typed value didn't take.
-    const trimmedDeadline = editDeadline.trim();
+    // Read from the ref, not state, so we get the post-dismiss value even
+    // if React hasn't re-rendered yet.
+    const trimmedDeadline = editDeadlineRef.current.trim();
     let deadlineIso: string | null;
     let deadlineWarning: string | null = null;
     if (!trimmedDeadline) {
@@ -716,7 +740,10 @@ export default function QuestDetail() {
         <Text className="mb-2 font-body text-xl text-stone-700">Deadline (optional)</Text>
         <TextInput
           value={editDeadline}
-          onChangeText={setEditDeadline}
+          onChangeText={(text) => {
+            setEditDeadline(text);
+            editDeadlineRef.current = text;
+          }}
           autoCapitalize="none"
           placeholder="e.g., May 15, 2026 · 5/15/26 · next Friday"
           placeholderTextColor="#57534e"
