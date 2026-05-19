@@ -55,7 +55,7 @@ interface SheetData {
 
 const DIFFICULTIES: Difficulty[] = ['apprentice', 'adept', 'master', 'legendary'];
 
-// XP modifiers per difficulty — surfaced next to each option in the
+// XP modifiers per difficulty, surfaced next to each option in the
 // difficulty picker so the trade-off is visible at the moment of choice.
 // Source of truth for the actual modifier math lives in lib/engine/xp.ts;
 // this constant is display-only.
@@ -104,7 +104,7 @@ export default function CharacterSheet() {
         try {
           await refreshDebuffs(profile.id);
         } catch (e) {
-          // Non-fatal — fall back to whatever's already on file.
+          // Non-fatal, fall back to whatever's already on file.
           console.warn('refreshDebuffs failed', e);
         }
       }
@@ -115,7 +115,7 @@ export default function CharacterSheet() {
         listActiveBuffs(),
         listActiveDebuffs(),
       ]);
-      // Achievement counts shown on the sheet are best-effort — render the
+      // Achievement counts shown on the sheet are best-effort, render the
       // sheet even if this fails so the user still sees their character.
       let achievements: SheetData['achievements'] = null;
       if (profile) {
@@ -210,7 +210,7 @@ export default function CharacterSheet() {
   const restOnCooldown = Date.now() < restAvailableAt;
   // Round the float for level + integer text values. The bar is driven
   // separately by Reanimated (see AnimatedXpBar below) so its width
-  // doesn't ride React's render loop — feeding a percentage style object
+  // doesn't ride React's render loop, feeding a percentage style object
   // through the reconciler each frame produced visible stutter on web,
   // even though the text counter (using the same source) read smooth.
   const animatedTotalXp = Math.round(animatedTotalXpFloat);
@@ -269,7 +269,7 @@ export default function CharacterSheet() {
         <Text className="font-display-bold text-2xl text-stone-900">{activeQuests}</Text>
       </View>
 
-      {/* Achievements — counts plus tap-to-open. The arc count appears as
+      {/* Achievements, counts plus tap-to-open. The arc count appears as
           a "+ X arcs" suffix when the chronicler has any. */}
       <Pressable
         onPress={() => router.push('/achievements')}
@@ -293,9 +293,9 @@ export default function CharacterSheet() {
         <Text className="mt-1 font-body text-base text-amber-800">View the ledger →</Text>
       </Pressable>
 
-      {/* Attributes — placeholder for v1.1+. Same dimmed "coming soon" treatment
+      {/* Attributes, placeholder for v1.1+. Same dimmed "coming soon" treatment
           as Perk Tree below. D&D-style six (STR/DEX/CON/INT/WIS/CHA) since the
-          chronicler asked for "DnD and Fallout" style — the six are the most
+          chronicler asked for "DnD and Fallout" style, the six are the most
           universally recognized. Values render as em-dashes so it reads as a
           real stat sheet that isn't filled in yet, not an empty placeholder. */}
       <View className="mb-4 rounded-md border border-amber-900/30 bg-amber-50/20 p-4">
@@ -325,18 +325,18 @@ export default function CharacterSheet() {
               <Text className="font-display text-xs uppercase tracking-widest text-amber-800/70">
                 {attr.key}
               </Text>
-              <Text className="font-display-bold text-2xl text-stone-500">—</Text>
+              <Text className="font-display-bold text-2xl text-stone-500">-</Text>
               <Text className="font-body text-xs italic text-stone-500">{attr.name}</Text>
             </View>
           ))}
         </View>
         <Text className="font-body text-lg italic text-stone-600">
-          Quests will one day temper the chronicler's traits — sharpened wit from study, hardened
+          Quests will one day temper the chronicler's traits, sharpened wit from study, hardened
           sinew from labor, silvered tongue from parley. The Archivist still measures the weights.
         </Text>
       </View>
 
-      {/* Perk Tree — placeholder for v1.1+. Non-interactive teaser that
+      {/* Perk Tree, placeholder for v1.1+. Non-interactive teaser that
           seeds anticipation for both free chroniclers (a glimpse of what
           Hero will unlock) and Hero subscribers (signaling that more is
           on the way). Visually dimmer than the active sections so it
@@ -358,10 +358,10 @@ export default function CharacterSheet() {
         </Text>
       </View>
 
-      {/* Buffs — earned by completing quests under their granted-buff
+      {/* Buffs, earned by completing quests under their granted-buff
           conditions. Persist for a tier-scaled lifetime; stack while
           active. Always render the section with an empty state so the
-          layout matches Debuffs below — consistency was a tester request. */}
+          layout matches Debuffs below, consistency was a tester request. */}
       <Text className="mb-2 font-display text-lg uppercase tracking-widest text-stone-700">
         Buffs
       </Text>
@@ -381,7 +381,7 @@ export default function CharacterSheet() {
         )}
       </View>
 
-      {/* Debuffs — visible whenever any are active. Rest button always
+      {/* Debuffs, visible whenever any are active. Rest button always
           renders but disables on cooldown. */}
       <View className="mb-2 flex-row items-baseline justify-between">
         <Text className="font-display text-lg uppercase tracking-widest text-stone-700">
@@ -634,7 +634,7 @@ export default function CharacterSheet() {
         ) : null}
       </View>
 
-      {/* Difficulty — dropdown selector. Tapping persists immediately and
+      {/* Difficulty, dropdown selector. Tapping persists immediately and
           refetches the profile so XP-modifier changes go live everywhere.
           Used to be a 4-button segmented control but the labels (especially
           LEGENDARY) crowded the row on narrow phones, so it's now a single
@@ -790,7 +790,7 @@ function FactionEditor({ initial, busy, onSave, onCancel, onDelete }: FactionEdi
       />
       <Text className="mb-3 font-body text-sm text-stone-600">
         Your standing within this faction. Edit when your real-world rank
-        changes — the Tome only counts; you name.
+        changes, the Tome only counts; you name.
       </Text>
       <View className="flex-row gap-2">
         <Pressable
@@ -972,7 +972,7 @@ function CampaignEditor({ initial, busy, onSave, onCancel, onDelete }: CampaignE
 
 /**
  * Reanimated-driven progress bar for the level card. Drives a scaleX
- * transform rather than width — transforms are GPU-composited (no
+ * transform rather than width, transforms are GPU-composited (no
  * layout/reflow) and Reanimated's web shim handles them more reliably
  * than percentage widths, so the sweep stays glass-smooth.
  *
@@ -980,7 +980,7 @@ function CampaignEditor({ initial, busy, onSave, onCancel, onDelete }: CampaignE
  * down via transformOrigin:'left' so it grows from the left edge.
  *
  * On first mount the sharedValue is initialized to the target so we
- * snap to the correct starting state — no "fill from empty" sweep just
+ * snap to the correct starting state, no "fill from empty" sweep just
  * because the user opened the screen. Subsequent target changes (e.g.
  * after a quest completion refetches the profile) animate over 900ms.
  */

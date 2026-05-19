@@ -1,4 +1,4 @@
-// Phase 5.1 — RevenueCat client wrapper.
+// Phase 5.1, RevenueCat client wrapper.
 //
 // react-native-purchases needs native code; on web it's not available.
 // Every helper here is Platform-aware and gracefully no-ops outside iOS/
@@ -8,7 +8,7 @@
 // Configuration: set EXPO_PUBLIC_REVENUECAT_IOS_KEY and
 // EXPO_PUBLIC_REVENUECAT_ANDROID_KEY in .env.local. RC test-mode keys
 // (prefixed `test_`) work without App Store / Play Console products
-// configured — useful for paywall iteration.
+// configured, useful for paywall iteration.
 
 import { Platform } from 'react-native';
 
@@ -25,7 +25,7 @@ export const HERO_ENTITLEMENT_ID = 'Questline Pro';
 type PurchasesModule = typeof import('react-native-purchases');
 let Purchases: PurchasesModule['default'] | null = null;
 let configured = false;
-// Last error from a configure() attempt — surfaced through the paywall
+// Last error from a configure() attempt, surfaced through the paywall
 // when configured is false, so the chronicler (and Mitchel) can see
 // what's actually broken instead of a generic "unreachable" message.
 let lastConfigureError: string | null = null;
@@ -45,7 +45,7 @@ async function loadPurchases(): Promise<PurchasesModule['default'] | null> {
 
 /**
  * Initialize the RevenueCat SDK. Call once at app start (after the user is
- * signed in, ideally — RC accepts a userId for cross-device sync).
+ * signed in, ideally, RC accepts a userId for cross-device sync).
  *
  * No-op on web and when the platform-specific API key is missing.
  */
@@ -69,7 +69,7 @@ export async function configurePurchases(userId?: string): Promise<void> {
   }
 
   // RC's native SDK force-closes production builds that try to configure with
-  // a sandbox `test_*` key — they refuse to mix test keys into production
+  // a sandbox `test_*` key, they refuse to mix test keys into production
   // surface area for purchase-security reasons. If we detect one, skip init
   // entirely: the paywall falls back to its STUB_PACKAGES path, no purchases
   // work, but the app doesn't crash on launch. Swap to `goog_*` / `appl_*`
@@ -139,13 +139,13 @@ export type PackageDuration = 'lifetime' | 'yearly' | 'monthly';
 export interface PaywallPackage {
   identifier: string;
   duration: PackageDuration;
-  /** Display title — e.g. "Hero · Monthly". */
+  /** Display title, e.g. "Hero · Monthly". */
   title: string;
-  /** Localized price string from the store — e.g. "$3.00". */
+  /** Localized price string from the store, e.g. "$3.00". */
   priceString: string;
-  /** Period descriptor — e.g. "month". null for lifetime. */
+  /** Period descriptor, e.g. "month". null for lifetime. */
   period: string | null;
-  /** Description text — e.g. "Best value · save 40%". Optional. */
+  /** Description text, e.g. "Best value · save 40%". Optional. */
   caption?: string;
 }
 
@@ -157,7 +157,7 @@ export interface PaywallPackage {
  * Order: monthly → yearly → lifetime. Matches the Play Console subscription
  * management page so users see tiers in the same sequence across both
  * surfaces. Yearly stays in the middle as the recommended "best value"
- * anchor — see the default-selected logic in paywall.tsx.
+ * anchor, see the default-selected logic in paywall.tsx.
  */
 const STUB_PACKAGES: PaywallPackage[] = [
   {
@@ -173,7 +173,7 @@ const STUB_PACKAGES: PaywallPackage[] = [
     title: 'Hero · Yearly',
     priceString: '$29.99',
     period: 'year',
-    caption: 'Best value — save 17% vs monthly',
+    caption: 'Best value, save 17% vs monthly',
   },
   {
     identifier: 'lifetime_stub',
@@ -223,7 +223,7 @@ export async function getHeroPackages(): Promise<PaywallPackage[]> {
 
 // Convert RC's PurchasesPackage to our slimmer PaywallPackage shape.
 function toPaywallPackage(pkg: unknown, duration: PackageDuration): PaywallPackage {
-  // RC types are loosely structured at runtime — pull what we need.
+  // RC types are loosely structured at runtime, pull what we need.
   const p = pkg as {
     identifier: string;
     product: { title?: string; priceString: string; description?: string };
@@ -250,7 +250,7 @@ function mapPackageType(packageType: string | undefined): PackageDuration | null
 export interface PurchaseResult {
   /** True when the purchase entitled the user to Hero (Questline Pro). */
   heroActive: boolean;
-  /** True when the user cancelled the native sheet — UI shouldn't show an error. */
+  /** True when the user cancelled the native sheet, UI shouldn't show an error. */
   userCancelled: boolean;
 }
 

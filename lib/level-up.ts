@@ -1,4 +1,4 @@
-// Phase 5.x — level-up narration.
+// Phase 5.x, level-up narration.
 //
 // When a quest completion crosses a level threshold, the LevelUpTakeover
 // fetches a 2-3 sentence Archivist-voice summary of what tipped the
@@ -64,7 +64,7 @@ function fallbackNarration(ctx: LevelUpContext): string {
 /**
  * Generate a short Archivist commentary for the level-up takeover. Returns
  * a fallback line on timeout / rate-limit / error so the UI never has to
- * branch on failure. Logs the raw response to console for debugging — if
+ * branch on failure. Logs the raw response to console for debugging, if
  * the takeover keeps showing fallback copy when it shouldn't, that log
  * tells us what came back.
  */

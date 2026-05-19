@@ -1,4 +1,4 @@
-// Character-sheet edits — factions, campaigns, and difficulty.
+// Character-sheet edits, factions, campaigns, and difficulty.
 //
 // RLS already gates these operations to the calling user, so each helper is
 // just a thin wrapper around the supabase-js call with the asError unwrap.

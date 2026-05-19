@@ -2,7 +2,7 @@
 //
 // Trigger functions publish a list of just-earned codes; the AchievementSurface
 // component (mounted once at the (main) layout root) subscribes and renders
-// the right surface for each one — toast for common/uncommon/rare, full-screen
+// the right surface for each one, toast for common/uncommon/rare, full-screen
 // cinematic for legendary.
 //
 // Kept dependency-free on purpose so the engine modules can import it without

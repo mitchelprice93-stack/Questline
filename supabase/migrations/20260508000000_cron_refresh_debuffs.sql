@@ -1,7 +1,7 @@
--- Phase 4.2 follow-up — schedule debuff refresh as a daily cron job.
+-- Phase 4.2 follow-up, schedule debuff refresh as a daily cron job.
 --
 -- Until now refresh_debuffs_for ran lazily on Character Sheet load,
--- which means a user who never opened the app never accrued debuffs —
+-- which means a user who never opened the app never accrued debuffs -
 -- defeating the purpose of the system. Daily pg_cron walks every
 -- profile and reconciles each user's debuffs against their quest state.
 --
@@ -14,7 +14,7 @@ create extension if not exists pg_cron;
 -- Internal version of refresh_debuffs_for that bypasses the auth check.
 -- Called by cron and by the user-facing wrapper. SECURITY DEFINER so it
 -- runs with the function owner's privileges (postgres role) instead of
--- the caller's — that's what makes it safe to invoke from cron.
+-- the caller's, that's what makes it safe to invoke from cron.
 create or replace function public.refresh_debuffs_for_user(p_user_id uuid)
 returns void
 language plpgsql
@@ -51,7 +51,7 @@ begin
         user_id, type, name, effect_description, xp_modifier_pct, source_kind, quest_id
       )
       select p_user_id, 'debuff', 'Curse of the Idle Blade',
-             'XP halved on the next completion — the deadline has long since passed.',
+             'XP halved on the next completion, the deadline has long since passed.',
              -50, 'deadline_long_overdue', v_quest.id
       where not exists (
         select 1 from public.modifiers
@@ -63,7 +63,7 @@ begin
         user_id, type, name, effect_description, xp_modifier_pct, source_kind, quest_id
       )
       select p_user_id, 'debuff', 'Cobwebs of Procrastination',
-             '−10% XP on the next completion — the hour has passed.',
+             '−10% XP on the next completion, the hour has passed.',
              -10, 'deadline_missed', v_quest.id
       where not exists (
         select 1 from public.modifiers

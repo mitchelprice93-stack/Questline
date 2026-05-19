@@ -1,12 +1,12 @@
 // XP engine for Questline.
 //
-// Pure TypeScript — no React, no React Native, no I/O. Every function is a
+// Pure TypeScript, no React, no React Native, no I/O. Every function is a
 // total function over its inputs. The deterministic core of the game lives
 // here; the AI never owns these values.
 //
 // See QUESTLINE_PROJECT.md §1.4 for spec. Edits to thresholds, tier XP, or
 // the calculateLevel return shape ripple through every UI surface that shows
-// XP — change with care and update tests.
+// XP, change with care and update tests.
 
 export type QuestTier = 'trivial' | 'minor' | 'standard' | 'major' | 'legendary';
 
@@ -22,7 +22,7 @@ export const MAX_LEVEL = 50;
 /**
  * One-time bonuses awarded on top of a recurring quest's tier XP when its
  * streak hits the listed threshold. Must stay in sync with the milestone
- * constants in the complete_quest SQL function — the SQL is canonical and
+ * constants in the complete_quest SQL function, the SQL is canonical and
  * the values here are duplicated for client-side display only.
  */
 export const STREAK_BONUSES: Record<number, number> = {
@@ -38,7 +38,7 @@ export function streakBonusFor(streak: number): number {
 
 /**
  * Lifetime, in days, of a buff earned by completing a quest of this tier.
- * Mirrors the buff_duration_for_tier SQL function — the SQL is canonical;
+ * Mirrors the buff_duration_for_tier SQL function, the SQL is canonical;
  * the client values are duplicated so the UI can render "lasts X days"
  * without an extra round-trip. Keep these two in sync.
  */
@@ -62,7 +62,7 @@ const TIER_XP: Record<QuestTier, number> = {
   legendary: 15000,
 };
 
-// Difficulty multipliers — inverted from the original spec so that picking
+// Difficulty multipliers, inverted from the original spec so that picking
 // a harder difficulty makes leveling slower (matches gamer convention).
 // apprentice (easiest) earns the most XP per quest; legendary (hardest)
 // earns the least. Master is the new baseline.
@@ -104,7 +104,7 @@ export interface LevelInfo {
 
 /**
  * Smooth 0..1 fraction of progress within the current level for a given
- * XP value. Accepts floats — useful for driving an animated progress bar
+ * XP value. Accepts floats, useful for driving an animated progress bar
  * between integer XP totals. calculateLevel() floors its input on
  * purpose (the level number must be an integer), which makes it unsuitable
  * for animating widths.
@@ -118,7 +118,7 @@ export function levelProgressFraction(totalXp: number): number {
   ) {
     i++;
   }
-  if (i + 1 >= LEVEL_THRESHOLDS.length) return 1; // max level — full bar
+  if (i + 1 >= LEVEL_THRESHOLDS.length) return 1; // max level, full bar
   const cur = LEVEL_THRESHOLDS[i] ?? 0;
   const next = LEVEL_THRESHOLDS[i + 1] ?? cur;
   if (next <= cur) return 1;
@@ -167,7 +167,7 @@ export function applyDifficultyModifier(xp: number, difficulty: Difficulty): num
 
 export function applyBuffsAndDebuffs(xp: number, modifiers: readonly Modifier[]): number {
   const totalPct = modifiers.reduce((sum, m) => sum + m.xpModifierPct, 0);
-  // Floor at 0 — a single quest completion never grants negative XP.
+  // Floor at 0, a single quest completion never grants negative XP.
   const multiplier = Math.max(0, 1 + totalPct / 100);
   return Math.round(xp * multiplier);
 }

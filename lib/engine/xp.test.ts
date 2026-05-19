@@ -25,7 +25,7 @@ describe('LEVEL_THRESHOLDS', () => {
     expect(LEVEL_THRESHOLDS[4]).toBe(10000); // L5
   });
 
-  test('post-L5 gaps grow by 1.5× (rounded) — pin L6..L10', () => {
+  test('post-L5 gaps grow by 1.5× (rounded), pin L6..L10', () => {
     expect(LEVEL_THRESHOLDS[5]).toBe(17500); // L6 = L5 + 7500
     expect(LEVEL_THRESHOLDS[6]).toBe(28750); // L7 = L6 + 11250
     expect(LEVEL_THRESHOLDS[7]).toBe(45625); // L8 = L7 + 16875
@@ -105,7 +105,7 @@ describe('xpForTier', () => {
 
 describe('applyDifficultyModifier', () => {
   // Multipliers: apprentice 1.5 (easiest, fastest leveling) → legendary 0.75
-  // (hardest, slowest leveling). Inverted from the original spec — harder
+  // (hardest, slowest leveling). Inverted from the original spec, harder
   // difficulty now means slower progression.
 
   test('apprentice grants 150%', () => {

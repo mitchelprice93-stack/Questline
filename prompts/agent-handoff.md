@@ -1,4 +1,4 @@
-# Questline — Agent Handoff
+# Questline, Agent Handoff
 
 Paste this at the start of a new chat as a system prompt or initial
 context message. It captures everything an incoming agent needs to be
@@ -13,7 +13,7 @@ You are continuing work on **Questline**, a cross-platform mobile app
 that reframes a real life as an RPG chronicle. The user (Mitchel Price,
 Texas) treats you as a senior engineering pair: action-oriented,
 opinionated, comfortable executing autonomously. He uses **auto mode**
-liberally — when in doubt, ship rather than ask.
+liberally, when in doubt, ship rather than ask.
 
 The app is owned and authored by Mitchel; you write the code, draft the
 docs, run the migrations, deploy the edge functions, and commit + push
@@ -146,7 +146,7 @@ eas.json                        # EAS Build profiles: development / preview / pr
 app.json                        # Expo config: bundle IDs, projectId, plugins
 .env.local                      # gitignored secrets (Supabase, RC test key, legal URLs)
 .env.example                    # documents required env vars
-QUESTLINE_PROJECT.md            # the spec — source of truth for what to build
+QUESTLINE_PROJECT.md            # the spec, source of truth for what to build
 ```
 
 ## External resources
@@ -157,7 +157,7 @@ QUESTLINE_PROJECT.md            # the spec — source of truth for what to build
   - Functions: `npx supabase functions deploy <name> --project-ref clugmgwyppiiscrnsogi`
   - Generate types: `npx supabase gen types typescript --linked > lib/types/database.ts`
     (note: strip the leading "Initialising login role..." line and any
-    trailing CLI version-update warning before saving — both leak into
+    trailing CLI version-update warning before saving, both leak into
     the file as stderr)
 - **GitHub Pages site**: https://mitchelprice93-stack.github.io/Questline/
   - `/privacy/` and `/terms/` live and parchment-themed; lawyer-reviewed,
@@ -180,17 +180,17 @@ QUESTLINE_PROJECT.md            # the spec — source of truth for what to build
 
 | Phase | Status | Notes |
 |---|---|---|
-| 1 — Foundation | ✅ | Expo + Supabase + XP engine + quest CRUD + character sheet basic |
-| 2 — AI | ✅ | claude-proxy + character creation + quest generation. 2.5 response caching deferred. |
-| 3 — Look & feel | 🟢 | Cinematic ✅, parchment UI ✅, ambient music ✅, SFX ✅, voiceover (ElevenLabs) deferred. Quest micro-anims: level-up ✅, completion shimmer ✅, buff/debuff pulse ✅; parchment-unfurl on accept + XP counter tick-up still pending. |
-| 4 — Mechanics | 🟢 | Recurring + streaks + milestones ✅, debuffs ✅, deadline-driven debuff system ✅, log/history ✅, settings ✅, local notifs ✅, daily pg_cron for debuffs ✅, remote push for warnings deferred. |
-| 5 — Launch | 🟡 | RC scaffolded ✅, paywall ✅, customer center ✅, webhook ✅, bundle IDs ✅, legal pages live ✅, App Store copy drafts ✅, EAS config ✅, tutorial overlay ✅, account deletion ✅, app icon saved ✅. Awaiting Google Play verification + product configuration. |
+| 1, Foundation | ✅ | Expo + Supabase + XP engine + quest CRUD + character sheet basic |
+| 2, AI | ✅ | claude-proxy + character creation + quest generation. 2.5 response caching deferred. |
+| 3, Look & feel | 🟢 | Cinematic ✅, parchment UI ✅, ambient music ✅, SFX ✅, voiceover (ElevenLabs) deferred. Quest micro-anims: level-up ✅, completion shimmer ✅, buff/debuff pulse ✅; parchment-unfurl on accept + XP counter tick-up still pending. |
+| 4, Mechanics | 🟢 | Recurring + streaks + milestones ✅, debuffs ✅, deadline-driven debuff system ✅, log/history ✅, settings ✅, local notifs ✅, daily pg_cron for debuffs ✅, remote push for warnings deferred. |
+| 5, Launch | 🟡 | RC scaffolded ✅, paywall ✅, customer center ✅, webhook ✅, bundle IDs ✅, legal pages live ✅, App Store copy drafts ✅, EAS config ✅, tutorial overlay ✅, account deletion ✅, app icon saved ✅. Awaiting Google Play verification + product configuration. |
 
 ## Recent work (last few commits)
 
 In rough order, most recent first:
 
-- **Offline write queue (v1, completeQuest)** — `lib/offline-queue.ts`
+- **Offline write queue (v1, completeQuest)**, `lib/offline-queue.ts`
   is a generic AsyncStorage-backed queue (enqueue, drainQueue,
   isNetworkError, AppState-driven init). `lib/quests.ts` splits a
   `callCompleteRpc` raw call, wraps `completeQuest` in a try/catch
@@ -202,11 +202,11 @@ In rough order, most recent first:
   last_completed_at), and queues the RPC for replay.
   `getCurrentProfile` mirrors `total_xp` to AsyncStorage on every
   successful fetch so the offline path has a real number to add to.
-  `getQuest` also falls back to cache on network error — the recurring
+  `getQuest` also falls back to cache on network error, the recurring
   branch in [id].tsx calls it after completion.
   createQuest stays online-only (Mitchel prefers a clear "save failed"
   over a hidden queued draft). Max 5 retries per mutation before drop.
-- **Approaching-deadline push warnings** — migration
+- **Approaching-deadline push warnings**, migration
   `20260509000000_approaching_deadline_warnings.sql`. New
   `notify_approaching_deadlines(uuid)` function dispatches an Expo push
   for any active quest whose deadline is within the next 24 hours and
@@ -216,13 +216,13 @@ In rough order, most recent first:
   06:00 UTC cron alongside refresh + debuff dispatch. Native-only
   (Expo push needs the EAS-linked projectId; web no-ops on token
   registration).
-- **Quest micro-animations** — `lib/animated-number.ts` (RAF-based
+- **Quest micro-animations**, `lib/animated-number.ts` (RAF-based
   ease-out cubic counter; Text doesn't accept animated style props for
   its content) drives the level card's XP / level / progress bar so
   they tick in sync after a quest completion. New-quest review wraps
   in an Animated.View with a custom `ParchmentUnfurl` entering animation
   (scaleY 0.05 → 1 + opacity 0 → 1, 550ms ease-out cubic).
-- **Spotlight tutorial** — `components/tutorial-overlay.tsx` rewritten
+- **Spotlight tutorial**, `components/tutorial-overlay.tsx` rewritten
   as a 4-rectangle scrim with a hole around a measured target rect +
   glow ring + tooltip card; `lib/tutorial-context.tsx` holds step state
   and a target registry; `components/tutorial-target.tsx` wraps any UI
@@ -231,7 +231,7 @@ In rough order, most recent first:
   spotlight has its target on screen even when triggered from Settings.
   Spotlight box is translated +10px down to compensate for the
   measure-vs-render mismatch on RN Web.
-- **Faction-on-quest + AI auto-suggestion + reputation retitle** —
+- **Faction-on-quest + AI auto-suggestion + reputation retitle** -
   `quests.faction_id` was already wired through the trigger; this
   closed the gap. New `_faction-picker.tsx` mirrors the campaign
   picker, `quest_generation` schema gains `suggested_faction_id` for
@@ -243,54 +243,54 @@ In rough order, most recent first:
   "Quest completed" alert, or after the level-up takeover dismisses
   (a `pendingRetitleRef` chains the announcement so level-up doesn't
   swallow it). Skips only when the AI returns the EXACT same title.
-- **Quest_generation routes to Haiku 4.5** — was Sonnet, now Haiku for
+- **Quest_generation routes to Haiku 4.5**, was Sonnet, now Haiku for
   the high-volume schema-bounded endpoint. 2–4s vs 5–15s, 1/3 the cost.
   Character creation + level-up narration stay on Sonnet for nuance.
-- **AI campaign auto-suggestion** — `quest_generation` prompt now
+- **AI campaign auto-suggestion**, `quest_generation` prompt now
   receives the chronicler's active campaigns (id, arc_name,
   real_world_goal) in context; schema adds `suggested_campaign_id`.
   When a quest clearly advances an active campaign, the Archivist
   returns its id and the new-quest review screen pre-selects it in the
   picker. Hallucinated ids are filtered client-side against the
   campaign list already loaded for context (no extra DB hit).
-- **AI reputation titles** — character_creation prompt + schema now
+- **AI reputation titles**, character_creation prompt + schema now
   request a per-faction `reputation_title` informed by user's
   background / proficiencies / life_summary.
-- **Faction reputation + campaign auto-progress** — schema:
+- **Faction reputation + campaign auto-progress**, schema:
   `factions.reputation_title` and `reputation_count`. New AFTER UPDATE
   trigger on `quests` increments faction.reputation_count and bumps
   campaign.progress_pct (tier-scaled: 2/5/10/20/40%) when status flips
   to completed or last_completed_at changes. Hits 100% → campaign
   status auto-flips to completed. Quests get a campaign-id picker on
   create + edit forms (`_campaign-picker.tsx`).
-- **Difficulty multiplier wired server-side** — was previously
+- **Difficulty multiplier wired server-side**, was previously
   cosmetic. Inverted: apprentice 1.5× → legendary 0.75× (harder = slower).
-- **Buff/debuff card animations** — `components/modifier-card.tsx`:
+- **Buff/debuff card animations**, `components/modifier-card.tsx`:
   FadeInDown.springify entrance + amber/red glow pulse via shared value.
   Animations only fire on fresh mount (stable keys preserve component
   instances on refresh).
-- **Buff dedup migration** — `20260508000002` consolidated existing
+- **Buff dedup migration**, `20260508000002` consolidated existing
   same-name buff stacks (e.g. 9× Wanderer's Stride → 1).
-- **Tutorial overlay** — first-launch 5-step orientation, dismissible,
+- **Tutorial overlay**, first-launch 5-step orientation, dismissible,
   AsyncStorage-backed. Settings → Replay orientation resets the flag.
-- **Legal pages live** — privacy + terms hosted via GitHub Pages,
+- **Legal pages live**, privacy + terms hosted via GitHub Pages,
   parchment theme via custom Jekyll layout. Texas governing law,
   support email plugged in.
-- **App icon + bundle IDs** — `com.mitchelprice.questline`, dark sepia
+- **App icon + bundle IDs**, `com.mitchelprice.questline`, dark sepia
   Android adaptive bg, leather-and-gold icon (saved by user).
-- **EAS init** — projectId in app.json. Push notifications now
+- **EAS init**, projectId in app.json. Push notifications now
   register on first session (was no-op before).
-- **Account deletion** — edge function + Settings UI. Two-step confirm.
-- **Daily pg_cron for refresh_debuffs** — security-definer
+- **Account deletion**, edge function + Settings UI. Two-step confirm.
+- **Daily pg_cron for refresh_debuffs**, security-definer
   `cron_refresh_all_debuffs()` runs 06:00 UTC daily. Lazy refresh on
   Character Sheet still in place as backup.
-- **Offline read-cache** — `lib/offline.ts` snapshots quest lists to
+- **Offline read-cache**, `lib/offline.ts` snapshots quest lists to
   AsyncStorage on every successful fetch; falls back when network
-  fails. v1 write queue (createQuest only) landed in a follow-up — see
+  fails. v1 write queue (createQuest only) landed in a follow-up, see
   recent work.
-- **RC + paywall + customer center** — full scaffolding. Real purchases
+- **RC + paywall + customer center**, full scaffolding. Real purchases
   blocked on Google Play / Apple Developer products.
-- **App Store copy drafts** — `prompts/app-store-copy-draft.md` covers
+- **App Store copy drafts**, `prompts/app-store-copy-draft.md` covers
   every text field for both stores.
 
 ## Open tasks (in priority order)
@@ -305,7 +305,7 @@ In rough order, most recent first:
 2. **EAS dev build** for native testing of paywall + push +
    subscriptions: `npx eas-cli build --profile development --platform
    android` once Google products exist.
-3. **Extend offline write queue** — v1 covers completeQuest only. Add
+3. **Extend offline write queue**, v1 covers completeQuest only. Add
    abandonQuest (parallel pattern, ~30 LOC) and faction / campaign
    CRUD when those surfaces start mattering offline. NetInfo for
    instant reconnect detection (currently relies on AppState
@@ -315,7 +315,7 @@ In rough order, most recent first:
    offline completion before the queue drains (today the optimistic
    value lives in the alert/takeover only; profile state stays stale
    until refetchProfile succeeds online).
-4. **Apple Sign In** scaffolding (deferred indefinitely per Mitchel —
+4. **Apple Sign In** scaffolding (deferred indefinitely per Mitchel -
    Android-first).
 
 ## Workflow patterns
@@ -346,7 +346,7 @@ npm test
 ### Migrations
 
 - File name: `YYYYMMDDhhmmss_short_name.sql`. Watch for **timestamp
-  collisions** — there's already been one (`20260508000001`); rename
+  collisions**, there's already been one (`20260508000001`); rename
   to next free slot.
 - Apply: `npx supabase db push --linked`
 - Idempotency: use `if not exists`, `or replace`, `drop ... if exists`
@@ -367,7 +367,7 @@ npx supabase gen types typescript --linked > lib/types/database.ts
 ```
 
 The CLI emits a stderr line at the start ("Initialising login role...")
-and possibly a CLI-update notice at the end — both leak into the file.
+and possibly a CLI-update notice at the end, both leak into the file.
 Strip them before saving.
 
 ## Voice & copy guidelines
@@ -401,7 +401,7 @@ for "The Tome remembers." instead.
   before creating new ones.
 - **No emojis.** Anywhere. Even in comments.
 - **Comments explain *why*, not *what***. Read the existing code's
-  comment style — it's terse, contextual, and explains tradeoffs.
+  comment style, it's terse, contextual, and explains tradeoffs.
 - **NativeWind className first, inline StyleSheet only when necessary**
   (e.g., for absolute overlays where Tailwind context might be lost,
   see `components/tutorial-overlay.tsx`).

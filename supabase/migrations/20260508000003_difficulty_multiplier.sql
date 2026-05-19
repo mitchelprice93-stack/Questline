@@ -1,15 +1,15 @@
--- Phase 1.4 follow-up — wire the difficulty multiplier into complete_quest.
+-- Phase 1.4 follow-up, wire the difficulty multiplier into complete_quest.
 --
 -- The multiplier table has existed in lib/engine/xp.ts since Phase 1, but
 -- the SQL function that actually awards XP never read profile.difficulty.
--- That meant changing difficulty in Settings was cosmetic — the same
+-- That meant changing difficulty in Settings was cosmetic, the same
 -- xp_reward landed regardless. This migration plugs the hole.
 --
--- Multipliers (mirror lib/engine/xp.ts DIFFICULTY_MULT — keep in sync):
---   apprentice  1.5    (easiest — fastest leveling)
+-- Multipliers (mirror lib/engine/xp.ts DIFFICULTY_MULT, keep in sync):
+--   apprentice  1.5    (easiest, fastest leveling)
 --   adept       1.25
 --   master      1.0    (baseline)
---   legendary   0.75   (hardest — slowest leveling)
+--   legendary   0.75   (hardest, slowest leveling)
 --
 -- Order of operations on completion:
 --   base_after = round(xp_reward * difficulty_mult * (1 + net_modifier_pct/100))
@@ -84,7 +84,7 @@ begin
 
   select difficulty into v_difficulty from public.profiles where id = v_user_id;
 
-  -- Difficulty multiplier — easier difficulty = more XP per quest.
+  -- Difficulty multiplier, easier difficulty = more XP per quest.
   v_difficulty_mult := case v_difficulty
     when 'apprentice' then 1.5
     when 'adept' then 1.25

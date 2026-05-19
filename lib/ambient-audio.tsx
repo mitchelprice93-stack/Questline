@@ -18,7 +18,7 @@ const AMBIENT_SOURCE = require('../assets/audio/ambient-loop.mp3');
  * Mount this once near the (main) layout root. Plays the ambient bed at
  * 18% volume on a seamless loop (halved from 35% on tester feedback so
  * SFX cut through more clearly). Respects the audio-mute pref. Renders
- * nothing — the player is purely audio.
+ * nothing, the player is purely audio.
  */
 export function AmbientAudioRoot() {
   const player = useAudioPlayer(AMBIENT_SOURCE);
@@ -26,7 +26,7 @@ export function AmbientAudioRoot() {
 
   useEffect(() => {
     // Configure once on mount. expo-audio's player has stable identity per
-    // source, so setting these on every render is wasteful — bind in a
+    // source, so setting these on every render is wasteful, bind in a
     // mount effect instead.
     player.loop = true;
     player.volume = 0.18;

@@ -67,7 +67,7 @@ const CLASSIFICATION_DESCRIPTIONS: Record<QuestClassification, string> = {
   daily: 'Routine work, done in minutes.',
   side: 'A standalone thread, away from the main path.',
   main: 'Important work that drives the chronicle.',
-  legendary: 'A magnum opus — multi-day or harder.',
+  legendary: 'A magnum opus, multi-day or harder.',
 };
 
 function recurrenceForDb(choice: RecurrenceChoice): QuestRecurrence {
@@ -94,7 +94,7 @@ function defaultPctForTier(t: QuestTier): number {
 
 type Phase = 'input' | 'loading' | 'review';
 
-// Parchment-unfurl entrance for the review screen — start collapsed
+// Parchment-unfurl entrance for the review screen, start collapsed
 // (scaleY 0.05) + transparent, then ease open to full height while fading
 // in. Reads like the Tome unrolling the page the Archivist just inscribed.
 const ParchmentUnfurl = () => {
@@ -124,7 +124,7 @@ export default function NewQuest() {
   const [objectives, setObjectives] = useState<QuestObjective[]>([]);
   const [deadlineRaw, setDeadlineRaw] = useState('');
   const [recurrence, setRecurrence] = useState<RecurrenceChoice>('none');
-  // Custom-cadence config — only meaningful when recurrence === 'custom'.
+  // Custom-cadence config, only meaningful when recurrence === 'custom'.
   // Defaults to "every 3 days" so the conditional UI doesn't appear empty
   // on first reveal.
   const [recurrenceInterval, setRecurrenceInterval] = useState<string>('3');
@@ -144,7 +144,7 @@ export default function NewQuest() {
     if (!input.trim()) return;
     setPhase('loading');
     setError(null);
-    // Looped quill scratch under the spinner — stops on response.
+    // Looped quill scratch under the spinner, stops on response.
     startLoopSfx('quill_scratch');
     try {
       const generated = await generateQuest(input);
@@ -155,7 +155,7 @@ export default function NewQuest() {
       setTier(generated.suggested_tier);
       setClassification(generated.classification);
       setObjectives(generated.objectives);
-      // Prefill the buff editor from the AI's design — user can tweak or
+      // Prefill the buff editor from the AI's design, user can tweak or
       // remove on review.
       setBuff({
         enabled: true,
@@ -165,7 +165,7 @@ export default function NewQuest() {
         condition: generated.granted_buff.condition,
       });
       // The Archivist may flag a campaign this endeavor advances. Already
-      // validated against the active list in generateQuest — null when no
+      // validated against the active list in generateQuest, null when no
       // match. User can override in the picker.
       setCampaignId(generated.suggested_campaign_id);
       // Auto-default the campaign contribution % to the tier scale when
@@ -215,21 +215,27 @@ export default function NewQuest() {
     setError(null);
     try {
       // Validate custom-cadence inputs before submit so the DB CHECK
-      // constraint doesn't bounce us with a confusing error.
+      // constraint doesn't bounce us with a confusing error. NOTE: every
+      // early-return MUST call setSubmitting(false), otherwise the button
+      // stays disabled and the screen feels frozen.
       const parsedInterval =
         recurrence === 'custom' ? Math.max(1, Math.floor(Number(recurrenceInterval) || 0)) : null;
       if (recurrence === 'custom' && (!parsedInterval || parsedInterval < 1)) {
         playSfx('error');
         setError('Custom cadence needs a positive number for the interval.');
+        setSubmitting(false);
         return;
       }
-      // Validate + clamp campaign % when a campaign is linked.
+      // Validate + clamp campaign % when a campaign is linked. 0 is allowed
+      // ("link this quest to the campaign but don't move the bar"); the DB
+      // CHECK accepts 0..100 and the trigger no-ops on 0.
       let parsedPct: number | null = null;
       if (campaignId) {
         const raw = Math.floor(Number(campaignContributionPct) || 0);
-        if (raw < 1 || raw > 100) {
+        if (raw < 0 || raw > 100) {
           playSfx('error');
-          setError('Campaign contribution must be between 1 and 100.');
+          setError('Campaign contribution must be between 0 and 100.');
+          setSubmitting(false);
           return;
         }
         parsedPct = raw;
@@ -251,20 +257,20 @@ export default function NewQuest() {
           .map((o) => ({ ...o, text: o.text.trim() }))
           .filter((o) => o.text.length > 0),
       });
-      // The Tome inscribes a new entry — ceremonial scratch.
+      // The Tome inscribes a new entry, ceremonial scratch.
       playSfx('quest_create');
       // Auto-prompt for notification permission on the chronicler's FIRST
-      // recurring quest — that's the moment notifications start being
+      // recurring quest, that's the moment notifications start being
       // useful (deadline reminders, recurrence streak nudges). Only ever
       // fires once per device; subsequent recurring quests don't re-prompt.
-      // Decliners can re-enable from Settings. Fire-and-forget — the quest
+      // Decliners can re-enable from Settings. Fire-and-forget, the quest
       // already saved successfully, no reason to block on this UX bonus.
       if (recurrence !== 'none') {
         void (async () => {
           const shown = await hasShownAutoPrompt();
           if (shown) return;
           const status = await getPermissionStatus();
-          // Only prompt when status is 'undetermined' — if already granted
+          // Only prompt when status is 'undetermined', if already granted
           // or denied, the OS sheet doesn't re-show.
           if (status === 'undetermined') {
             await requestPermission();
@@ -273,13 +279,13 @@ export default function NewQuest() {
         })();
       }
       // router.back() is a no-op when there's no history (deep link or
-      // browser refresh) — without the canGoBack guard, the user is left
+      // browser refresh), without the canGoBack guard, the user is left
       // staring at a "Saving…" button while the quest already saved.
       if (router.canGoBack()) router.back();
       else router.replace('/quest-board');
     } catch (e) {
       playSfx('error');
-      // Quest cap is a soft, recoverable rejection — show the in-voice
+      // Quest cap is a soft, recoverable rejection, show the in-voice
       // copy instead of the raw Postgres exception text.
       setError(isQuestCapError(e) ? questCapMessage() : errorMessage(e));
       setSubmitting(false);
@@ -336,7 +342,7 @@ export default function NewQuest() {
     );
   }
 
-  // Review phase — draft is set.
+  // Review phase, draft is set.
   if (!draft) return null;
 
   return (
@@ -448,7 +454,7 @@ export default function NewQuest() {
       ) : null}
 
       {/* Faction + Campaign pickers carry their own labels via DropdownPicker
-          so the parent doesn't need a wrapping View+Text — keeps spacing
+          so the parent doesn't need a wrapping View+Text, keeps spacing
           consistent with the other dropdowns on this form. */}
       <FactionPicker value={factionId} onChange={setFactionId} disabled={submitting} />
       <CampaignPicker
@@ -479,7 +485,8 @@ export default function NewQuest() {
             <Text className="font-body text-xl text-stone-700">%</Text>
           </View>
           <Text className="mt-2 font-body text-sm italic text-stone-500">
-            1–100. The campaign auto-closes the moment progress reaches 100%.
+            0–100. Use 0 to track the quest under the campaign without moving the
+            bar. The campaign auto-closes the moment progress reaches 100%.
           </Text>
         </View>
       ) : null}
@@ -505,7 +512,7 @@ export default function NewQuest() {
         editable={!submitting}
       />
       <Text className="mb-6 font-body text-lg text-stone-500">
-        Plain language is fine — the Tome reads dates loosely.
+        Plain language is fine, the Tome reads dates loosely.
       </Text>
 
       {error ? <Text className="mb-4 font-body text-xl text-red-700">{error}</Text> : null}

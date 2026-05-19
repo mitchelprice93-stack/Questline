@@ -1,4 +1,4 @@
-// Offline write queue — companion to lib/offline.ts's read-cache.
+// Offline write queue, companion to lib/offline.ts's read-cache.
 //
 // Mutations that hit the network (e.g. createQuest) try the server first.
 // On network failure they're enqueued to AsyncStorage; an optimistic copy
@@ -6,7 +6,7 @@
 // their work immediately. The next time the app foregrounds, drainQueue
 // replays the pending mutations against the server.
 //
-// Scope (v1): completeQuest — the offline-failure path that matters
+// Scope (v1): completeQuest, the offline-failure path that matters
 // most for testing on phones away from wifi. Quest creation stays
 // online-only (the user prefers a clear "save failed" over a hidden
 // queued draft). createQuest / abandonQuest can be added to the
@@ -24,7 +24,7 @@ const MAX_ATTEMPTS = 5;
 export type MutationKind = 'completeQuest';
 
 export interface QueuedMutation {
-  /** Local id for the queue entry — distinct from any server-side id the
+  /** Local id for the queue entry, distinct from any server-side id the
    *  payload may eventually receive. */
   id: string;
   kind: MutationKind;
@@ -64,7 +64,7 @@ async function writeQueue(mutations: QueuedMutation[]): Promise<void> {
   } catch (e) {
     console.warn('[offline-queue] writeQueue failed', errorMessage(e));
   } finally {
-    // Notify listeners regardless of write success — the in-memory state
+    // Notify listeners regardless of write success, the in-memory state
     // is what the UI reads next, and the write failure is best-effort.
     listeners.forEach((l) => l(mutations.length));
   }
@@ -119,7 +119,7 @@ export async function drainQueue(): Promise<{ replayed: number; remaining: numbe
           mutation.kind,
           errorMessage(e),
         );
-        // Counts as "handled" — the user's not getting it back regardless.
+        // Counts as "handled", the user's not getting it back regardless.
         replayed++;
       } else {
         stillPending.push(next);
@@ -169,7 +169,7 @@ export function initOfflineQueue(): void {
   if (initialized) return;
   initialized = true;
 
-  // Initial drain — defer one tick so module-load-time handler registration
+  // Initial drain, defer one tick so module-load-time handler registration
   // has finished before we start firing handlers.
   setTimeout(() => {
     void drainQueue();

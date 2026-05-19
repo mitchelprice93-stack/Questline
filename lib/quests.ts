@@ -1,5 +1,5 @@
 // Quest data layer. All calls go through the Supabase client and rely on RLS
-// for authorization — a logged-out caller will get an empty list (or an auth
+// for authorization, a logged-out caller will get an empty list (or an auth
 // error from the RPCs).
 //
 // Offline cache + sync queue (spec §1.5 line items) are deferred. Today these
@@ -124,7 +124,7 @@ function campaignColumns(input: {
   }
   const pct =
     typeof input.campaignContributionPct === 'number'
-      ? Math.max(1, Math.min(100, Math.round(input.campaignContributionPct)))
+      ? Math.max(0, Math.min(100, Math.round(input.campaignContributionPct)))
       : defaultCampaignContributionForTier(input.tier);
   return { campaign_id: campaignId, campaign_contribution_pct: pct };
 }
@@ -170,7 +170,7 @@ export async function listQuests(status: QuestStatus = 'active'): Promise<Quest[
     void cacheQuests(status, rows);
     return rows;
   } catch (e) {
-    // Network or server failure — fall back to the cached snapshot if we
+    // Network or server failure, fall back to the cached snapshot if we
     // have one. Throw the original error if there's nothing to fall back
     // to so the UI's error state still fires.
     const cached = await readCachedQuests(status);
@@ -189,7 +189,7 @@ export async function getQuest(id: string): Promise<Quest | null> {
     return (data ?? null) as Quest | null;
   } catch (e) {
     if (!isNetworkError(e)) throw e;
-    // Offline — serve from any cached list. The post-completion path on
+    // Offline, serve from any cached list. The post-completion path on
     // the detail screen calls this to pick up streak / last_completed_at;
     // markPendingCompletion has already updated the active cache with
     // the new values, so the cached read reflects the optimistic state.
@@ -246,12 +246,12 @@ export interface CompleteQuestResult {
   buffGranted: string | null;
 }
 
-/** Raw RPC call — used by both the public completeQuest and the offline-
+/** Raw RPC call, used by both the public completeQuest and the offline-
  *  queue replay handler. Throws on any server/network error. */
 async function callCompleteRpc(questId: string): Promise<CompleteQuestResult> {
   const { data, error } = await supabase.rpc('complete_quest', { quest_id: questId });
   if (error) throw asError(error);
-  // RPC returns SETOF, supabase-js gives us an array — take the first row.
+  // RPC returns SETOF, supabase-js gives us an array, take the first row.
   const row = Array.isArray(data) ? data[0] : data;
   if (!row) throw new Error('complete_quest returned no row');
   return {
@@ -270,7 +270,7 @@ async function callCompleteRpc(questId: string): Promise<CompleteQuestResult> {
  *  level-up trigger, takeover) based on what we know locally.
  *
  *  Modifiers (active debuffs / buff conditions) and streak milestones
- *  are NOT computed locally — those need the server's view. The server's
+ *  are NOT computed locally, those need the server's view. The server's
  *  RPC will reconcile when the queue drains; the next profile refetch
  *  pulls the real total_xp and the user's display catches up. */
 async function synthesizeOfflineCompletion(questId: string): Promise<CompleteQuestResult> {
@@ -288,7 +288,7 @@ async function synthesizeOfflineCompletion(questId: string): Promise<CompleteQue
 }
 
 /**
- * Fire achievement triggers for a just-completed quest. Fire-and-forget —
+ * Fire achievement triggers for a just-completed quest. Fire-and-forget -
  * achievement work must not block the user's quest-complete UX, and any
  * failure here is logged inside the trigger module rather than thrown.
  *
@@ -312,7 +312,7 @@ async function fireCompletionAchievements(
     }
 
     // The bump_faction_and_campaign trigger may have just flipped the linked
-    // campaign to 'completed'. Re-read it to detect that — if status flipped,
+    // campaign to 'completed'. Re-read it to detect that, if status flipped,
     // fire the arc_completed template (idempotent via unique index).
     if (questBefore.campaign_id) {
       const { data: campaign } = await supabase
@@ -334,7 +334,7 @@ async function fireCompletionAchievements(
 }
 
 export async function completeQuest(questId: string): Promise<CompleteQuestResult> {
-  // Fetch the quest BEFORE the RPC stamps last_completed_at — the achievement
+  // Fetch the quest BEFORE the RPC stamps last_completed_at, the achievement
   // age check (the_comeback) needs the prior gap, not zero.
   const questBefore = await getQuest(questId).catch(() => null);
 
@@ -353,7 +353,7 @@ export async function completeQuest(questId: string): Promise<CompleteQuestResul
     // synthesized result so the calling UI (level-up takeover, XP
     // toast, SFX) behaves as if the server had answered.
     //
-    // Achievements DO NOT fire on the optimistic path — server state is
+    // Achievements DO NOT fire on the optimistic path, server state is
     // the source of truth, and the queued replay below catches them up
     // when the network returns.
     const optimistic = await synthesizeOfflineCompletion(questId);
@@ -375,7 +375,7 @@ registerHandler('completeQuest', async (payload) => {
 });
 
 export async function abandonQuest(questId: string): Promise<void> {
-  // Capture the quest BEFORE abandon flips status — the engine needs
+  // Capture the quest BEFORE abandon flips status, the engine needs
   // created_at + the (still-active) timestamps to compute age.
   const quest = await getQuest(questId).catch(() => null);
   const { error } = await supabase.rpc('abandon_quest', { quest_id: questId });

@@ -2,7 +2,7 @@
 --
 -- Given the AI's parsed character sheet, write the chronicler's profile
 -- (name, title, starting level, total_xp), insert their factions, and
--- insert their campaigns — all in one transaction. One-shot: enforces the
+-- insert their campaigns, all in one transaction. One-shot: enforces the
 -- spec's "1 character creation per lifetime" by refusing if the calling
 -- user's profile already has a character_name.
 --
@@ -39,7 +39,7 @@ begin
     raise exception 'total_xp cannot be negative' using errcode = '22023';
   end if;
 
-  -- Lock the profile row before checking — prevents a double-submit racing
+  -- Lock the profile row before checking, prevents a double-submit racing
   -- between two clients.
   perform 1 from public.profiles where id = v_user_id for update;
 

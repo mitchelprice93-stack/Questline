@@ -1,4 +1,4 @@
-// Phase 3.2 — first-run cinematic gating.
+// Phase 3.2, first-run cinematic gating.
 //
 // Two flags coexist:
 //
@@ -8,13 +8,13 @@
 //     on a shared device each see the cinematic once each.
 //
 //   - PER-DEVICE (KEY_DEVICE): tracks whether anyone on this device has
-//     viewed the cinematic. Used for pre-auth gating — a first-time
+//     viewed the cinematic. Used for pre-auth gating, a first-time
 //     visitor opening the app should see the cinematic BEFORE the login
 //     screen so they get emotional buy-in before being asked to sign up.
 //     Once they sign up, the device flag is promoted to the per-user
 //     flag so the cinematic doesn't replay during onboarding.
 //
-// AsyncStorage is fine for both — losing either flag (e.g. cache clear)
+// AsyncStorage is fine for both, losing either flag (e.g. cache clear)
 // just means the cinematic plays once more, which is gracefully handled.
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -35,12 +35,12 @@ export async function markCinematicSeen(userId: string): Promise<void> {
   try {
     await AsyncStorage.setItem(KEY(userId), '1');
   } catch {
-    // Best-effort — user will see it again on next launch but the app still works.
+    // Best-effort, user will see it again on next launch but the app still works.
   }
 }
 
 /** Wipe the seen flag so the cinematic plays again on next launch.
- *  Used by the Reset Character flow — when the user starts over, the
+ *  Used by the Reset Character flow, when the user starts over, the
  *  full first-run experience replays. */
 export async function resetCinematicSeen(userId: string): Promise<void> {
   try {

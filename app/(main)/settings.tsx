@@ -21,19 +21,70 @@ import { FREE_TIER_QUEST_CAP } from '../../lib/subscription';
 import { resetTutorial } from '../../lib/tutorial';
 import { useTutorial } from '../../lib/tutorial-context';
 import {
-  getCheckInTime,
+  getCheckInSchedule,
   getPermissionStatus,
   requestPermission,
-  setCheckInTime,
+  setCheckInSchedule,
+  type CheckInSchedule,
   type PermissionStatus,
 } from '../../lib/notifications';
+import { DropdownPicker, type DropdownOption } from '../../components/dropdown-picker';
 
-const CHECK_IN_OPTIONS: { key: 'off' | string; label: string }[] = [
-  { key: 'off', label: 'Off' },
-  { key: '07:00', label: '7 AM' },
-  { key: '08:00', label: '8 AM' },
-  { key: '09:00', label: '9 AM' },
-  { key: '20:00', label: '8 PM' },
+type Cadence = 'off' | 'daily' | 'weekly' | 'custom';
+
+const CADENCE_OPTIONS: DropdownOption<Cadence>[] = [
+  { value: 'off', label: 'Off', description: 'No check-in nudge.' },
+  {
+    value: 'daily',
+    label: 'Daily',
+    description: 'Every day at the chosen time.',
+  },
+  {
+    value: 'weekly',
+    label: 'Weekly',
+    description: 'One day a week at the chosen time.',
+  },
+  {
+    value: 'custom',
+    label: 'Custom',
+    description: 'Pick any combination of days at one shared time.',
+  },
+];
+
+// 24 hours expressed as 12-hour-clock labels. Internal value is HH (00..23).
+const HOUR_OPTIONS: DropdownOption<string>[] = Array.from({ length: 24 }, (_, h) => {
+  const period = h < 12 ? 'AM' : 'PM';
+  const display = h === 0 ? 12 : h > 12 ? h - 12 : h;
+  return {
+    value: String(h).padStart(2, '0'),
+    label: `${display} ${period}`,
+  };
+});
+
+const MINUTE_OPTIONS: DropdownOption<string>[] = ['00', '15', '30', '45'].map((m) => ({
+  value: m,
+  label: `:${m}`,
+}));
+
+// 0 = Sunday … 6 = Saturday (JS Date.getDay convention).
+const WEEKDAY_OPTIONS: DropdownOption<string>[] = [
+  { value: '0', label: 'Sunday' },
+  { value: '1', label: 'Monday' },
+  { value: '2', label: 'Tuesday' },
+  { value: '3', label: 'Wednesday' },
+  { value: '4', label: 'Thursday' },
+  { value: '5', label: 'Friday' },
+  { value: '6', label: 'Saturday' },
+];
+
+const DAY_CHIPS: { day: number; short: string }[] = [
+  { day: 0, short: 'S' },
+  { day: 1, short: 'M' },
+  { day: 2, short: 'T' },
+  { day: 3, short: 'W' },
+  { day: 4, short: 'T' },
+  { day: 5, short: 'F' },
+  { day: 6, short: 'S' },
 ];
 
 export default function Settings() {
@@ -44,12 +95,29 @@ export default function Settings() {
   const [muted, setMuted] = useAudioMuted();
 
   const [permissionStatus, setPermissionStatus] = useState<PermissionStatus | null>(null);
-  const [checkInTime, setCheckInTimeState] = useState<string>('off');
+  // Check-in schedule, broken into editable pieces. cadence + time are always
+  // editable; weekday is used when cadence='weekly'; days is used when
+  // cadence='custom'. We persist by assembling these into a CheckInSchedule
+  // on every change so the user never has to tap "Save".
+  const [cadence, setCadence] = useState<Cadence>('off');
+  const [hour, setHour] = useState<string>('08');
+  const [minute, setMinute] = useState<string>('00');
+  const [weekday, setWeekday] = useState<number>(1); // Monday default for weekly
+  const [days, setDays] = useState<number[]>([1, 3, 5]); // Mon/Wed/Fri default for custom
   const [notifBusy, setNotifBusy] = useState(false);
 
   useEffect(() => {
     void getPermissionStatus().then(setPermissionStatus);
-    void getCheckInTime().then(setCheckInTimeState);
+    void getCheckInSchedule().then((s) => {
+      setCadence(s.cadence);
+      if (s.cadence !== 'off') {
+        const [h, m] = s.time.split(':');
+        if (h) setHour(h.padStart(2, '0'));
+        if (m) setMinute(m.padStart(2, '0'));
+      }
+      if (s.cadence === 'weekly') setWeekday(s.weekday);
+      if (s.cadence === 'custom' && s.days.length > 0) setDays([...s.days].sort());
+    });
   }, []);
 
   const onRequestPermission = async () => {
@@ -62,16 +130,58 @@ export default function Settings() {
     }
   };
 
-  const onSelectCheckIn = async (next: 'off' | string) => {
+  /** Build a CheckInSchedule from the current editor state. */
+  const assembleSchedule = (overrides?: {
+    cadence?: Cadence;
+    hour?: string;
+    minute?: string;
+    weekday?: number;
+    days?: number[];
+  }): CheckInSchedule => {
+    const c = overrides?.cadence ?? cadence;
+    const time = `${overrides?.hour ?? hour}:${overrides?.minute ?? minute}`;
+    if (c === 'off') return { cadence: 'off' };
+    if (c === 'daily') return { cadence: 'daily', time };
+    if (c === 'weekly') return { cadence: 'weekly', time, weekday: overrides?.weekday ?? weekday };
+    const d = overrides?.days ?? days;
+    // Empty custom selection falls back to daily so we never silently disable
+    // the user, they explicitly chose Custom, they want SOMETHING scheduled.
+    if (d.length === 0) return { cadence: 'daily', time };
+    return { cadence: 'custom', time, days: d };
+  };
+
+  const persistSchedule = async (schedule: CheckInSchedule) => {
     setNotifBusy(true);
     try {
-      await setCheckInTime(next);
-      setCheckInTimeState(next);
+      await setCheckInSchedule(schedule);
     } catch (e) {
       console.warn('check-in schedule failed', e);
     } finally {
       setNotifBusy(false);
     }
+  };
+
+  const onCadenceChange = (next: Cadence) => {
+    setCadence(next);
+    void persistSchedule(assembleSchedule({ cadence: next }));
+  };
+  const onHourChange = (next: string) => {
+    setHour(next);
+    void persistSchedule(assembleSchedule({ hour: next }));
+  };
+  const onMinuteChange = (next: string) => {
+    setMinute(next);
+    void persistSchedule(assembleSchedule({ minute: next }));
+  };
+  const onWeekdayChange = (next: string) => {
+    const w = parseInt(next, 10);
+    setWeekday(w);
+    void persistSchedule(assembleSchedule({ weekday: w }));
+  };
+  const toggleDay = (day: number) => {
+    const next = days.includes(day) ? days.filter((d) => d !== day) : [...days, day].sort();
+    setDays(next);
+    void persistSchedule(assembleSchedule({ days: next }));
   };
 
   const [exporting, setExporting] = useState(false);
@@ -88,7 +198,7 @@ export default function Settings() {
   const [deleteBusy, setDeleteBusy] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
 
-  // Reset character — opens an inline "type DELETE to confirm" panel
+  // Reset character, opens an inline "type DELETE to confirm" panel
   // before the wipe fires. Cancel-able until the user types and taps.
   const [resetStage, setResetStage] = useState<'idle' | 'confirming'>('idle');
   const [resetTypeInput, setResetTypeInput] = useState('');
@@ -96,19 +206,19 @@ export default function Settings() {
   const [resetError, setResetError] = useState<string | null>(null);
 
   // Public URLs for the privacy policy and terms of service. Once those
-  // pages are hosted (GitHub Pages, Notion, Termly — your call), drop the
+  // pages are hosted (GitHub Pages, Notion, Termly, your call), drop the
   // URLs into .env.local under EXPO_PUBLIC_PRIVACY_URL / _TERMS_URL.
   // Until then the buttons surface a "coming soon" message.
   const privacyUrl = process.env.EXPO_PUBLIC_PRIVACY_URL ?? null;
   const termsUrl = process.env.EXPO_PUBLIC_TERMS_URL ?? null;
 
-  // Bug report — opens the user's email client with a structured,
+  // Bug report, opens the user's email client with a structured,
   // pre-filled message to the support inbox. Auto-fills app version,
   // platform, and the chronicler's email so we can locate their account
   // and reproduce on the same build. Zero backend; just leverages mailto:.
   //
   // Future upgrade path: replace mailto with an in-app form that posts
-  // to a Supabase bug_reports table + sends a Resend notification — gives
+  // to a Supabase bug_reports table + sends a Resend notification, gives
   // structured data and removes the dependency on the user having a mail
   // client configured. For v1 closed-alpha this simpler path is enough.
   const onReportBug = async () => {
@@ -128,8 +238,8 @@ export default function Settings() {
       '2. ',
       '3. ',
       '',
-      '— — — — — — — — — — — — — — — —',
-      'Do not edit below this line — the Archivist needs it for the audit:',
+      '----------------------------------',
+      'Do not edit below this line, the Archivist needs it for the audit:',
       `App version: ${version}`,
       `Platform:    ${Platform.OS} ${Platform.Version}`,
       `Account:     ${session?.user.email ?? 'unknown'}`,
@@ -207,7 +317,7 @@ export default function Settings() {
       'Every quest, faction, campaign, and entry the Tome holds for you will be erased. This cannot be undone.',
     );
     if (!proceed) return;
-    // Two-step confirm — irreversible action deserves it.
+    // Two-step confirm, irreversible action deserves it.
     const reallyProceed = await confirmDestructive(
       'Truly?',
       'Type-confirm dialogs aren\'t available here, but consider this your final ward. Continue and the Tome closes on you forever.',
@@ -230,7 +340,7 @@ export default function Settings() {
   const onTapReset = async () => {
     const proceed = await confirmDestructive(
       'Reset your chronicle?',
-      'Every quest, faction, campaign, and entry the Tome holds for you will be erased. Your account and login remain — but you will return to the chronicle\'s forging and start anew. This cannot be undone.',
+      'Every quest, faction, campaign, and entry the Tome holds for you will be erased. Your account and login remain, but you will return to the chronicle\'s forging and start anew. This cannot be undone.',
     );
     if (!proceed) return;
     setResetTypeInput('');
@@ -378,7 +488,7 @@ export default function Settings() {
         <Text className="text-center font-body text-2xl text-stone-900">Sign out</Text>
       </Pressable>
 
-      {/* Reset character — wipes the chronicle but keeps the auth account.
+      {/* Reset character, wipes the chronicle but keeps the auth account.
           Two-step gate: the in-voice confirm dialog opens an inline panel
           that requires literally typing DELETE before the action arms. */}
       {resetStage === 'idle' ? (
@@ -474,7 +584,7 @@ export default function Settings() {
         </Text>
       </Pressable>
       <Text className="-mt-1 mb-3 font-body text-lg text-stone-500">
-        Take a written copy of your chronicle — character, factions, campaigns,
+        Take a written copy of your chronicle, character, factions, campaigns,
         and every quest the Tome remembers.
       </Text>
       {exportError ? (
@@ -572,7 +682,7 @@ export default function Settings() {
             {notifBusy
               ? 'Asking the device…'
               : permissionStatus === 'denied'
-                ? 'Permission denied — open device Settings to re-enable'
+                ? 'Permission denied, open device Settings to re-enable'
                 : 'Allow notifications'}
           </Text>
         </Pressable>
@@ -585,33 +695,98 @@ export default function Settings() {
             </Text>
           </View>
           <Text className="mb-1 font-display text-base uppercase tracking-widest text-stone-500">
-            Daily check-in
+            Check-in cadence
           </Text>
-          <View className="mb-8 flex-row flex-wrap gap-2">
-            {CHECK_IN_OPTIONS.map((opt) => {
-              const selected = checkInTime === opt.key;
-              return (
-                <Pressable
-                  key={opt.key}
-                  onPress={() => void onSelectCheckIn(opt.key)}
-                  disabled={notifBusy}
-                  className={`rounded-full border px-3 py-1.5 ${
-                    selected
-                      ? 'border-amber-500 bg-amber-600/20'
-                      : 'border-stone-700 bg-amber-50/40'
-                  }`}
-                >
-                  <Text
-                    className={`font-body-medium text-xl ${
-                      selected ? 'text-amber-800' : 'text-stone-700'
-                    }`}
-                  >
-                    {opt.label}
-                  </Text>
-                </Pressable>
-              );
-            })}
-          </View>
+          <DropdownPicker
+            label=""
+            value={cadence}
+            onChange={onCadenceChange}
+            options={CADENCE_OPTIONS}
+            disabled={notifBusy}
+          />
+
+          {cadence !== 'off' ? (
+            <>
+              <Text className="mb-1 font-display text-base uppercase tracking-widest text-stone-500">
+                Time
+              </Text>
+              <View className="mb-4 flex-row gap-3">
+                <View className="flex-1">
+                  <DropdownPicker
+                    label=""
+                    value={hour}
+                    onChange={onHourChange}
+                    options={HOUR_OPTIONS}
+                    disabled={notifBusy}
+                  />
+                </View>
+                <View className="flex-1">
+                  <DropdownPicker
+                    label=""
+                    value={minute}
+                    onChange={onMinuteChange}
+                    options={MINUTE_OPTIONS}
+                    disabled={notifBusy}
+                  />
+                </View>
+              </View>
+            </>
+          ) : null}
+
+          {cadence === 'weekly' ? (
+            <>
+              <Text className="mb-1 font-display text-base uppercase tracking-widest text-stone-500">
+                Day of the week
+              </Text>
+              <DropdownPicker
+                label=""
+                value={String(weekday)}
+                onChange={onWeekdayChange}
+                options={WEEKDAY_OPTIONS}
+                disabled={notifBusy}
+              />
+            </>
+          ) : null}
+
+          {cadence === 'custom' ? (
+            <View className="mb-8">
+              <Text className="mb-2 font-display text-base uppercase tracking-widest text-stone-500">
+                Days
+              </Text>
+              <View className="flex-row gap-2">
+                {DAY_CHIPS.map((chip) => {
+                  const selected = days.includes(chip.day);
+                  return (
+                    <Pressable
+                      key={chip.day}
+                      onPress={() => toggleDay(chip.day)}
+                      disabled={notifBusy}
+                      className={`h-10 w-10 items-center justify-center rounded-full border ${
+                        selected
+                          ? 'border-amber-500 bg-amber-600/20'
+                          : 'border-stone-700 bg-amber-50/40'
+                      }`}
+                    >
+                      <Text
+                        className={`font-body-medium text-lg ${
+                          selected ? 'text-amber-800' : 'text-stone-700'
+                        }`}
+                      >
+                        {chip.short}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+              {days.length === 0 ? (
+                <Text className="mt-2 font-body text-sm italic text-amber-700">
+                  Pick at least one day, or the check-in will run every day.
+                </Text>
+              ) : null}
+            </View>
+          ) : (
+            <View className="mb-8" />
+          )}
         </>
       )}
 

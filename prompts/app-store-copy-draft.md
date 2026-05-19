@@ -2,7 +2,7 @@
 
 Drafts for every text field App Store Connect and Google Play Console
 ask for. Two of each kind for the major fields so you can pick the one
-that lands. Keep these here for reference — when you submit to the
+that lands. Keep these here for reference, when you submit to the
 stores, paste / iterate as needed.
 
 ---
@@ -23,7 +23,7 @@ stores, paste / iterate as needed.
 
 ---
 
-## Promotional text (App Store, 170 chars — updatable without resubmit)
+## Promotional text (App Store, 170 chars, updatable without resubmit)
 
 > The Tome opens once more. Each task you complete is inscribed by the
 > Archivist of Fate; each oath kept earns its own line in your chronicle.
@@ -41,7 +41,7 @@ above sets the tone without overpromising.
 > Questline turns your real life into an RPG chronicle.
 >
 > Every task is a quest. Every quest is forged into the Archivist's
-> voice — given a tier, a description, an objective list, and a buff
+> voice, given a tier, a description, an objective list, and a buff
 > the chronicler can earn for finishing on time. Complete it, and the
 > Tome inscribes the deed; level up enough times and the chronicle
 > thickens. Let it slide past its deadline, and the Cobwebs of
@@ -50,8 +50,8 @@ above sets the tone without overpromising.
 > THIS IS NOT ANOTHER TASK APP
 >
 > The Archivist of Fate watches over your endeavors. When you describe
-> what you need to do — finish the lab report, run the half-marathon,
-> finally call the dentist — the Tome reframes it as a quest worthy of
+> what you need to do, finish the lab report, run the half-marathon,
+> finally call the dentist, the Tome reframes it as a quest worthy of
 > recording. The narrative is the whole point. You feel the weight of
 > a major undertaking differently when the Archivist names it
 > "legendary"; you feel the pull of a daily routine differently when
@@ -64,7 +64,7 @@ above sets the tone without overpromising.
 > · Daily and weekly recurring quests with streak tracking
 > · Granted buffs that scale with quest difficulty and persist across
 >   completions
-> · Debuffs when deadlines pass — and a +rest invocation to clear the
+> · Debuffs when deadlines pass, and a +rest invocation to clear the
 >   stalest ones once a week
 > · Factions, campaigns, and a chronicle of every XP gain you've earned
 > · A cinematic intro narrated in the Archivist's voice
@@ -72,8 +72,8 @@ above sets the tone without overpromising.
 > FREE TO BEGIN
 >
 > Hold up to five active quests at any time on the Free tier.
-> Everything else — character creation, the cinematic, every mechanic,
-> every animation — opens to you without payment.
+> Everything else, character creation, the cinematic, every mechanic,
+> every animation, opens to you without payment.
 >
 > PLEDGE YOUR OATH (HERO)
 >
@@ -87,12 +87,12 @@ above sets the tone without overpromising.
 >
 > Tell us, then. Who are you?
 
-(About 1,800 chars — well under the 4,000 limit, leaves room to add a
+(About 1,800 chars, well under the 4,000 limit, leaves room to add a
 "What's New in this version" preamble if you want.)
 
 ---
 
-## Keywords (App Store, 100 chars total — comma-separated, no spaces around commas)
+## Keywords (App Store, 100 chars total, comma-separated, no spaces around commas)
 
 **Option A (productivity-leaning, 99 chars):**
 ```
@@ -109,7 +109,7 @@ search "task / habit / planner" and would smile at finding an RPG
 take. Game-heavy keywords pull in players who want a game and bounce
 off finding a productivity tool.
 
-(Don't include words that are in the app name or subtitle — Apple
+(Don't include words that are in the app name or subtitle, Apple
 auto-indexes those. So "Questline" doesn't need to be in the keyword
 list.)
 
@@ -172,7 +172,7 @@ For minor updates afterward, follow the pattern: in-voice line +
 optional one-line bullet list of meaningful changes. Examples:
 
 > Buffs persist longer. The Archivist remembers more than he lets on.
-> · Buff lifetimes now scale with quest tier — up to 14 days for legendary deeds
+> · Buff lifetimes now scale with quest tier, up to 14 days for legendary deeds
 > · Same-name buffs refresh instead of stacking
 
 ---

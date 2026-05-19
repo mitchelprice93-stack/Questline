@@ -1,4 +1,4 @@
-// Phase 5.1 — subscription tier read.
+// Phase 5.1, subscription tier read.
 //
 // The `subscriptions` table is populated by RevenueCat webhooks (deferred).
 // Until that lands, every user resolves to 'free'. The DB-side trigger
@@ -20,7 +20,7 @@ export interface SubscriptionStatus {
 }
 
 /** Resolve the current user's effective tier. Defaults to 'free' on any error
- *  or missing row — the server trigger will reject if a free user tries to
+ *  or missing row, the server trigger will reject if a free user tries to
  *  exceed the cap regardless of what this returns. */
 export async function getSubscriptionStatus(): Promise<SubscriptionStatus> {
   const {
@@ -65,5 +65,5 @@ export function isQuestCapError(error: unknown): boolean {
 /** Resolve a server-side error to user-facing copy. The trigger raises
  *  P0005 with a serviceable message; we override with in-voice copy. */
 export function questCapMessage(): string {
-  return 'The Tome can hold but five open endeavors at once on the free tier. Complete or abandon one — or pledge your oath to the Archivist for unlimited inscription.';
+  return 'The Tome can hold but five open endeavors at once on the free tier. Complete or abandon one, or pledge your oath to the Archivist for unlimited inscription.';
 }

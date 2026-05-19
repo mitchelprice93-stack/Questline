@@ -33,7 +33,7 @@ export async function setAudioMuted(muted: boolean): Promise<void> {
   await AsyncStorage.setItem(KEY_MUTED, muted ? '1' : '0');
   cachedMuted = muted;
   // Notify every active useAudioMuted() hook so all surfaces react in
-  // real time — Settings toggle, ambient bed, cinematic player, future
+  // real time, Settings toggle, ambient bed, cinematic player, future
   // voiceover stays in sync without an app restart.
   listeners.forEach((listener) => listener(muted));
 }
@@ -57,7 +57,7 @@ export function useAudioMuted(): [boolean, (m: boolean) => Promise<void>] {
   }, []);
 
   // `set` triggers the pub/sub which updates our local state via the
-  // listener — no need to setMutedState here, avoids a redundant render.
+  // listener, no need to setMutedState here, avoids a redundant render.
   const set = async (m: boolean) => {
     await setAudioMuted(m);
   };

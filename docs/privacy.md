@@ -117,7 +117,7 @@ Depending on where you live, you have the right to:
   the rest, contact support.
 - **Delete** your account and data. Settings → Delete account.
 - **Object** to processing or **withdraw consent** for any processing
-  based on consent (e.g., notifications — toggle off in Settings).
+  based on consent (e.g., notifications, toggle off in Settings).
 - **Port** your data to another service. Use `+chronicle` or contact
   support for a structured export.
 

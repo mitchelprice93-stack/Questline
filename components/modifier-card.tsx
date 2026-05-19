@@ -26,7 +26,7 @@ import type { ActiveModifier } from '../lib/debuffs';
 interface Props {
   modifier: ActiveModifier;
   /** Optional remaining-duration label (only meaningful for buffs with
-   *  expires_at). Caller computes this — keeps the card display-only. */
+   *  expires_at). Caller computes this, keeps the card display-only. */
   remainingLabel?: string | null;
 }
 
@@ -55,7 +55,7 @@ export function ModifierCard({ modifier, remainingLabel }: Props) {
         isBuff ? 'border-emerald-900/40' : 'border-red-900/40'
       }`}
     >
-      {/* Glow overlay — absolute fill behind the content. Buff = amber,
+      {/* Glow overlay, absolute fill behind the content. Buff = amber,
           debuff = red. Pointer-events none so taps still land. */}
       <Animated.View
         pointerEvents="none"

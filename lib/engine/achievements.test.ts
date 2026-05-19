@@ -1,4 +1,4 @@
-// v1.1 — pure achievement check tests.
+// v1.1, pure achievement check tests.
 //
 // These cover the deterministic core: each achievement's earn / not-earn
 // conditions, template grants firing per metadata key, idempotency
@@ -125,7 +125,7 @@ describe('metadataKey', () => {
 
 // ---- onQuestComplete ------------------------------------------------------
 
-describe('checkOnQuestComplete — first_blood', () => {
+describe('checkOnQuestComplete, first_blood', () => {
   test('grants on the very first completion', () => {
     const out = checkOnQuestComplete(
       baseQuestComplete({
@@ -144,13 +144,13 @@ describe('checkOnQuestComplete — first_blood', () => {
     expect(out.toGrant.map((g) => g.code)).not.toContain('first_blood');
   });
 
-  test('not granted at zero completions (defensive — should not happen)', () => {
+  test('not granted at zero completions (defensive, should not happen)', () => {
     const out = checkOnQuestComplete(baseQuestComplete(), EMPTY_STATE);
     expect(out.toGrant.map((g) => g.code)).not.toContain('first_blood');
   });
 });
 
-describe('checkOnQuestComplete — reckoning_day', () => {
+describe('checkOnQuestComplete, reckoning_day', () => {
   test('grants on the third completion of the day', () => {
     const out = checkOnQuestComplete(
       baseQuestComplete({
@@ -174,7 +174,7 @@ describe('checkOnQuestComplete — reckoning_day', () => {
   });
 });
 
-describe('checkOnQuestComplete — legendary tier', () => {
+describe('checkOnQuestComplete, legendary tier', () => {
   test('legendary_deed grants on a single legendary completion', () => {
     const out = checkOnQuestComplete(
       baseQuestComplete({
@@ -224,7 +224,7 @@ describe('checkOnQuestComplete — legendary tier', () => {
   });
 });
 
-describe('checkOnQuestComplete — strategist', () => {
+describe('checkOnQuestComplete, strategist', () => {
   test('grants when active=10 spans 3 factions', () => {
     const out = checkOnQuestComplete(
       baseQuestComplete({
@@ -254,7 +254,7 @@ describe('checkOnQuestComplete — strategist', () => {
   });
 });
 
-describe('checkOnQuestComplete — faction templates', () => {
+describe('checkOnQuestComplete, faction templates', () => {
   test('faction_devotee fires once per faction at 25 completions', () => {
     const totals = emptyTotals();
     totals.completedAllTime = 25;
@@ -322,7 +322,7 @@ describe('checkOnQuestComplete — faction templates', () => {
   });
 });
 
-describe('checkOnQuestComplete — the_comeback', () => {
+describe('checkOnQuestComplete, the_comeback', () => {
   test('fires when ageDaysAtCompletion ≥ 7', () => {
     const out = checkOnQuestComplete(
       baseQuestComplete({
@@ -508,7 +508,7 @@ describe('checkOnCharacterCreated', () => {
     expect(codes).toEqual(expect.arrayContaining(['chronicle_begins', 'known_by_name']));
   });
 
-  test('idempotent — neither re-grants once earned', () => {
+  test('idempotent, neither re-grants once earned', () => {
     expect(
       checkOnCharacterCreated({ hasCharacterTitle: true }, stateWith(['chronicle_begins', 'known_by_name']))
         .toGrant,

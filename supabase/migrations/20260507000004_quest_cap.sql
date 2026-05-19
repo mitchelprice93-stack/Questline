@@ -1,4 +1,4 @@
--- Phase 5.1 — freemium quest cap.
+-- Phase 5.1, freemium quest cap.
 --
 -- Free-tier users can hold at most 5 active quests at any one time.
 -- Hero-tier (paid) users are uncapped. The check runs as a BEFORE INSERT

@@ -1,9 +1,9 @@
-// Account management — change email, change password.
+// Account management, change email, change password.
 //
 // Both flows go through Supabase Auth. The user receives a confirmation
 // email at the new address (or a reset link, for password) and the change
 // only takes effect once they click through. We don't auto-update local
-// state — the next session refresh will pick up the new email.
+// state, the next session refresh will pick up the new email.
 
 import { asError } from './errors';
 import { supabase } from './supabase';

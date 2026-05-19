@@ -1,14 +1,14 @@
--- v1.1 — Achievement system.
+-- v1.1, Achievement system.
 --
 -- Two tables:
---   * achievements_earned   — append-only ledger of granted achievements.
+--   * achievements_earned  , append-only ledger of granted achievements.
 --                             Templated achievements (per-faction, per-arc,
 --                             per-streak-quest) live in metadata as JSONB.
---   * achievement_progress  — running counts for quantitative achievements
+--   * achievement_progress , running counts for quantitative achievements
 --                             (e.g. 3/5 dawn quests), so the UI can show
 --                             "almost there" without re-querying source rows.
 --
--- Granting is client-side (lib/engine/achievementTriggers.ts) per v1.1 spec —
+-- Granting is client-side (lib/engine/achievementTriggers.ts) per v1.1 spec -
 -- the unique index below is the safety net against the offline-queue replay
 -- path double-granting.
 
@@ -52,7 +52,7 @@ create policy "Users insert own earned achievements"
   on public.achievements_earned for insert
   with check (auth.uid() = user_id);
 
--- No update/delete policy — earning is one-way. Reset Character wipes via
+-- No update/delete policy, earning is one-way. Reset Character wipes via
 -- the SECURITY DEFINER reset_character() RPC.
 
 -- ---------------------------------------------------------------------------
@@ -78,7 +78,7 @@ create policy "Users access own progress"
   with check (auth.uid() = user_id);
 
 -- ---------------------------------------------------------------------------
--- profiles.last_seen_at — drives the "Resurrected" achievement (login after
+-- profiles.last_seen_at, drives the "Resurrected" achievement (login after
 -- a 30-day absence). Updated by the client on every session start; nullable
 -- so first-time signups don't trip the absence check.
 -- ---------------------------------------------------------------------------
@@ -86,7 +86,7 @@ alter table public.profiles
   add column if not exists last_seen_at timestamptz;
 
 -- ---------------------------------------------------------------------------
--- reset_character() — extend to clear achievement state alongside the rest
+-- reset_character(), extend to clear achievement state alongside the rest
 -- of the chronicle. Keeps the wipe consistent with the existing semantics
 -- (auth account stays, everything else goes).
 -- ---------------------------------------------------------------------------

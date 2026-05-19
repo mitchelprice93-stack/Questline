@@ -36,7 +36,7 @@ async function loadRCPaywallView() {
  * Paywall route. On native with RC configured we render RevenueCatUI's
  * dashboard-built PaywallView (drop-in, A/B-testable, remote config from
  * RC). On web / unconfigured we fall back to a custom in-world paywall
- * with all three package tiers — same purchase flow underneath.
+ * with all three package tiers, same purchase flow underneath.
  */
 export default function Paywall() {
   const router = useRouter();
@@ -50,7 +50,7 @@ export default function Paywall() {
   // Loading gate: blocks both the RC PaywallView and the custom fallback
   // from rendering until we know which path to use. Without this, the
   // custom fallback flashes for ~200ms while RC's UI is async-loading,
-  // then gets replaced — a visible "double screen" jolt to the user.
+  // then gets replaced, a visible "double screen" jolt to the user.
   const [resolving, setResolving] = useState(true);
 
   useEffect(() => {
@@ -59,7 +59,7 @@ export default function Paywall() {
       // Defensive retry: if the RC SDK isn't configured yet (e.g. the
       // initial configurePurchases call in AuthProvider lost a race or
       // hit a transient network error), retry now before fetching
-      // packages. configurePurchases is idempotent — calling it when
+      // packages. configurePurchases is idempotent, calling it when
       // already configured is a no-op.
       if (!isPurchasesReady() && session?.user.id) {
         await configurePurchases(session.user.id);
@@ -102,7 +102,7 @@ export default function Paywall() {
       const detail = diag ? `\n\nDiagnostic: ${diag}` : '';
       await showInfoMessage(
         'The registry is unreachable',
-        `The Archivist could not reach the registry of pledges. Force-close the app and reopen it — that often clears the silence. If the problem persists, send a dispatch via Settings → Report a bug.${detail}`,
+        `The Archivist could not reach the registry of pledges. Force-close the app and reopen it, that often clears the silence. If the problem persists, send a dispatch via Settings → Report a bug.${detail}`,
       );
       return;
     }
@@ -121,7 +121,7 @@ export default function Paywall() {
       } else {
         await showInfoMessage(
           'Hmm',
-          'The purchase completed but the entitlement didn\'t land. The Tome will reflect the change shortly — try again in a moment if it doesn\'t.',
+          'The purchase completed but the entitlement didn\'t land. The Tome will reflect the change shortly, try again in a moment if it doesn\'t.',
         );
         setBusy(null);
       }
@@ -297,7 +297,7 @@ export default function Paywall() {
             className="rounded-md px-4 py-3 active:opacity-60"
           >
             <Text className="text-center font-body text-base text-stone-600">
-              Not now — return to the Tome
+              Not now, return to the Tome
             </Text>
           </Pressable>
         </Animated.View>
@@ -323,7 +323,7 @@ function PackageCard({
     <Pressable
       onPress={onPress}
       // Unified amber palette so selected and unselected borders sit in
-      // the same color family — previously the jump from stone-700 to
+      // the same color family, previously the jump from stone-700 to
       // amber-700 on selection felt jarring across the three cards.
       className={`rounded-md border-2 p-4 ${
         selected

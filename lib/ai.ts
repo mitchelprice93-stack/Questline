@@ -1,4 +1,4 @@
-// Phase 2.1 — client-side wrapper for the claude-proxy edge function.
+// Phase 2.1, client-side wrapper for the claude-proxy edge function.
 //
 // All AI calls go through this single helper. It posts to the deployed
 // Supabase edge function with the user's JWT (auto-attached by

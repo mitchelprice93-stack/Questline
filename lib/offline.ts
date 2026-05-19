@@ -1,4 +1,4 @@
-// Phase 1.5 follow-up — read-side offline cache.
+// Phase 1.5 follow-up, read-side offline cache.
 //
 // Every successful network fetch stores the result in AsyncStorage under
 // a per-status key. When a fetch fails (no network, server down), callers
@@ -32,7 +32,7 @@ export async function cacheQuests(status: QuestStatus, quests: Quest[]): Promise
       [META_KEY(status), new Date().toISOString()],
     ]);
   } catch (e) {
-    // Cache writes are best-effort — never let a storage failure surface.
+    // Cache writes are best-effort, never let a storage failure surface.
     console.warn('[offline] cacheQuests failed', e);
   }
 }
@@ -59,7 +59,7 @@ export async function readCachedQuests(status: QuestStatus): Promise<CachedQuest
 /**
  * Look up a single cached quest by id across active/completed/abandoned
  * lists. Used by the write-side queue when an RPC (completeQuest) fails
- * for network reasons — we need the quest's tier/title/recurrence to
+ * for network reasons, we need the quest's tier/title/recurrence to
  * synthesize an optimistic result and update local state without hitting
  * the server.
  */
@@ -73,7 +73,7 @@ export async function getCachedQuestById(questId: string): Promise<Quest | null>
 }
 
 /**
- * Optimistic completion — move a quest from the active cache to the
+ * Optimistic completion, move a quest from the active cache to the
  * completed cache, stamping completed_at. For recurring quests we leave
  * the row in active and bump last_completed_at + streak_count instead,
  * mirroring how the server-side trigger behaves on a successful RPC.
@@ -123,7 +123,7 @@ export async function markPendingCompletion(questId: string): Promise<void> {
       ];
       await cacheQuests('completed', nextCompleted);
     } else {
-      // No completed cache yet — seed it with just this row so the
+      // No completed cache yet, seed it with just this row so the
       // user can see their work in the Completed tab right away.
       await cacheQuests('completed', [completedQuest]);
     }
@@ -146,7 +146,7 @@ export async function cacheProfileTotalXp(xp: number): Promise<void> {
 }
 
 /** Read the most recent cached total_xp. Returns 0 if nothing is cached
- *  — caller treats that as "we don't know" and the optimistic estimate
+ * , caller treats that as "we don't know" and the optimistic estimate
  *  will be (0 + baseXp), which the next online refetch will correct. */
 export async function readCachedProfileTotalXp(): Promise<number> {
   try {

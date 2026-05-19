@@ -1,8 +1,8 @@
-// Phase 2.4 — AI quest generation.
+// Phase 2.4, AI quest generation.
 //
 // User types a plain-language endeavor, the Archivist returns a forged quest
 // (title, description, objectives, classification, tier, tactical warnings).
-// The deterministic engine still owns XP — code computes xp_reward from the
+// The deterministic engine still owns XP, code computes xp_reward from the
 // AI's suggested_tier via xpForTier, never trusting the AI to set XP itself.
 
 import { callClaudeProxy, ClaudeProxyError } from './ai';
@@ -48,7 +48,7 @@ export interface GeneratedQuest {
   /** A boon the chronicler earns if they meet the buff's condition on completion. */
   granted_buff: GeneratedBuff;
   /** Active-campaign id the AI thinks this quest advances, if any. Validated
-   *  against the loaded list — null when the AI returned empty string, an
+   *  against the loaded list, null when the AI returned empty string, an
    *  unknown id, or there were no active campaigns to choose from. */
   suggested_campaign_id: string | null;
   /** Faction id the AI thinks this quest counts toward, if any. Same
@@ -56,14 +56,14 @@ export interface GeneratedQuest {
   suggested_faction_id: string | null;
   /** Recurrence cadence inferred from input context ("every day", "weekly",
    *  "monthly", "annually", etc). 'none' for one-shot endeavors. Custom
-   *  intervals aren't inferred — the chronicler picks those manually on
+   *  intervals aren't inferred, the chronicler picks those manually on
    *  the review screen. */
   suggested_recurrence: 'none' | 'daily' | 'weekly' | 'monthly' | 'yearly';
   /** True when the AI call failed and we fell back to a stub. */
   fromFallback: boolean;
 }
 
-// 30s — Sonnet 4.6 with thinking disabled usually returns in 3-8s, but
+// 30s, Sonnet 4.6 with thinking disabled usually returns in 3-8s, but
 // we've seen occasional 15-25s spikes under Anthropic load. The user
 // stays on a loading spinner the whole time, so erring on the side of
 // "wait for the real answer" beats silently dropping to the templated
@@ -126,8 +126,8 @@ function templatedFallback(input: string): GeneratedQuest {
     objectives: [],
     classification: 'side',
     suggested_tier: 'standard',
-    tactical_warnings: ['The Archivist was silent — refine this quest as you see fit.'],
-    // Generic buff so even fallback quests carry a small boon — the user
+    tactical_warnings: ['The Archivist was silent, refine this quest as you see fit.'],
+    // Generic buff so even fallback quests carry a small boon, the user
     // can edit or remove it on the review screen.
     granted_buff: {
       name: "Wanderer's Stride",

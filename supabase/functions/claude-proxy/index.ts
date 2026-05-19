@@ -1,4 +1,4 @@
-// Phase 2.1 — Claude proxy edge function.
+// Phase 2.1, Claude proxy edge function.
 //
 // Single Supabase Edge Function (Deno) that brokers every Claude API call:
 //   * verifies the caller's Supabase JWT
@@ -19,20 +19,22 @@ import Anthropic from 'npm:@anthropic-ai/sdk@0.92.0';
 // Synced from prompts/archivist-v1.md. Update both files together.
 const ARCHIVIST_PROMPT = `You are **The Archivist of Fate**, an ancient chronicler who watches over the lives of mortals and inscribes their deeds upon the Tome. You speak in the voice of a Stephen Fry-style British narrator: erudite, wry, warmly bemused. Slightly archaic without being stuffy. Measured, never breathless.
 
-You attend to one chronicler at a time — the user. You may address them as "chronicler", "wanderer", "seeker", or by their character name once it is known. Refer to their pursuits as "endeavors", "campaigns", or "quests"; their workplaces and studies as "factions" or "guilds". Use these flourishes sparingly — once or twice per response — never as a tic.
+PUNCTUATION RULE (strict). Never use em dashes (—) or en dashes (–) in any output, ever. They are a tell that gives away machine authorship. Use commas, periods, semicolons, colons, or parentheses instead. Where you would have written "X — Y", write "X, Y" or "X. Y" or "X (Y)" or "X: Y" as the context demands. This rule applies to every field of every JSON response and to every line of every prose response.
 
-You never own state. XP totals, level numbers, quest IDs, completion timestamps — these are computed by a deterministic engine. You may *reference* values the user message provides, but you must not invent new ones. You never act as a productivity coach, therapist, doctor, lawyer, or accountant — you narrate, the chronicler chooses their own path. You stay within the lore: no breaking the fourth wall, no mentioning Claude, Anthropic, AI, prompts, or that you are software.
+You attend to one chronicler at a time, the user. You may address them as "chronicler", "wanderer", "seeker", or by their character name once it is known. Refer to their pursuits as "endeavors", "campaigns", or "quests"; their workplaces and studies as "factions" or "guilds". Use these flourishes sparingly, once or twice per response, never as a tic.
+
+You never own state. XP totals, level numbers, quest IDs, completion timestamps: these are computed by a deterministic engine. You may *reference* values the user message provides, but you must not invent new ones. You never act as a productivity coach, therapist, doctor, lawyer, or accountant. You narrate; the chronicler chooses their own path. You stay within the lore: no breaking the fourth wall, no mentioning Claude, Anthropic, AI, prompts, or that you are software.
 
 When the user message asks for structured data (JSON), return only the JSON, no preamble, no markdown fence, and keep the **voice inside the values**, not around them. When the user message asks for prose narration, return prose only.
 
-THE FIREWALL — proactive safety. You **must not introduce or dwell on sensitive topics** of your own accord. This includes self-harm, suicidal ideation, eating disorders, substance abuse, intimate partner violence, child welfare, severe mental health crises, weapons. You do not embellish the chronicler's input by inferring a struggle they did not name. If the chronicler explicitly raises a sensitive topic and clearly seeks support, drop the voice immediately, respond as a plain assistant pointing them to qualified human help (a trusted person, a hotline, a clinician), and end the response.
+THE FIREWALL: proactive safety. You **must not introduce or dwell on sensitive topics** of your own accord. This includes self-harm, suicidal ideation, eating disorders, substance abuse, intimate partner violence, child welfare, severe mental health crises, weapons. You do not embellish the chronicler's input by inferring a struggle they did not name. If the chronicler explicitly raises a sensitive topic and clearly seeks support, drop the voice immediately, respond as a plain assistant pointing them to qualified human help (a trusted person, a hotline, a clinician), and end the response.
 
 Calibrate tone to scale: warm and lightly amused by default; slight dismissal in a friendly way for trivial endeavors; gravitas without sarcasm for legendary ones; brief acknowledgment on completion (the chronicler did the work, you only inscribed it); matter-of-fact on abandonment (no scolding); measured concern on debuffs (no melodrama).
 
 You must never write: real people's names or impersonations, medical/legal/financial/psychiatric advice, instructions for self-harm or illegal acts, sexual or romantic content, slurs or demeaning content, harmful content disguised as in-world flavor. If asked for any of the above, return a brief in-voice deflection ("Some pages of the Tome remain sealed, even to me. Let us speak of a different endeavor.") and offer to continue with the original task.`;
 
 // Cost per 1M tokens. Source: shared/models.md as of skill cache 2026-04-15.
-// Haiku uses the dated ID — the un-dated alias is not guaranteed to resolve
+// Haiku uses the dated ID, the un-dated alias is not guaranteed to resolve
 // across all API versions, while the dated ID is the canonical handle.
 const PRICING: Record<string, { input: number; output: number }> = {
   'claude-sonnet-4-6': { input: 3.0, output: 15.0 },
@@ -90,7 +92,7 @@ const CHARACTER_CREATION_SCHEMA = {
               "Medical resident → 'Aspirant Healer'. " +
               "First-year teacher → 'Initiate of the Lectern'. " +
               "When seniority is unclear, default to 'Initiate' or 'Apprentice'. " +
-              "Keep it short — one or two words.",
+              "Keep it short, one or two words.",
           },
         },
         required: ['name', 'real_world_domain', 'reputation_title'],
@@ -174,12 +176,12 @@ const QUEST_GENERATION_SCHEMA = {
     suggested_campaign_id: {
       type: 'string',
       description:
-        "If exactly one of the chronicler's active campaigns from the context clearly aligns with this endeavor — meaning completing the quest would visibly advance the campaign's real_world_goal — return that campaign's id verbatim. Otherwise return an empty string. Only suggest a match when the alignment is obvious; do not force a campaign onto an unrelated quest. Empty string is the right answer when the chronicler has no active campaigns or none fit.",
+        "If exactly one of the chronicler's active campaigns from the context clearly aligns with this endeavor, meaning completing the quest would visibly advance the campaign's real_world_goal, return that campaign's id verbatim. Otherwise return an empty string. Only suggest a match when the alignment is obvious; do not force a campaign onto an unrelated quest. Empty string is the right answer when the chronicler has no active campaigns or none fit.",
     },
     suggested_faction_id: {
       type: 'string',
       description:
-        "If this endeavor naturally belongs to one of the chronicler's factions — judged from the faction's name and real_world_domain — return that faction's id verbatim. Empty string when no faction fits or the chronicler has no factions. Carpentry quests should land on a carpenter faction, code quests on a software faction, lesson plans on a teaching faction, and so on.",
+        "If this endeavor naturally belongs to one of the chronicler's factions, judged from the faction's name and real_world_domain, return that faction's id verbatim. Empty string when no faction fits or the chronicler has no factions. Carpentry quests should land on a carpenter faction, code quests on a software faction, lesson plans on a teaching faction, and so on.",
     },
     suggested_recurrence: {
       type: 'string',
@@ -191,8 +193,8 @@ const QUEST_GENERATION_SCHEMA = {
         "'monthly' when the input mentions: 'every month', 'monthly', 'each month', 'first of the month', or implies a once-a-month cadence ('pay the rent', 'monthly inventory'). " +
         "'yearly' when the input mentions: 'every year', 'annually', 'yearly', 'every January'/'every December'/etc., 'annual', or implies a once-a-year cadence ('renew the registration', 'birthday'). " +
         "'none' for one-shot endeavors with no obvious cadence ('finish the lab report', 'call the dentist', 'plan the trip'). " +
-        "When in doubt, prefer 'none' — the chronicler can opt into recurrence on the review screen if they want. " +
-        "Do NOT return 'custom' here — custom intervals are too ambiguous to infer reliably; the chronicler picks those manually.",
+        "When in doubt, prefer 'none', the chronicler can opt into recurrence on the review screen if they want. " +
+        "Do NOT return 'custom' here, custom intervals are too ambiguous to infer reliably; the chronicler picks those manually.",
     },
   },
   required: [
@@ -209,7 +211,7 @@ const QUEST_GENERATION_SCHEMA = {
   ],
 };
 
-// Level-up narration — short Archivist commentary on what crossed the
+// Level-up narration, short Archivist commentary on what crossed the
 // threshold. Two to three sentences, voiced over the takeover (text now,
 // ElevenLabs audio when 3.4 lands). Schema is intentionally minimal so the
 // model spends its tokens on the narration rather than structure.
@@ -226,7 +228,7 @@ const LEVEL_UP_NARRATION_SCHEMA = {
   required: ['narration'],
 };
 
-// Reputation retitle — fires after a major / legendary quest tied to a
+// Reputation retitle, fires after a major / legendary quest tied to a
 // faction. The Archivist proposes a new reputation_title that reflects
 // THIS specific deed. Schema is minimal: the model returns one short
 // title, the client decides whether to apply it.
@@ -316,11 +318,11 @@ function buildUserMessage(req: ProxyRequest): { content: string; schema: unknown
           `preserved in real_world_domain. Starting level is your judgement, capped at 12 by spec. ` +
           `first_quest_hook is one or two sentences pointing at the next obvious endeavor.\n\n` +
           `For each faction, set a reputation_title that reflects the chronicler's actual standing in that ` +
-          `domain — read their background, proficiencies, and life_summary for seniority signals (years served, ` +
+          `domain, read their background, proficiencies, and life_summary for seniority signals (years served, ` +
           `roles held, certifications earned, leadership positions). A long-tenured professional should not ` +
           `start as "Initiate"; a brand-new student should not start as "Master". Match the title's flavor to ` +
           `the faction (military → military rank-feel, craft guild → master/journeyman ladder, scholarly → ` +
-          `aspirant/lecturer/scholar). Keep it short — one or two words. When the chronicler gives no signal, ` +
+          `aspirant/lecturer/scholar). Keep it short, one or two words. When the chronicler gives no signal, ` +
           `default to "Initiate" or "Apprentice".`,
         schema: CHARACTER_CREATION_SCHEMA,
       };
@@ -331,7 +333,7 @@ function buildUserMessage(req: ProxyRequest): { content: string; schema: unknown
           `Compose two or three sentences acknowledging the level gained, the deed that tipped them over, ` +
           `and (if relevant) the streak or buff in play. Speak to the chronicler directly. ` +
           `Match the gravitas to the level: warm and lightly proud at low levels, weightier as the numbers climb. ` +
-          `Do not announce the level number explicitly — the takeover screen already shows it. ` +
+          `Do not announce the level number explicitly, the takeover screen already shows it. ` +
           `Return JSON matching the supplied schema with a single 'narration' field.`,
         schema: LEVEL_UP_NARRATION_SCHEMA,
       };
@@ -340,10 +342,10 @@ function buildUserMessage(req: ProxyRequest): { content: string; schema: unknown
         content:
           `The chronicler offers a new endeavor. Their words and current context:\n\n${JSON.stringify(req.payload, null, 2)}\n\n` +
           `Forge a quest. Return JSON matching the supplied schema. ` +
-          `Tier reflects effort — trivial (a few minutes), minor, standard, major, legendary (multi-day or harder). ` +
+          `Tier reflects effort, trivial (a few minutes), minor, standard, major, legendary (multi-day or harder). ` +
           `Classification is daily/side/main/legendary based on cadence. ` +
           `Objectives are an in-order checklist of concrete steps; start with completed=false on every entry. ` +
-          `Tactical warnings are short in-voice notes on scope, dependencies, or risk — leave the array empty if there's nothing useful to say. ` +
+          `Tactical warnings are short in-voice notes on scope, dependencies, or risk, leave the array empty if there's nothing useful to say. ` +
           `\n\n` +
           `Design the granted_buff to FIT THIS SPECIFIC QUEST. The name must reflect the domain of work, not be generic. ` +
           `Pull the imagery from the quest itself. Examples by domain:\n` +
@@ -363,7 +365,7 @@ function buildUserMessage(req: ProxyRequest): { content: string; schema: unknown
           `'on_complete' for simple commitments. The buff should feel earned but not punishing to miss.\n\n` +
           `For suggested_campaign_id: the context includes the chronicler's active campaigns (each with id, arc_name, ` +
           `and real_world_goal). If this endeavor would clearly advance one of those goals, return that campaign's id ` +
-          `EXACTLY as given. Be conservative — only suggest when the connection is obvious from the user's input ` +
+          `EXACTLY as given. Be conservative, only suggest when the connection is obvious from the user's input ` +
           `(e.g. a "study for finals" quest matches a "Pass Organic Chemistry" campaign; a generic "buy groceries" ` +
           `quest matches no campaign). Return an empty string when no campaign fits, when the active campaigns list ` +
           `is empty, or when the connection is only loosely thematic. Never invent an id that wasn't in the context.\n\n` +
@@ -371,7 +373,7 @@ function buildUserMessage(req: ProxyRequest): { content: string; schema: unknown
           `real_world_domain). Match the endeavor to the faction whose real_world_domain naturally claims it ` +
           `(carpentry / building → carpenter faction; coding → software faction; lessons / lectures → teaching ` +
           `faction; clinic / patients → medical faction; military duties → service faction; and so on). Return ` +
-          `that faction's id EXACTLY as given. Be more willing to suggest a faction than a campaign — most ` +
+          `that faction's id EXACTLY as given. Be more willing to suggest a faction than a campaign, most ` +
           `purposeful endeavors belong to some domain. Return empty string only when the quest is genuinely ` +
           `domain-agnostic (e.g. "buy groceries", "call mom") or when the chronicler has no factions. Never ` +
           `invent an id that wasn't in the context.`,
@@ -382,9 +384,9 @@ function buildUserMessage(req: ProxyRequest): { content: string; schema: unknown
         content:
           `The chronicler has just completed a notable deed for one of their factions. Context:\n\n${JSON.stringify(req.payload, null, 2)}\n\n` +
           `Propose a new reputation_title for this faction that reflects THIS specific deed. ` +
-          `It should feel like the Tome inscribed it after watching the work — concrete, in-voice, 1 to 3 words.\n\n` +
+          `It should feel like the Tome inscribed it after watching the work, concrete, in-voice, 1 to 3 words.\n\n` +
           `MANDATORY: the new title MUST be different from the current title. Echoing the existing title is a ` +
-          `failure mode — even if it still fits, propose a fresh take that draws imagery from the specific quest ` +
+          `failure mode, even if it still fits, propose a fresh take that draws imagery from the specific quest ` +
           `just completed. Pull a verb, a tool, or an outcome from the quest's title and description and weave it ` +
           `in. Examples:\n` +
           `  - Carpenter, current "Initiate", just finished "Build a bookshelf" (major) → "Joiner", "Shelf-Wright", "Bookbinder of the Loom"\n` +
@@ -395,7 +397,7 @@ function buildUserMessage(req: ProxyRequest): { content: string; schema: unknown
           `into more specific roles are fine. Avoid bland generics ("Skilled", "Veteran", "Expert") unless the current ` +
           `title is even blander. Match the title's flavor to the faction's real_world_domain (carpentry → craft-guild ` +
           `ranks; medicine → healer ranks; service → military ranks; scholarship → aspirant/lecturer/scholar).\n\n` +
-          `Return JSON with a single 'new_reputation_title' field — ONE string, 1 to 3 words.`,
+          `Return JSON with a single 'new_reputation_title' field, ONE string, 1 to 3 words.`,
         schema: REPUTATION_RETITLE_SCHEMA,
       };
   }
@@ -404,7 +406,7 @@ function buildUserMessage(req: ProxyRequest): { content: string; schema: unknown
 function pickModel(endpoint: ProxyRequest['endpoint']): keyof typeof PRICING {
   // character_creation (once-per-lifetime, sets the chronicle's tone) and
   // level_up_narration (rare, voice-heavy) stay on Sonnet for nuance.
-  // quest_generation runs up to 50x/day on a forgiving schema — the system
+  // quest_generation runs up to 50x/day on a forgiving schema, the system
   // prompt carries the voice and the structure does the rest, so Haiku 4.5
   // gets the round-trip down from 5-15s to 2-4s at 1/3 the cost.
   switch (endpoint) {
@@ -423,15 +425,15 @@ interface EndpointInferenceConfig {
 }
 
 const ENDPOINT_INFERENCE: Record<ProxyRequest['endpoint'], EndpointInferenceConfig> = {
-  // Rich narrative, once-per-lifetime — let the model think.
+  // Rich narrative, once-per-lifetime, let the model think.
   character_creation: { thinking: { type: 'adaptive' }, max_tokens: 4096 },
   // Decomposition task fired up to 50x/day. Already on Haiku 4.5 with
   // thinking disabled; reduced max_tokens from 2048 → 1500 to tighten the
-  // generation tail — typical quest payloads come in around 800-1200
+  // generation tail, typical quest payloads come in around 800-1200
   // tokens, so 1500 is comfortable headroom without giving the model
   // license to ramble. Trims ~10-20% off observed latency.
   quest_generation: { thinking: { type: 'disabled' }, max_tokens: 1500 },
-  // Short narrative, fires only on a level-up — relatively rare. Keep
+  // Short narrative, fires only on a level-up, relatively rare. Keep
   // thinking off for snappy display; cap tokens tight since output is
   // 2-3 sentences.
   level_up_narration: { thinking: { type: 'disabled' }, max_tokens: 512 },
@@ -460,7 +462,7 @@ Deno.serve(async (req) => {
     return jsonResponse({ error: 'Server misconfigured: missing required env var' }, 500);
   }
 
-  // 1. Auth — verify the caller via the JWT they sent.
+  // 1. Auth, verify the caller via the JWT they sent.
   const authHeader = req.headers.get('Authorization');
   if (!authHeader) return jsonResponse({ error: 'Missing Authorization header' }, 401);
   const userClient = createClient(supabaseUrl, anonKey, {
@@ -531,7 +533,7 @@ Deno.serve(async (req) => {
     const stack = e instanceof Error ? e.stack : undefined;
     console.log('[anthropic] call failed:', message);
     if (stack) console.log('[anthropic] stack:', stack);
-    // Best-effort log even on failure — input tokens may be zero if the call never reached the API.
+    // Best-effort log even on failure, input tokens may be zero if the call never reached the API.
     await serviceClient.from('ai_call_log').insert({
       user_id: userId,
       model,

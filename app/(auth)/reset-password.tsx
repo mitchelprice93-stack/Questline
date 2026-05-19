@@ -29,7 +29,7 @@ export default function ResetPassword() {
     try {
       await updatePassword(password);
       // Clear the recovery flag so useProtectedRoute releases the user
-      // back to normal session routing — they'll land on the next gate
+      // back to normal session routing, they'll land on the next gate
       // (character creation or quest board, depending on their state).
       clearPasswordRecovery();
       // Belt-and-suspenders: explicitly push to the quest board. The

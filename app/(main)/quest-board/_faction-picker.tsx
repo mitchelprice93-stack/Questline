@@ -3,7 +3,7 @@
 // completing it auto-increments the faction's reputation_count (the
 // SQL trigger in 20260508000004 does the bumping).
 //
-// Hidden when the user has no factions — leading underscore keeps
+// Hidden when the user has no factions, leading underscore keeps
 // expo-router from treating this as a route.
 //
 // UI delegates to the shared <DropdownPicker> so it matches Tier /

@@ -12,13 +12,13 @@ describe('isCompletedThisPeriod', () => {
     expect(isCompletedThisPeriod('weekly', null, now)).toBe(false);
   });
 
-  test('daily — same UTC day counts as in-period', () => {
+  test('daily, same UTC day counts as in-period', () => {
     const now = new Date('2026-05-03T23:30:00Z');
     expect(isCompletedThisPeriod('daily', '2026-05-03T00:01:00Z', now)).toBe(true);
     expect(isCompletedThisPeriod('daily', '2026-05-03T22:00:00Z', now)).toBe(true);
   });
 
-  test('daily — different UTC day is out of period', () => {
+  test('daily, different UTC day is out of period', () => {
     const now = new Date('2026-05-03T01:00:00Z');
     // Yesterday UTC
     expect(isCompletedThisPeriod('daily', '2026-05-02T23:00:00Z', now)).toBe(false);
@@ -26,14 +26,14 @@ describe('isCompletedThisPeriod', () => {
     expect(isCompletedThisPeriod('daily', '2026-05-04T01:00:00Z', now)).toBe(false);
   });
 
-  test('weekly — same ISO week (Monday-anchored) counts as in-period', () => {
+  test('weekly, same ISO week (Monday-anchored) counts as in-period', () => {
     // 2026-05-04 is a Monday; week runs Mon May 4 → Sun May 10 UTC.
     const now = new Date('2026-05-07T12:00:00Z'); // Thu in that week
     expect(isCompletedThisPeriod('weekly', '2026-05-04T00:00:00Z', now)).toBe(true); // Mon
     expect(isCompletedThisPeriod('weekly', '2026-05-10T23:00:00Z', now)).toBe(true); // Sun
   });
 
-  test('weekly — adjacent week is out of period', () => {
+  test('weekly, adjacent week is out of period', () => {
     const now = new Date('2026-05-07T12:00:00Z');
     // Sun Apr 26 → Sat May 2 ... wait, ISO week of May 4 is Mon-Sun. Previous
     // week ended Sun May 3. May 3 should be out of period.

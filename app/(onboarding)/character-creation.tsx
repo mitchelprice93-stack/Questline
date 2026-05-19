@@ -72,9 +72,9 @@ export default function CharacterCreation() {
     );
   }
 
-  // Anonymous user shouldn't be here — bounce.
+  // Anonymous user shouldn't be here, bounce.
   if (!session) return <Redirect href="/login" />;
-  // Already created a character (e.g. landed on this URL by accident) — bounce.
+  // Already created a character (e.g. landed on this URL by accident), bounce.
   if (profile?.character_name) return <Redirect href="/quest-board" />;
 
   if (submitting) {
@@ -139,7 +139,7 @@ export default function CharacterCreation() {
       {step === 0 && (
         <Step
           title="Your name"
-          flavor="What shall the Tome call you? A title is optional — the Archivist may bestow one regardless."
+          flavor="What shall the Tome call you? A title is optional, the Archivist may bestow one regardless."
         >
           <Field label="Name" value={name} onChange={setName} autoFocus />
           <Field
@@ -202,7 +202,7 @@ export default function CharacterCreation() {
       {step === 5 && (
         <Step
           title="Current campaigns"
-          flavor="The long arcs you're already in motion on — projects, goals, ongoing endeavors. Plain language; the Archivist will name them. Comma- or newline-separated."
+          flavor="The long arcs you're already in motion on, projects, goals, ongoing endeavors. Plain language; the Archivist will name them. Comma- or newline-separated."
         >
           <Field
             label="Goals and ongoing projects"
@@ -217,7 +217,7 @@ export default function CharacterCreation() {
       {step === 6 && (
         <Step
           title="Inventory"
-          flavor="Optional. Anything you carry that matters — tools, gear, totems. Skip if nothing comes to mind."
+          flavor="Optional. Anything you carry that matters, tools, gear, totems. Skip if nothing comes to mind."
         >
           <Field
             label="Items, gear, totems"
@@ -317,7 +317,7 @@ function Hint({ count, singular }: { count: number; singular: string }) {
   );
 }
 
-// Phase 3.5 — sequenced reveal with staggered fade-in for each section.
+// Phase 3.5, sequenced reveal with staggered fade-in for each section.
 // Each Animated.View enters 200ms after the previous, so the chronicle unfolds
 // rather than appearing all at once.
 function Reveal({

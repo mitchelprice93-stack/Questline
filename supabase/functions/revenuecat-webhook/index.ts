@@ -1,4 +1,4 @@
-// Phase 5.1 — RevenueCat → Supabase webhook.
+// Phase 5.1, RevenueCat → Supabase webhook.
 //
 // RevenueCat dispatches every subscription state change to this URL via
 // HTTP POST. We verify the shared-secret Authorization header, look up
@@ -15,10 +15,10 @@
 //
 // Webhook event types we care about (full list:
 // https://www.revenuecat.com/docs/integrations/webhooks/event-types-and-fields):
-//   - INITIAL_PURCHASE / RENEWAL / PRODUCT_CHANGE — set tier=hero, status=active
-//   - CANCELLATION — keep tier=hero until expiry, status=cancelled
-//   - EXPIRATION — set tier=free, status=expired
-//   - BILLING_ISSUE — keep tier=hero but mark status=expired (grace period)
+//   - INITIAL_PURCHASE / RENEWAL / PRODUCT_CHANGE, set tier=hero, status=active
+//   - CANCELLATION, keep tier=hero until expiry, status=cancelled
+//   - EXPIRATION, set tier=free, status=expired
+//   - BILLING_ISSUE, keep tier=hero but mark status=expired (grace period)
 //
 // Deploy: `npx supabase functions deploy revenuecat-webhook --no-verify-jwt`
 // (no-verify-jwt because RC is the caller, not an authenticated user.)
@@ -87,7 +87,7 @@ Deno.serve(async (req) => {
       status = 'active';
       break;
     case 'CANCELLATION':
-      // User cancelled but is still entitled until expiry — keep tier=hero
+      // User cancelled but is still entitled until expiry, keep tier=hero
       // until EXPIRATION fires. UI shows "cancelled, ends <date>".
       tier = 'hero';
       status = 'cancelled';
@@ -98,12 +98,12 @@ Deno.serve(async (req) => {
       status = 'expired';
       break;
     case 'TRANSFER':
-      // Sub moved to a different app_user_id — RC sends two events; the
+      // Sub moved to a different app_user_id, RC sends two events; the
       // user receiving sees INITIAL_PURCHASE, the user losing sees
       // EXPIRATION. We can ignore the TRANSFER event itself.
       return jsonResponse({ ignored: 'TRANSFER' });
     default:
-      // Subscription pause, refund, etc. — log and ignore.
+      // Subscription pause, refund, etc., log and ignore.
       console.log('[rc-webhook] unhandled event type', event.type);
       return jsonResponse({ ignored: event.type });
   }
@@ -112,7 +112,7 @@ Deno.serve(async (req) => {
     ? new Date(event.expiration_at_ms).toISOString()
     : null;
 
-  // Upsert via service role (bypasses RLS — webhook is trusted).
+  // Upsert via service role (bypasses RLS, webhook is trusted).
   const adminClient = createClient(supabaseUrl, serviceKey);
   const { error } = await adminClient
     .from('subscriptions')

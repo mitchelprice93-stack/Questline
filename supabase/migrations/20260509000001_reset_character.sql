@@ -1,4 +1,4 @@
--- Phase 5 follow-up — reset_character() RPC.
+-- Phase 5 follow-up, reset_character() RPC.
 --
 -- Wipes the chronicle for the calling user without touching the auth
 -- account: deletes their factions, campaigns, quests, modifiers, and
@@ -8,7 +8,7 @@
 -- character creation on next launch because apply_character_creation
 -- only runs when character_name is NULL.
 --
--- ai_call_log is intentionally NOT cleared — keeping the lifetime
+-- ai_call_log is intentionally NOT cleared, keeping the lifetime
 -- character_creation count means a reset chronicler can still only
 -- forge one chronicle per day's cost ceiling. push_tokens stays so
 -- the same device keeps receiving notifications post-reset.

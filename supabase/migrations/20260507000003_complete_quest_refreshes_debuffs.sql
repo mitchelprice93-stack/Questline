@@ -1,4 +1,4 @@
--- Phase 4.x — close a hole in debuff application.
+-- Phase 4.x, close a hole in debuff application.
 --
 -- refresh_debuffs_for runs on Character Sheet load, so until now a user
 -- who created an overdue quest and went straight to completing it would

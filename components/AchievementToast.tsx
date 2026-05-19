@@ -1,7 +1,7 @@
 // Floating toast for newly-earned achievements (common / uncommon / rare).
 //
 // The AchievementSurface mounts at most one of these at a time and removes
-// it after AUTO_DISMISS_MS — see AchievementSurface for the queue logic.
+// it after AUTO_DISMISS_MS, see AchievementSurface for the queue logic.
 // This component just renders + animates one card.
 
 import { useEffect } from 'react';

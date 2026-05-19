@@ -1,4 +1,4 @@
--- Phase 4 follow-up — proactive push warnings for approaching deadlines.
+-- Phase 4 follow-up, proactive push warnings for approaching deadlines.
 --
 -- The existing notify_user_of_debuffs only fires after a deadline has
 -- already passed and a debuff has landed. That's reactive. This migration
@@ -38,7 +38,7 @@ create trigger reset_deadline_warning_trigger
   execute function public.reset_deadline_warning();
 
 -- ---------------------------------------------------------------------------
--- notify_approaching_deadlines(p_user_id) — push a warning for any active
+-- notify_approaching_deadlines(p_user_id), push a warning for any active
 -- quest the user has whose deadline lands in the next 24 hours and which
 -- hasn't already been warned about for this deadline. Mirrors the
 -- notify_user_of_debuffs shape: read the user's expo_token, fan out one

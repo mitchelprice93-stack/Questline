@@ -6,7 +6,7 @@
 // the overlay reads them by id.
 //
 // Persistence (whether the user has seen the tutorial) lives in lib/tutorial.ts
-// — this module is just the in-flight UI state.
+//, this module is just the in-flight UI state.
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import type { MutableRefObject, ReactNode } from 'react';
@@ -37,7 +37,7 @@ interface TutorialContextValue {
    * Ref to the layout View that contains the TutorialOverlay. All target
    * rects are measured relative to this View's window-space position so
    * the spotlight coordinates match the overlay's paint coordinates
-   * exactly — no manual yShift / mode hacks. The (main) layout assigns
+   * exactly, no manual yShift / mode hacks. The (main) layout assigns
    * this ref to its flex-1 wrapper View.
    */
   anchorRef: MutableRefObject<View | null>;
@@ -79,12 +79,12 @@ export function TutorialProvider({ children, totalSteps, onStart }: ProviderProp
   // Auto-start on first launch when the user hasn't seen the tutorial.
   //
   // Deferred past the initial mount on purpose. The Replay-from-Settings
-  // flow runs against a warm app — fonts applied, Quest Board mounted, tab
-  // bar measured, async data loaded — so TutorialTarget rects are stable
+  // flow runs against a warm app, fonts applied, Quest Board mounted, tab
+  // bar measured, async data loaded, so TutorialTarget rects are stable
   // and the spotlights land where the yShift overrides expect them.
   // First launch fires the moment MainLayout mounts, against rects captured
   // mid-settle, which puts the spotlights a few pixels off. Wait for any
-  // in-flight transitions, then a short grace period, before activating —
+  // in-flight transitions, then a short grace period, before activating -
   // that matches the warm-app state the Replay path enjoys.
   useEffect(() => {
     let cancelled = false;

@@ -103,7 +103,7 @@ end;
 $$;
 
 -- ---------------------------------------------------------------------------
--- abandon_quest — extended to apply Mark of the Forsaken
+-- abandon_quest, extended to apply Mark of the Forsaken
 -- ---------------------------------------------------------------------------
 create or replace function public.abandon_quest(quest_id uuid)
 returns void
@@ -135,7 +135,7 @@ end;
 $$;
 
 -- ---------------------------------------------------------------------------
--- complete_quest — extended to apply unconsumed debuffs to the base reward
+-- complete_quest, extended to apply unconsumed debuffs to the base reward
 -- and consume them. Difficulty rules:
 --   apprentice / adept    → only the worst (most negative) debuff applies
 --   master / legendary    → all unconsumed debuffs stack (sum of pcts)
@@ -260,7 +260,7 @@ begin
   end if;
 
   -- Consume any unconsumed debuffs. At apprentice/adept only the worst was
-  -- applied, but we mark them all consumed — debuffs are "next completion"
+  -- applied, but we mark them all consumed, debuffs are "next completion"
   -- duration, not "next completion you actually feel".
   update public.modifiers
     set consumed_at = now()
@@ -278,7 +278,7 @@ end;
 $$;
 
 -- ---------------------------------------------------------------------------
--- rest_user — clears unconsumed debuffs older than 14 days. Once-per-week
+-- rest_user, clears unconsumed debuffs older than 14 days. Once-per-week
 -- cooldown enforced via profiles.last_rest_at. Returns the number of debuffs
 -- cleared so the UI can confirm the action.
 -- ---------------------------------------------------------------------------
@@ -301,7 +301,7 @@ begin
   select last_rest_at into v_last_rest from public.profiles where id = v_user_id;
 
   if v_last_rest is not null and now() - v_last_rest < interval '7 days' then
-    raise exception 'Rest cooldown — try again after %',
+    raise exception 'Rest cooldown, try again after %',
       to_char(v_last_rest + interval '7 days', 'YYYY-MM-DD HH24:MI')
       using errcode = 'P0004';
   end if;

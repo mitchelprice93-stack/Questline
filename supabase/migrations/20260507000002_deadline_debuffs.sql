@@ -1,4 +1,4 @@
--- Phase 4.x — debuff trigger reworked: deadline-miss instead of "untouched".
+-- Phase 4.x, debuff trigger reworked: deadline-miss instead of "untouched".
 --
 -- The 3-day / 7-day "you let it sit" debuffs punished long-tail work
 -- (year-long campaigns) for being long-tail. Deadlines are user-set
@@ -32,7 +32,7 @@ begin
 end $$;
 
 -- ---------------------------------------------------------------------------
--- refresh_debuffs_for — same idempotent shape, now keyed off deadlines.
+-- refresh_debuffs_for, same idempotent shape, now keyed off deadlines.
 --   1+ day overdue   → Cobwebs of Procrastination (-10%)
 --   7+ days overdue  → Curse of the Idle Blade   (-50%)
 -- A quest with no deadline is exempt from these checks entirely.
@@ -77,7 +77,7 @@ begin
         user_id, type, name, effect_description, xp_modifier_pct, source_kind, quest_id
       )
       select p_user_id, 'debuff', 'Curse of the Idle Blade',
-             'XP halved on the next completion — the deadline has long since passed.',
+             'XP halved on the next completion, the deadline has long since passed.',
              -50, 'deadline_long_overdue', v_quest.id
       where not exists (
         select 1 from public.modifiers
@@ -89,7 +89,7 @@ begin
         user_id, type, name, effect_description, xp_modifier_pct, source_kind, quest_id
       )
       select p_user_id, 'debuff', 'Cobwebs of Procrastination',
-             '−10% XP on the next completion — the hour has passed.',
+             '−10% XP on the next completion, the hour has passed.',
              -10, 'deadline_missed', v_quest.id
       where not exists (
         select 1 from public.modifiers

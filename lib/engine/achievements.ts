@@ -1,4 +1,4 @@
-// v1.1 — Achievement registry + pure check functions.
+// v1.1, Achievement registry + pure check functions.
 //
 // Pure TypeScript. No React, no Supabase, no I/O. Mirrors the discipline of
 // the XP engine: code owns the math, the AI never decides who earns what,
@@ -14,7 +14,7 @@
 //   5. Newly-granted codes are pushed to the in-app feed for surfacing.
 //
 // The metadata column on achievements_earned is the discriminator for
-// templated achievements — same code, different instance per faction / arc /
+// templated achievements, same code, different instance per faction / arc /
 // streak quest. Checks pass deterministic metadata (faction_id, arc_name) so
 // the unique index in the migration is the safety net against double-grants
 // from the offline-queue replay path.
@@ -35,7 +35,7 @@ export interface Achievement {
   hidden: boolean;
   /** True = may be earned multiple times with different metadata. */
   isTemplate: boolean;
-  /** For quantitative achievements — the goal needed to earn. Drives the
+  /** For quantitative achievements, the goal needed to earn. Drives the
    *  "13/30" hint shown on locked cards once 50% progress is logged. */
   targetValue?: number;
   /** Optional in-voice hint shown on the locked card once progress crosses
@@ -45,7 +45,7 @@ export interface Achievement {
 
 // ---- Registry --------------------------------------------------------------
 // Order in this array determines display order on the Achievements screen.
-// 24 entries — Rank Ascended (per-class-title) is intentionally omitted in
+// 24 entries, Rank Ascended (per-class-title) is intentionally omitted in
 // v1.1 because the underlying "title changes every 5 levels" mechanic doesn't
 // exist; character_title is set once at character creation and stays put.
 
@@ -330,13 +330,13 @@ export interface EarnedState {
   oneShotCodes: ReadonlySet<string>;
   /**
    * Templated achievements already earned, keyed by code.
-   * Each value is the set of "metadata keys" — see metadataKey() — already
+   * Each value is the set of "metadata keys", see metadataKey(), already
    * granted under that code.
    */
   templates: ReadonlyMap<string, ReadonlySet<string>>;
 }
 
-/** Stable string key for a metadata object — so `templates.get(code).has(key)`
+/** Stable string key for a metadata object, so `templates.get(code).has(key)`
  *  matches whichever insert order the rows came back in. Templates that need
  *  multi-field metadata (faction_id + faction_name, etc.) use the *identity*
  *  field (faction_id) to key on; the rest is display sugar. */
@@ -350,7 +350,7 @@ export function metadataKey(code: string, metadata: Record<string, unknown> | nu
     case 'forge_master':
       return String(metadata.faction_id ?? '');
     default:
-      // Generic fallback — sort keys for stability across object spreads.
+      // Generic fallback, sort keys for stability across object spreads.
       return JSON.stringify(
         Object.fromEntries(
           Object.entries(metadata).sort(([a], [b]) => a.localeCompare(b)),
@@ -372,7 +372,7 @@ export interface CompletedQuestRecord {
   completed_at: string;
   tier: 'trivial' | 'minor' | 'standard' | 'major' | 'legendary';
   faction_id: string | null;
-  /** Set on a recurring quest's MOST RECENT completion only — used by the
+  /** Set on a recurring quest's MOST RECENT completion only, used by the
    *  Comeback check (gap since last_completed_at). For one-shot quests this
    *  is the create→complete gap. */
   ageDaysAtCompletion: number;
@@ -381,7 +381,7 @@ export interface CompletedQuestRecord {
 export interface QuestCompleteCheckInput {
   /** The quest just completed. */
   quest: CompletedQuestRecord;
-  /** All factions the user has, with display names — for template metadata. */
+  /** All factions the user has, with display names, for template metadata. */
   factionsById: Map<string, { name: string }>;
   /** Aggregate snapshot AFTER the just-completed quest is included. */
   totals: {
@@ -428,7 +428,7 @@ export interface UserLoginInput {
 
 export interface CharacterCreatedInput {
   /** Set true when apply_character_creation persisted a non-null
-   *  character_title — that's enough to fire "Known by Name" in v1.1. */
+   *  character_title, that's enough to fire "Known by Name" in v1.1. */
   hasCharacterTitle: boolean;
 }
 
@@ -455,14 +455,14 @@ export function checkOnQuestComplete(
     grant.push({ code, metadata });
   };
 
-  // first_blood — first completion ever.
+  // first_blood, first completion ever.
   if (t.completedAllTime >= 1) tryGrant('first_blood');
 
-  // reckoning_day — 3 completions in one calendar day.
+  // reckoning_day, 3 completions in one calendar day.
   progress.push({ code: 'reckoning_day', currentValue: Math.min(t.completedToday, 3), targetValue: 3 });
   if (t.completedToday >= 3) tryGrant('reckoning_day');
 
-  // bountiful_harvest — 50 in one calendar month.
+  // bountiful_harvest, 50 in one calendar month.
   progress.push({
     code: 'bountiful_harvest',
     currentValue: Math.min(t.completedThisMonth, 50),
@@ -470,15 +470,15 @@ export function checkOnQuestComplete(
   });
   if (t.completedThisMonth >= 50) tryGrant('bountiful_harvest');
 
-  // dawns_own — 5 completions before 9 AM (cumulative, lifetime).
+  // dawns_own, 5 completions before 9 AM (cumulative, lifetime).
   progress.push({ code: 'dawns_own', currentValue: Math.min(t.completedBefore9am, 5), targetValue: 5 });
   if (t.completedBefore9am >= 5) tryGrant('dawns_own');
 
-  // night_watch — 5 completions at/after 10 PM.
+  // night_watch, 5 completions at/after 10 PM.
   progress.push({ code: 'night_watch', currentValue: Math.min(t.completedAfter10pm, 5), targetValue: 5 });
   if (t.completedAfter10pm >= 5) tryGrant('night_watch');
 
-  // polymath — 5 distinct factions touched.
+  // polymath, 5 distinct factions touched.
   progress.push({
     code: 'polymath',
     currentValue: Math.min(t.distinctFactionsCompleted, 5),
@@ -486,10 +486,10 @@ export function checkOnQuestComplete(
   });
   if (t.distinctFactionsCompleted >= 5) tryGrant('polymath');
 
-  // legendary_deed — at least one legendary completion.
+  // legendary_deed, at least one legendary completion.
   if (input.quest.tier === 'legendary') tryGrant('legendary_deed');
 
-  // triple_legend — 3 legendary completions cumulative.
+  // triple_legend, 3 legendary completions cumulative.
   progress.push({
     code: 'triple_legend',
     currentValue: Math.min(t.legendaryCompletions, 3),
@@ -497,15 +497,15 @@ export function checkOnQuestComplete(
   });
   if (t.legendaryCompletions >= 3) tryGrant('triple_legend');
 
-  // the_comeback — a quest neglected 7+ days, then completed.
+  // the_comeback, a quest neglected 7+ days, then completed.
   if (input.quest.ageDaysAtCompletion >= 7) tryGrant('the_comeback');
 
-  // strategist — 10 active quests across 3+ factions.
+  // strategist, 10 active quests across 3+ factions.
   if (input.totals.activeQuests.count >= 10 && input.totals.activeQuests.distinctFactions >= 3) {
     tryGrant('strategist');
   }
 
-  // faction_devotee (25 / faction) and forge_master (100 / faction) — template
+  // faction_devotee (25 / faction) and forge_master (100 / faction), template
   // achievements keyed by faction_id. Only fires for the just-completed quest's
   // faction so a single completion doesn't spam grants for unrelated factions.
   const fid = input.quest.faction_id;
@@ -545,15 +545,15 @@ export function checkOnStreakMilestone(
     grant.push({ code, metadata });
   };
 
-  // first_oath_held — any recurring quest hits a 7-streak.
+  // first_oath_held, any recurring quest hits a 7-streak.
   if (input.newStreak >= 7) tryGrant('first_oath_held');
 
-  // keeper_of_oaths — daily-recurring quest specifically reaches a 7-streak
+  // keeper_of_oaths, daily-recurring quest specifically reaches a 7-streak
   // (a "perfect" 7-day cadence). Spec lists this separately from
   // first_oath_held so users can earn both off the same milestone.
   if (input.newStreak >= 7 && input.recurrence === 'daily') tryGrant('keeper_of_oaths');
 
-  // long_watch / unbroken — 30 / 100-streak on a single quest. Progress is
+  // long_watch / unbroken, 30 / 100-streak on a single quest. Progress is
   // tracked per-quest via the quest's streak_count, so we just push the
   // current streak as the in-progress hint.
   progress.push({
@@ -586,7 +586,7 @@ export function checkOnQuestAbandon(
 
 export function checkOnDebuffClear(state: EarnedState): CheckResult {
   // Caller only invokes this when restUser cleared >0 debuffs, and rest only
-  // clears debuffs older than 14 days — so by the time we reach the pure check
+  // clears debuffs older than 14 days, so by the time we reach the pure check
   // the condition is already satisfied. The state lookup is the only gate.
   const grant: GrantCandidate[] = [];
   if (!alreadyEarned(state, 'penitent', null)) {

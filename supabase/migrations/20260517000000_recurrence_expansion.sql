@@ -1,11 +1,11 @@
--- Phase 5.x — expand quest recurrence beyond daily/weekly.
+-- Phase 5.x, expand quest recurrence beyond daily/weekly.
 --
 -- Adds monthly, yearly, and custom (every-N-days/weeks/months) cadences.
 -- Custom requires two new columns to carry the interval + unit pair.
 --
 -- All four existing/new recurrence handlers (the period-collision check
 -- and the streak math) get extended to cover the new values. complete_quest
--- is the only function that needs PL/pgSQL surgery — the buff/debuff
+-- is the only function that needs PL/pgSQL surgery, the buff/debuff
 -- engines reference `v_recurrence` only for the same two checks, both of
 -- which now live inside complete_quest's logic. (debuff_engine.sql doesn't
 -- override complete_quest after this migration runs.)

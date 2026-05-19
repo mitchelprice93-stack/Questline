@@ -1,8 +1,8 @@
-// Phase 5.x — sound effects.
+// Phase 5.x, sound effects.
 //
 // Every SFX in `prompts/sound-effects-brief.md` gets one preloaded
 // expo-audio player here. Trigger any of them with `playSfx('button_tap')`
-// from anywhere in the app — the call is sync and idempotent (no-ops if
+// from anywhere in the app, the call is sync and idempotent (no-ops if
 // the user has audio muted via the Settings toggle).
 //
 // Players are created lazily on first play() so the import has no startup
@@ -45,7 +45,7 @@ const VOLUMES: Partial<Record<SfxName, number>> = {
   toggle_on: 0.6,
   toggle_off: 0.6,
   quill_scratch: 0.4, // ambient flavor, very quiet
-  // Moment sounds default to 1.0 — they're meant to land.
+  // Moment sounds default to 1.0, they're meant to land.
 };
 
 const players: Partial<Record<SfxName, AudioPlayer>> = {};
@@ -60,7 +60,7 @@ function getPlayer(name: SfxName): AudioPlayer {
   return p;
 }
 
-// Cached mute pref. Refreshed on every play() — the read is cheap
+// Cached mute pref. Refreshed on every play(), the read is cheap
 // (AsyncStorage) but synchronous-with-await; we cache the last value
 // so a tap that happens after the user toggles mute respects it on
 // the *next* tap, which is fine for SFX latency-wise.
@@ -80,10 +80,10 @@ async function refreshMutedFlag() {
 void refreshMutedFlag();
 
 /**
- * Play a sound effect. Fire-and-forget — never throws, never returns a
+ * Play a sound effect. Fire-and-forget, never throws, never returns a
  * promise. Honors the audio-mute pref; if muted, the call is a no-op.
  *
- * Call this from anywhere — Pressable onPress handlers, RPC success
+ * Call this from anywhere, Pressable onPress handlers, RPC success
  * paths, useEffect on takeover mount, etc. It's safe to call on every
  * render; the underlying player is shared and re-seeked.
  */
@@ -94,7 +94,7 @@ export function playSfx(name: SfxName): void {
 
   try {
     const p = getPlayer(name);
-    // seekTo(0) lets a still-playing sound retrigger from the start —
+    // seekTo(0) lets a still-playing sound retrigger from the start -
     // useful for rapid button mashing.
     p.seekTo(0);
     p.play();
@@ -134,7 +134,7 @@ export function stopLoopSfx(name: SfxName): void {
   }
 }
 
-/** Pause and release every player. Currently unused — call this if we
+/** Pause and release every player. Currently unused, call this if we
  *  ever need to free up the audio session (e.g. before recording). */
 export function disposeSfx(): void {
   for (const name of Object.keys(players) as SfxName[]) {
@@ -143,7 +143,7 @@ export function disposeSfx(): void {
     try {
       p.pause();
     } catch {
-      // ignore — best-effort cleanup
+      // ignore, best-effort cleanup
     }
     delete players[name];
   }

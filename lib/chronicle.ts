@@ -1,4 +1,4 @@
-// `+chronicle` export — dumps the user's full state as a plain-text file.
+// `+chronicle` export, dumps the user's full state as a plain-text file.
 //
 // Works cross-platform: on web we trigger a Blob download; on native we
 // write to FileSystem and hand off to the Sharing API. Generation is pure
@@ -54,7 +54,7 @@ async function loadSnapshot(): Promise<ChronicleSnapshot> {
 }
 
 function shortDate(iso: string | null): string {
-  if (!iso) return '—';
+  if (!iso) return '-';
   const d = new Date(iso);
   if (isNaN(d.getTime())) return iso;
   return d.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
@@ -80,7 +80,7 @@ function formatQuest(q: Quest): string {
 }
 
 /**
- * Build the chronicle string. Pure over its input — see the test for shape.
+ * Build the chronicle string. Pure over its input, see the test for shape.
  */
 export function renderChronicle(snap: ChronicleSnapshot, now: Date = new Date()): string {
   const lines: string[] = [];
@@ -152,7 +152,7 @@ export function renderChronicle(snap: ChronicleSnapshot, now: Date = new Date())
     lines.push('');
   }
 
-  lines.push('— end of chronicle —');
+  lines.push('- end of chronicle -');
   return lines.join('\n');
 }
 
@@ -180,7 +180,7 @@ export async function shareChronicle(): Promise<void> {
   const filename = `questline-chronicle-${date}.txt`;
 
   if (Platform.OS === 'web') {
-    // Trigger an anchor click — browser saves as the requested filename.
+    // Trigger an anchor click, browser saves as the requested filename.
     const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');

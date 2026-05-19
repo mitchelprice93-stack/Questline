@@ -1,4 +1,4 @@
--- Phase 4.3 follow-up — remote push for debuff warnings.
+-- Phase 4.3 follow-up, remote push for debuff warnings.
 --
 -- Adds a push_tokens table (one Expo push token per user), a notified_at
 -- column on modifiers so each debuff is announced exactly once, and
@@ -11,7 +11,7 @@
 
 create extension if not exists pg_net;
 
--- One row per user. The latest token wins — we upsert on user_id.
+-- One row per user. The latest token wins, we upsert on user_id.
 create table if not exists public.push_tokens (
   user_id uuid primary key references public.profiles (id) on delete cascade,
   expo_token text not null,
@@ -20,7 +20,7 @@ create table if not exists public.push_tokens (
 
 alter table public.push_tokens enable row level security;
 
--- RLS — caller manages only their own row. The dispatch path runs under
+-- RLS, caller manages only their own row. The dispatch path runs under
 -- security definer so it can read every user's token without a separate
 -- "service" policy.
 create policy "Users read own push token"
@@ -44,9 +44,9 @@ create policy "Users delete own push token"
 alter table public.modifiers add column if not exists notified_at timestamptz;
 
 -- ---------------------------------------------------------------------------
--- notify_user_of_debuffs(p_user_id) — dispatches Expo push for any
+-- notify_user_of_debuffs(p_user_id), dispatches Expo push for any
 -- unconsumed, unnotified debuffs the user has. Marks them notified after
--- the request fires (we don't wait for the response — pg_net is async).
+-- the request fires (we don't wait for the response, pg_net is async).
 -- ---------------------------------------------------------------------------
 create or replace function public.notify_user_of_debuffs(p_user_id uuid)
 returns int

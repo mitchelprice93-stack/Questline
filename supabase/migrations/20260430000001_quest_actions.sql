@@ -1,14 +1,14 @@
 -- Phase 1.5: atomic quest action RPCs.
 --
 -- Both functions run as the calling user (security invoker), so RLS policies
--- on quests / xp_log / profiles still apply — a user cannot act on someone
+-- on quests / xp_log / profiles still apply, a user cannot act on someone
 -- else's quests because the policies on `select`/`update` filter the rows
 -- before the function sees them.
 
 -- ---------------------------------------------------------------------------
 -- complete_quest: marks a quest completed, appends to xp_log, increments
 -- profile.total_xp atomically. Returns the new total_xp + the xp granted.
--- Buffs / debuffs are NOT applied here — that's caller-side via the XP engine
+-- Buffs / debuffs are NOT applied here, that's caller-side via the XP engine
 -- once the modifiers system goes live.
 -- ---------------------------------------------------------------------------
 create or replace function public.complete_quest(quest_id uuid)

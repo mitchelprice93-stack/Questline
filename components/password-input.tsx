@@ -2,7 +2,7 @@
 // login, signup, and password-reset screens so every password field in
 // the app behaves identically.
 //
-// Visibility is local state per input — toggling one field doesn't affect
+// Visibility is local state per input, toggling one field doesn't affect
 // any sibling fields (matches OS-keychain UX on iOS and Android).
 
 import { MaterialCommunityIcons } from '@expo/vector-icons';

@@ -1,4 +1,4 @@
-// Phase 4.3 — local notifications.
+// Phase 4.3, local notifications.
 //
 // Web: expo-notifications has no scheduling API in the browser, so every
 // helper here returns gracefully (early return / null). On native we ask
@@ -18,8 +18,8 @@ import { supabase } from './supabase';
 
 // AsyncStorage keys.
 const KEY_QUEST_NOTIFICATIONS = 'questline.notifications.questIds'; // map quest_id -> [scheduledIds]
-const KEY_CHECK_IN_TIME = 'questline.notifications.checkInTime'; // LEGACY 'HH:MM' or 'off' — migrated on first read
-const KEY_CHECK_IN_NOTIF = 'questline.notifications.checkInId'; // LEGACY single scheduled id — migrated on first read
+const KEY_CHECK_IN_TIME = 'questline.notifications.checkInTime'; // LEGACY 'HH:MM' or 'off', migrated on first read
+const KEY_CHECK_IN_NOTIF = 'questline.notifications.checkInId'; // LEGACY single scheduled id, migrated on first read
 const KEY_CHECK_IN_SCHEDULE = 'questline.notifications.checkInSchedule'; // JSON of CheckInSchedule
 const KEY_CHECK_IN_NOTIF_IDS = 'questline.notifications.checkInIds'; // JSON array of scheduled ids
 const KEY_AUTO_PROMPT_SHOWN = 'questline.notifications.autoPromptShown'; // boolean
@@ -27,7 +27,7 @@ const KEY_AUTO_PROMPT_SHOWN = 'questline.notifications.autoPromptShown'; // bool
 /**
  * Has the just-in-time permission prompt already been shown to this device?
  * Used by the quest-creation flow to prompt for notifications the FIRST
- * time a chronicler creates a recurring (daily/weekly) quest — that's the
+ * time a chronicler creates a recurring (daily/weekly) quest, that's the
  * moment notifications actually matter. After that, they can toggle from
  * Settings if they declined.
  */
@@ -49,7 +49,7 @@ export async function markAutoPromptShown(): Promise<void> {
 
 const isNative = Platform.OS === 'ios' || Platform.OS === 'android';
 
-// Foreground display behavior — show banner + sound while the app is open
+// Foreground display behavior, show banner + sound while the app is open
 // instead of silently dropping the notification.
 if (isNative) {
   Notifications.setNotificationHandler({
@@ -102,7 +102,7 @@ export async function requestPermission(): Promise<PermissionStatus> {
  *
  * Expo's push system requires a `projectId` from app.json. If that's
  * missing (e.g. local dev without EAS-linked project) we silently skip
- * registration — local notifications still work.
+ * registration, local notifications still work.
  */
 export async function registerPushTokenForCurrentUser(): Promise<void> {
   if (!isNative) return;
@@ -134,7 +134,7 @@ export async function registerPushTokenForCurrentUser(): Promise<void> {
       .from('push_tokens')
       .upsert({ user_id: user.id, expo_token: expoToken, updated_at: new Date().toISOString() });
   } catch (e) {
-    // Swallow — push registration failure shouldn't disrupt the app.
+    // Swallow, push registration failure shouldn't disrupt the app.
     console.warn('[push] registerPushTokenForCurrentUser failed', errorMessage(e));
   }
 }
@@ -182,7 +182,7 @@ export async function cancelDeadlineReminders(questId: string): Promise<void> {
  * Schedule reminder notifications for a quest's deadline at 24h-before and
  * 1h-before. Past timestamps are skipped, so a deadline 30 minutes from now
  * will only get the 1h reminder (which has already passed) and effectively
- * be a no-op — that's fine.
+ * be a no-op, that's fine.
  *
  * Idempotent: cancels any prior reminders for this quest first.
  */
@@ -196,7 +196,7 @@ export async function scheduleDeadlineReminders(
   if (!deadlineIso) return;
 
   const status = await getPermissionStatus();
-  if (status !== 'granted') return; // silently skip — user can grant later
+  if (status !== 'granted') return; // silently skip, user can grant later
 
   const deadline = new Date(deadlineIso);
   if (isNaN(deadline.getTime())) return;
@@ -248,7 +248,7 @@ export async function scheduleDeadlineReminders(
 // ---- Check-in schedule -----------------------------------------------------
 //
 // The check-in nudge supports four cadences: off, daily, weekly (one weekday),
-// and custom (any subset of weekdays). All cadences share one time-of-day —
+// and custom (any subset of weekdays). All cadences share one time-of-day -
 // per-day times would mean a row-per-day editor and a more complex schedule
 // shape; revisit if testers ask for it. Day indices use the JS Date.getDay()
 // convention: 0 = Sunday … 6 = Saturday. The expo-notifications CALENDAR
@@ -272,7 +272,7 @@ export async function getCheckInSchedule(): Promise<CheckInSchedule> {
     const raw = await AsyncStorage.getItem(KEY_CHECK_IN_SCHEDULE);
     if (raw) {
       const parsed = JSON.parse(raw) as CheckInSchedule;
-      // Light shape check — anything malformed falls back to 'off'.
+      // Light shape check, anything malformed falls back to 'off'.
       if (parsed && typeof parsed === 'object' && 'cadence' in parsed) {
         return parsed;
       }
@@ -291,7 +291,7 @@ export async function getCheckInSchedule(): Promise<CheckInSchedule> {
 }
 
 /**
- * LEGACY shim — older callers may still import this. Returns 'off' or
+ * LEGACY shim, older callers may still import this. Returns 'off' or
  * 'HH:MM' derived from the new schedule. Daily/weekly/custom all surface
  * the underlying time; off returns 'off'.
  */
@@ -332,7 +332,7 @@ const CHECK_IN_CONTENT = {
 
 /**
  * Persist the schedule and (re)schedule the corresponding local notifications.
- * Single source of truth for both writes — callers don't need to cancel first.
+ * Single source of truth for both writes, callers don't need to cancel first.
  */
 export async function setCheckInSchedule(schedule: CheckInSchedule): Promise<void> {
   await AsyncStorage.setItem(KEY_CHECK_IN_SCHEDULE, JSON.stringify(schedule));
@@ -411,7 +411,7 @@ export async function setCheckInSchedule(schedule: CheckInSchedule): Promise<voi
 }
 
 /**
- * LEGACY shim — keeps the older single-time API working. Maps 'HH:MM' to
+ * LEGACY shim, keeps the older single-time API working. Maps 'HH:MM' to
  * a daily cadence and 'off' to off. Internally calls setCheckInSchedule.
  */
 export async function setCheckInTime(time: 'off' | string): Promise<void> {

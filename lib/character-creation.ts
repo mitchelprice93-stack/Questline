@@ -1,4 +1,4 @@
-// Phase 2.3 — character creation flow.
+// Phase 2.3, character creation flow.
 //
 // Drives the AI call (with timeout + templated fallback) and the atomic
 // apply_character_creation RPC.
@@ -20,7 +20,7 @@ export interface CharacterCreationInput {
   factions: string[];
   /** Free-form education, training, accomplishments. */
   proficiencies: string;
-  /** Free-form description of current state — drives starting level fallback. */
+  /** Free-form description of current state, drives starting level fallback. */
   life_summary: string;
   /** Plain-language goals / current projects. */
   campaigns: string[];
@@ -57,7 +57,7 @@ export interface CharacterSheetResult {
 const AI_TIMEOUT_MS = 6_000;
 const FALLBACK_TITLE = 'The Wanderer';
 const FALLBACK_QUEST_HOOK =
-  'A blank page awaits the first inscription — choose any endeavor and let the Tome record it.';
+  'A blank page awaits the first inscription, choose any endeavor and let the Tome record it.';
 
 /**
  * Wraps a promise with a hard timeout. The promise keeps running in the
@@ -122,7 +122,7 @@ export async function generateCharacterSheet(
     );
     return { ...result.data, fromFallback: false };
   } catch (e) {
-    // Distinguish rate-limit from other failures only for logging — both fall back.
+    // Distinguish rate-limit from other failures only for logging, both fall back.
     if (e instanceof ClaudeProxyError && e.isRateLimited()) {
       console.warn('character_creation rate-limited; using fallback', e.message);
     } else {
@@ -160,7 +160,7 @@ export async function applyCharacterSheet(
   if (error) throw asError(error);
 
   // Fire chronicle_begins (always) and known_by_name (when the AI assigned
-  // a non-empty title). Fire-and-forget — a failed achievement insert never
+  // a non-empty title). Fire-and-forget, a failed achievement insert never
   // blocks the user from entering the app.
   try {
     const {

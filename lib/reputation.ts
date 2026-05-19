@@ -1,11 +1,11 @@
-// Reputation retitle — fires after a major or legendary quest tied to a
+// Reputation retitle, fires after a major or legendary quest tied to a
 // faction completes. The Archivist proposes a fresh in-voice title that
 // reflects the specific deed, and we persist it via the existing
 // updateFaction helper.
 //
 // This is a best-effort enhancement: if the AI call fails (rate limit,
 // timeout, etc.) we silently skip. The completion flow has already
-// shown the user their XP / buff / level changes — a missing title
+// shown the user their XP / buff / level changes, a missing title
 // upgrade isn't worth surfacing as an error.
 
 import { callClaudeProxy, ClaudeProxyError } from './ai';
@@ -75,7 +75,7 @@ export async function retitleFactionFromQuest(
   factionId: string,
   quest: Pick<Quest, 'title' | 'description' | 'tier' | 'classification'>,
 ): Promise<RetitleResult | null> {
-  // Fetch the latest faction row — post-trigger so reputation_count is
+  // Fetch the latest faction row, post-trigger so reputation_count is
   // current. RLS gates this to the caller's own factions.
   const { data, error } = await supabase
     .from('factions')

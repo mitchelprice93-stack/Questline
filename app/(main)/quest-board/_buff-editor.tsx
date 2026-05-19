@@ -109,7 +109,7 @@ export function BuffEditor({ draft, onChange, questTier, disabled }: Props) {
           + Attach a granted buff
         </Text>
         <Text className="mt-0.5 text-center font-body text-lg text-stone-500">
-          A reward beyond XP — applies to the next completion if its condition is met.
+          A reward beyond XP, applies to the next completion if its condition is met.
         </Text>
       </Pressable>
     );

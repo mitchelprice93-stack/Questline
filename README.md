@@ -37,7 +37,7 @@ The `claude-proxy` edge function brokers every Claude API call. To deploy:
    - **Dashboard:** [Project Settings → Edge Functions → Secrets](https://supabase.com/dashboard/project/_/settings/functions). Name `ANTHROPIC_API_KEY`, paste the `sk-ant-…` value.
    - **CLI:** `npx supabase secrets set ANTHROPIC_API_KEY=sk-ant-... --project-ref <ref>`
 2. Deploy: `npx supabase functions deploy claude-proxy --project-ref <ref>` (requires `npx supabase login`).
-3. The function picks up `SUPABASE_URL`, `SUPABASE_ANON_KEY`, and `SUPABASE_SERVICE_ROLE_KEY` automatically — no further config needed.
+3. The function picks up `SUPABASE_URL`, `SUPABASE_ANON_KEY`, and `SUPABASE_SERVICE_ROLE_KEY` automatically, no further config needed.
 
 Cost guardrails enforced server-side: $0.50/day hard ceiling per user, 1 character creation per lifetime, 50 quest generations per day. Every call is logged to `public.ai_call_log` for auditing.
 
@@ -57,10 +57,10 @@ npx expo start --ios       # requires macOS
 
 ## Scripts
 
-- `npm run typecheck` — `tsc --noEmit`
-- `npm run lint` — `expo lint` (Expo's ESLint flat config + Prettier)
-- `npm run format` / `npm run format:check` — Prettier
-- `npm test` / `npm run test:watch` — Jest (jest-expo preset)
+- `npm run typecheck`, `tsc --noEmit`
+- `npm run lint`, `expo lint` (Expo's ESLint flat config + Prettier)
+- `npm run format` / `npm run format:check`, Prettier
+- `npm test` / `npm run test:watch`, Jest (jest-expo preset)
 
 ## Project structure
 
@@ -82,7 +82,7 @@ app/
 lib/
   engine/
     xp.ts                  # pure-TS XP engine: levels, tiers, modifiers
-    xp.test.ts             # Jest tests — must stay green
+    xp.test.ts             # Jest tests, must stay green
   auth.tsx                 # AuthProvider + useAuth + useProtectedRoute
   profile.ts               # profile + faction + active-quest-count fetchers
   quests.ts                # quest data layer (list, create, complete, abandon)
@@ -106,18 +106,18 @@ Tracking against the spec's phase plan. Phase 1.4 lands before 1.2/1.3 per the s
 
 - [x] **1.1** Project initialization
 - [x] **1.4** XP engine (pure TS + Jest)
-- [x] **1.2** Supabase setup — project linked, both migrations applied via SQL Editor, schema + RPCs verified live. `supabase gen types` deferred until CLI auth works (no functional impact; `Database = any` for now).
-- [~] **1.3** Authentication — email/password + session-gated routing done; Apple/Google Sign In deferred (need Apple Developer + Google Cloud OAuth setup)
-- [~] **1.5** Quest CRUD — list / create / detail / complete / abandon shipped via atomic RPCs; SQLite/MMKV offline cache + sync queue deferred to a follow-up
-- [x] **1.6** Character sheet — name, level, XP bar (driven by `calculateLevel`), active-quest count, factions placeholder until 2.3, difficulty
+- [x] **1.2** Supabase setup, project linked, both migrations applied via SQL Editor, schema + RPCs verified live. `supabase gen types` deferred until CLI auth works (no functional impact; `Database = any` for now).
+- [~] **1.3** Authentication, email/password + session-gated routing done; Apple/Google Sign In deferred (need Apple Developer + Google Cloud OAuth setup)
+- [~] **1.5** Quest CRUD, list / create / detail / complete / abandon shipped via atomic RPCs; SQLite/MMKV offline cache + sync queue deferred to a follow-up
+- [x] **1.6** Character sheet, name, level, XP bar (driven by `calculateLevel`), active-quest count, factions placeholder until 2.3, difficulty
 - [x] **2.1** Edge function proxy + Archivist system prompt
 - [x] **2.2** System prompt integration (folded into 2.1; lives at `prompts/archivist-v1.md`, embedded in the edge function)
-- [x] **2.3** Character creation flow — 7-step form, 6s AI timeout with templated fallback, atomic apply RPC; verified end-to-end
-- [x] **2.4** AI quest generation — plain-language input → AI-forged draft (title / description / objectives / tier / classification / tactical warnings) → editable review with save / regenerate / discard. Code still owns XP via `xpForTier`. Verified end-to-end.
+- [x] **2.3** Character creation flow, 7-step form, 6s AI timeout with templated fallback, atomic apply RPC; verified end-to-end
+- [x] **2.4** AI quest generation, plain-language input → AI-forged draft (title / description / objectives / tier / classification / tactical warnings) → editable review with save / regenerate / discard. Code still owns XP via `xpForTier`. Verified end-to-end.
 - [ ] 2.5 Response caching
-- [~] **3.1** Visual identity — Cinzel + EB Garamond loaded via expo-google-fonts; `font-display` / `font-body` tokens in tailwind; applied across all screens. Final color palette + commissioned app icon / wordmark deferred.
-- [~] **3.2** Cinematic intro — type-on text sequence, candle flicker, vignette frame, skip-after-3s, first-run-only gating per user via AsyncStorage. Commissioned 5-layer parchment scene + Rive dust motes / quill entrance deferred.
-- [x] **3.5** Character sheet reveal animation — sequenced FadeInDown stagger on each section (caption → name → title → level → factions → campaigns → first quest hook → CTA).
-- [~] **3.6** Quest micro-animations — level-up takeover modal triggered when a completion crosses a level threshold (caption → "LEVEL N" → delta → continue CTA). Quest-accept parchment unfurl + non-level-up XP toast deferred.
+- [~] **3.1** Visual identity, Cinzel + EB Garamond loaded via expo-google-fonts; `font-display` / `font-body` tokens in tailwind; applied across all screens. Final color palette + commissioned app icon / wordmark deferred.
+- [~] **3.2** Cinematic intro, type-on text sequence, candle flicker, vignette frame, skip-after-3s, first-run-only gating per user via AsyncStorage. Commissioned 5-layer parchment scene + Rive dust motes / quill entrance deferred.
+- [x] **3.5** Character sheet reveal animation, sequenced FadeInDown stagger on each section (caption → name → title → level → factions → campaigns → first quest hook → CTA).
+- [~] **3.6** Quest micro-animations, level-up takeover modal triggered when a completion crosses a level threshold (caption → "LEVEL N" → delta → continue CTA). Quest-accept parchment unfurl + non-level-up XP toast deferred.
 
 See [`QUESTLINE_PROJECT.md`](./QUESTLINE_PROJECT.md) for the full roadmap.

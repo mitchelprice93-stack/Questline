@@ -55,8 +55,8 @@ export const TUTORIAL_STEPS: Step[] = [
     eyebrow: 'Beneath the page',
     title: 'Your tabs',
     body:
-      'The Quest Board sits beside your Character — your level, factions, campaigns, and any ' +
-      'modifiers in play — and Settings, where audio, notifications, and your chronicle export live.',
+      'The Quest Board sits beside your Character, your level, factions, campaigns, and any ' +
+      'modifiers in play, and Settings, where audio, notifications, and your chronicle export live.',
     nextLabel: 'Continue',
   },
   {
@@ -65,7 +65,7 @@ export const TUTORIAL_STEPS: Step[] = [
     title: 'The Tome opens once more',
     body:
       'You may revisit this orientation at any time from Settings. ' +
-      'Now — what shall we inscribe first?',
+      'Now, what shall we inscribe first?',
     nextLabel: 'Begin',
   },
 ];
@@ -130,12 +130,12 @@ function SpotlightScrim({ target, screen }: SpotlightScrimProps) {
   // Target rects are now measured RELATIVE TO THE TUTORIAL ANCHOR (see
   // TutorialTarget and TabBarTutorialAnchor in (main)/_layout.tsx), which
   // is the same View the overlay sits inside. That means target.x/y are
-  // already in the overlay's coordinate space — no mode-based shift, no
+  // already in the overlay's coordinate space, no mode-based shift, no
   // per-step override, no measurement compensation. Just symmetric padding
   // around the actual target rect. 2px keeps the hole tight against the
   // button edge; the glow ring (top: y - 2 in the JSX below) adds another
   // 2px outset so the total gap between the visible button and the glow
-  // is 4px — present but unobtrusive.
+  // is 4px, present but unobtrusive.
   const padX = 2;
   const padY = 2;
   const x = Math.max(0, target.x - padX);
@@ -163,7 +163,7 @@ function SpotlightScrim({ target, screen }: SpotlightScrimProps) {
           { top: y, left: x + w, right: 0, height: h },
         ]}
       />
-      {/* Transparent block over the hole — keeps the user from tapping
+      {/* Transparent block over the hole, keeps the user from tapping
           the spotlit element while the tutorial is open. They use Next
           (or Skip) to dismiss; once dismissed they have full access. */}
       <View

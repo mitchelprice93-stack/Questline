@@ -3,7 +3,7 @@
 // Persistence is intentionally device-local (AsyncStorage, not the DB) so
 // each new device gets the tutorial once, regardless of which user is
 // signed in. A returning user on a fresh install gets the same brief
-// orientation as a brand-new chronicler — that's the right behavior for
+// orientation as a brand-new chronicler, that's the right behavior for
 // a tutorial that's about *the app's interface*, not *this user's data*.
 
 import AsyncStorage from '@react-native-async-storage/async-storage';

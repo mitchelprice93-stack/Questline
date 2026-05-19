@@ -28,7 +28,7 @@ interface AuthContextValue {
   profileLoading: boolean;
   /** null until the first cinematic-seen check resolves, then true/false. */
   cinematicSeen: boolean | null;
-  /** Device-level flag — null until the first check resolves. Used to
+  /** Device-level flag, null until the first check resolves. Used to
    *  gate the pre-auth cinematic for first-time visitors. */
   cinematicSeenOnDevice: boolean | null;
   /** Mark the device flag (used when an unauthenticated visitor finishes
@@ -140,14 +140,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Deep-link handler: when the app is opened via questline:// URLs
   // (notably the password-recovery email link), the Supabase JS client
-  // does NOT auto-detect tokens in the URL on React Native — we have
+  // does NOT auto-detect tokens in the URL on React Native, we have
   // `detectSessionInUrl: false` in lib/supabase.ts and no equivalent of
   // window.location to read from. So we parse the URL ourselves and
   // hand the tokens to supabase.auth.setSession (implicit/hash flow) or
   // exchangeCodeForSession (PKCE flow).
   //
   // Important subtlety: manually calling setSession fires SIGNED_IN, NOT
-  // PASSWORD_RECOVERY — that event only ever fires from the built-in URL
+  // PASSWORD_RECOVERY, that event only ever fires from the built-in URL
   // detection path which we have disabled. So when we detect type=recovery
   // (or the URL targets /reset-password) we ALSO flip inPasswordRecovery
   // ourselves so the route gate pins the user on /reset-password. Without
@@ -195,9 +195,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     };
 
-    // Cold launch — the link that opened the app.
+    // Cold launch, the link that opened the app.
     Linking.getInitialURL().then(handleUrl);
-    // Warm launch — links delivered while the app is already running.
+    // Warm launch, links delivered while the app is already running.
     const sub = Linking.addEventListener('url', (event) => handleUrl(event.url));
     return () => sub.remove();
   }, []);
@@ -214,7 +214,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [session?.user.id, loading, refetchProfile]);
 
   // Load the device-level cinematic flag once on mount. Doesn't depend on
-  // session — it gates the pre-auth cinematic for first-time visitors.
+  // session, it gates the pre-auth cinematic for first-time visitors.
   useEffect(() => {
     hasSeenCinematicOnDevice().then(setCinematicSeenOnDevice);
   }, []);
@@ -336,7 +336,7 @@ export function useProtectedRoute() {
   useEffect(() => {
     if (loading) return;
     // While the initial profile or cinematic check is in flight, don't
-    // redirect — we'd bounce the user prematurely.
+    // redirect, we'd bounce the user prematurely.
     if (session && profileLoading) return;
     if (session && cinematicSeen === null) return;
     // For no-session users, wait until the device-level cinematic flag
@@ -382,7 +382,7 @@ export function useProtectedRoute() {
     } else if (inAuthGroup) {
       target = hasCharacter ? '/quest-board' : nextOnboardingStep();
     } else if (hasCharacter && onCharacterCreation) {
-      // Already created — character-creation has its own Redirect too,
+      // Already created, character-creation has its own Redirect too,
       // but the gate covers the brief window before that mounts.
       target = '/quest-board';
     } else if (!hasCharacter && !inOnboarding) {

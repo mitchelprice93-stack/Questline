@@ -2,11 +2,11 @@
 --
 -- User dogfooding hit a foreign-key violation on `factions.user_id` during
 -- character creation, meaning no profiles row existed for their new auth.users
--- row — the on_auth_user_created trigger didn't fire. Three defenses:
+-- row, the on_auth_user_created trigger didn't fire. Three defenses:
 --
 --   1. Backfill any auth.users row that lacks a matching profile.
 --   2. Re-install handle_new_user() + the trigger so future signups always
---      get a profile (idempotent — works even if the trigger is already there).
+--      get a profile (idempotent, works even if the trigger is already there).
 --   3. Make apply_character_creation defensive: insert the profile if it's
 --      somehow still missing at call time, then proceed with the update.
 
@@ -33,7 +33,7 @@ create trigger on_auth_user_created
   after insert on auth.users
   for each row execute function public.handle_new_user();
 
--- 3. Defensive apply_character_creation — same body as the original RPC,
+-- 3. Defensive apply_character_creation, same body as the original RPC,
 -- with an `insert ... on conflict do nothing` ahead of the update so the
 -- profile row is guaranteed to exist by the time we lock it.
 create or replace function public.apply_character_creation(
@@ -70,7 +70,7 @@ begin
   -- handles this. RLS on profiles permits the user to insert their own row.
   insert into public.profiles (id) values (v_user_id) on conflict do nothing;
 
-  -- Lock the profile row before the duplicate check — prevents a double-submit
+  -- Lock the profile row before the duplicate check, prevents a double-submit
   -- racing between two clients.
   perform 1 from public.profiles where id = v_user_id for update;
 

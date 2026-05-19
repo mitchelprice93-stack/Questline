@@ -11,7 +11,7 @@ import { getAudioMuted } from '../../lib/audio-prefs';
 // Two clips: the narrated intro plays once, then we hand off to a separate
 // holding loop authored to seam back to itself with only ambient (wind +
 // candle) audio. We keep a single player and `replace()` the source on
-// handoff — that way the original user-gesture clearance carries over and
+// handoff, that way the original user-gesture clearance carries over and
 // browsers don't re-block autoplay on the second clip.
 const INTRO_VIDEO = require('../../assets/cinematic/intro.mp4');
 const HOLDING_VIDEO = require('../../assets/cinematic/holding.mp4');
@@ -37,7 +37,7 @@ export default function Cinematic() {
 
   const player = useVideoPlayer(INTRO_VIDEO, (p) => {
     p.loop = false;
-    // Don't autoplay — we play() inside the tap handler so the browser sees
+    // Don't autoplay, we play() inside the tap handler so the browser sees
     // a user gesture and unblocks audio playback.
   });
 
@@ -68,7 +68,7 @@ export default function Cinematic() {
   }, [phase]);
 
   // When the narrated intro reaches its end, swap the source to the holding
-  // clip and turn on native looping. Same player instance — keeps the user
+  // clip and turn on native looping. Same player instance, keeps the user
   // gesture clearance the browser granted on the initial tap.
   useEffect(() => {
     const sub = player.addListener('playToEnd', () => {
@@ -92,7 +92,7 @@ export default function Cinematic() {
     // replay on next launch regardless of whether the visitor signs up.
     await markCinematicSeenOnDevice();
     if (!session) {
-      // Pre-auth visitor — they've had their emotional buy-in moment.
+      // Pre-auth visitor, they've had their emotional buy-in moment.
       // Send them to the login screen to make the commitment.
       router.replace('/login');
       return;

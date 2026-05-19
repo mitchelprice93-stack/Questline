@@ -7,7 +7,7 @@ import { playSfx } from '../../lib/sfx';
 
 /**
  * Plays after a successful Hero purchase. Dark backdrop + Cinzel display
- * staggered in. ElevenLabs voice slot deferred until 3.4 lands — text-only
+ * staggered in. ElevenLabs voice slot deferred until 3.4 lands, text-only
  * for now.
  *
  * Reachable via router.replace('/hero-cinematic') from the paywall on

@@ -1,4 +1,4 @@
-// useAnimatedNumber — smoothly tick a value from its previous toward a
+// useAnimatedNumber, smoothly tick a value from its previous toward a
 // new target whenever the target changes. Returns a continuous float;
 // callers Math.round it for integer text display, OR pass the float
 // straight into a derived value (e.g. progress-bar width) so the visual
@@ -10,7 +10,7 @@
 //
 // Initial mount: no animation. Subsequent target changes: linear over
 // `duration` (linear feels smoother for counting because every integer
-// flip takes the same time — eased curves bunch flips at one end and
+// flip takes the same time, eased curves bunch flips at one end and
 // the user perceives that as "jumpy"). Target changes mid-animation
 // cancel and restart from the current displayed value.
 
@@ -18,7 +18,7 @@ import { useEffect, useRef, useState } from 'react';
 
 export function useAnimatedNumber(target: number, duration = 900): number {
   const [displayed, setDisplayed] = useState(target);
-  // Mirror of `displayed` for the effect to read without subscribing —
+  // Mirror of `displayed` for the effect to read without subscribing -
   // adding `displayed` to the dep array would re-run the effect every
   // frame (we call setDisplayed inside it).
   const displayedRef = useRef(target);

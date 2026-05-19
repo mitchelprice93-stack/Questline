@@ -1,4 +1,4 @@
--- Phase 4.x — buff duration by tier.
+-- Phase 4.x, buff duration by tier.
 --
 -- Earned buffs now persist for a tier-scaled lifetime instead of being
 -- consumed on the next completion. Harder quests yield longer-lasting buffs;
@@ -21,7 +21,7 @@ as $$
 $$;
 
 -- ---------------------------------------------------------------------------
--- complete_quest — buff lifecycle reworked. Active buffs (expires_at > now)
+-- complete_quest, buff lifecycle reworked. Active buffs (expires_at > now)
 -- now SURVIVE completion and only debuffs (plus any expired buffs) are
 -- consumed. The granted-buff insert sets expires_at based on the source
 -- quest's tier.
@@ -219,7 +219,7 @@ end;
 $$;
 
 -- ---------------------------------------------------------------------------
--- refresh_debuffs_for — also sweeps expired buffs so the character sheet
+-- refresh_debuffs_for, also sweeps expired buffs so the character sheet
 -- doesn't keep showing them past their lifetime even before the next
 -- completion runs the consume step.
 -- ---------------------------------------------------------------------------

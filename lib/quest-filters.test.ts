@@ -49,13 +49,13 @@ describe('applyQuestFilters', () => {
     expect(applyQuestFilters([a, b], { searchText: 'silver' }).map((q) => q.id)).toEqual(['a']);
   });
 
-  test("tier filter — 'all' is a noop", () => {
+  test("tier filter, 'all' is a noop", () => {
     const major = makeQuest({ id: 'a', tier: 'major' });
     const minor = makeQuest({ id: 'b', tier: 'minor' });
     expect(applyQuestFilters([major, minor], { tier: 'all' })).toHaveLength(2);
   });
 
-  test('tier filter — selects only matching rows', () => {
+  test('tier filter, selects only matching rows', () => {
     const major = makeQuest({ id: 'a', tier: 'major' });
     const minor = makeQuest({ id: 'b', tier: 'minor' });
     expect(applyQuestFilters([major, minor], { tier: 'major' }).map((q) => q.id)).toEqual(['a']);

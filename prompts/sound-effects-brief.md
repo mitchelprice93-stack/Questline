@@ -1,13 +1,13 @@
-# Questline — Sound Effects Brief
+# Questline, Sound Effects Brief
 
 ## Why this brief exists
 
-Skyrim's UI is mostly silent until something *matters* — and when it does,
+Skyrim's UI is mostly silent until something *matters*, and when it does,
 you get a horn flourish or a bell chime that lands like a small ceremony.
 We want the same restraint here. Most taps are quiet. The big moments
 (level up, quest complete, streak milestone) get a beat of weight.
 
-This brief covers the full SFX library. Generate them in tiers — the
+This brief covers the full SFX library. Generate them in tiers, the
 must-haves first, nice-to-haves later. The wiring code is built so
 dropping any single file at the listed path makes that one sound work
 immediately, with the others staying silent until they arrive.
@@ -19,9 +19,9 @@ Best-in-class for short, intentional sounds. Pay-per-generation but
 cheap; you can iterate on a prompt until the take feels right.
 
 Alternatives:
-- **Pixabay** / **Freesound.org** — free, but you'll hunt through stock
+- **Pixabay** / **Freesound.org**, free, but you'll hunt through stock
   options for ones in the right voice
-- **Suno** / **Udio** — overkill for SFX (they're music tools); use only
+- **Suno** / **Udio**, overkill for SFX (they're music tools); use only
   for the level-up flourish if you want a melodic sting
 
 ## Style cohesion
@@ -29,20 +29,20 @@ Alternatives:
 Every SFX in this library should feel like it belongs in the same
 soundscape:
 
-- **Acoustic, organic** — leather, parchment, brass, glass, wood. Avoid
+- **Acoustic, organic**, leather, parchment, brass, glass, wood. Avoid
   synthetic blips, lasers, electronic UI sounds.
-- **Warm and slightly dampened** — like the sound is happening in the
+- **Warm and slightly dampened**, like the sound is happening in the
   Archivist's library, not in an empty room. A touch of natural reverb
   is fine; reverb tails should be short (under 0.4s).
-- **Mid-range frequency** — no sharp highs, no rumbling lows. The user
+- **Mid-range frequency**, no sharp highs, no rumbling lows. The user
   is hearing this from a phone speaker most of the time.
-- **Volume budget** — every SFX gets normalized to **−16 LUFS** before
+- **Volume budget**, every SFX gets normalized to **−16 LUFS** before
   shipping, so nothing startles when stacked against the −23 LUFS
   ambient bed. (See "Mastering" section at the bottom.)
 
 ---
 
-## Tier 1 — Must-haves (UI feedback)
+## Tier 1, Must-haves (UI feedback)
 
 ### 1.1 · `button_tap.mp3`
 
@@ -60,7 +60,7 @@ Duration: 0.1-0.2s. Drop at `assets/audio/sfx/button_tap.mp3`.
 Tapping a checkbox in the objectives list.
 
 > A brief ink-quill scratch on parchment, immediately followed by a
-> faint dot — as if checking off a box on a hand-written list. Rough
+> faint dot, as if checking off a box on a hand-written list. Rough
 > texture, dry, organic. Very short. About 0.25 seconds.
 
 Duration: 0.2-0.3s. Drop at `assets/audio/sfx/objective_check.mp3`.
@@ -68,7 +68,7 @@ Duration: 0.2-0.3s. Drop at `assets/audio/sfx/objective_check.mp3`.
 ### 1.3 · `error.mp3`
 
 Form validation fails, RPC errors, "Quest cap reached," etc. Should
-read as *firm* not *harsh* — the Archivist disapproving, not punishing.
+read as *firm* not *harsh*, the Archivist disapproving, not punishing.
 
 > A low brass chord, single note, slightly muted, like a horn played
 > softly with a hand in the bell. Brief downward inflection at the end.
@@ -78,14 +78,14 @@ Duration: 0.3-0.5s. Drop at `assets/audio/sfx/error.mp3`.
 
 ---
 
-## Tier 2 — Moment sounds (big beats)
+## Tier 2, Moment sounds (big beats)
 
 ### 2.1 · `quest_complete.mp3`
 
-Plays when a quest finishes. The smaller of the celebration sounds —
+Plays when a quest finishes. The smaller of the celebration sounds -
 this fires multiple times a day for active users.
 
-> A short, satisfied bell chime — a single small brass bell, struck
+> A short, satisfied bell chime, a single small brass bell, struck
 > once with felt, with a brief warm ring-out. Similar to a Skyrim
 > quest-objective-complete cue. Warm, achievement-feeling, but
 > understated. About 0.8 seconds total.
@@ -97,7 +97,7 @@ Duration: 0.7-1.0s. Drop at `assets/audio/sfx/quest_complete.mp3`.
 The big one. Plays on the LevelUpTakeover, BEFORE the Archivist's
 narration begins. Sets the stage.
 
-> A short orchestral fantasy flourish — three to four notes on horns
+> A short orchestral fantasy flourish, three to four notes on horns
 > and strings, ascending, with a final sustained chord that fades
 > into reverb. Skyrim-style level-up sting: dramatic but warm,
 > ceremonial, about 2-3 seconds long. No vocals. Ends on a held
@@ -117,7 +117,7 @@ the quest_complete bell. Should feel like a *second* recognition on
 top of the first.
 
 > A bright single bell chime, higher pitched than the quest-complete
-> bell, with a slight glissando shimmer behind it — as if struck and
+> bell, with a slight glissando shimmer behind it, as if struck and
 > then resonating into a wind chime briefly. Triumphant but small.
 > About 1 second.
 
@@ -128,7 +128,7 @@ Duration: 0.8-1.2s. Drop at `assets/audio/sfx/streak_milestone.mp3`.
 Plays when a granted buff lands (condition met on completion).
 
 > A soft warm magical shimmer, like a single chime struck and then
-> fading into a held vocal pad — but no actual voice, just the
+> fading into a held vocal pad, but no actual voice, just the
 > wordless suggestion of one. Pleasant, encouraging. Short tail.
 > About 1 second.
 
@@ -146,13 +146,13 @@ Duration: 0.8-1.2s. Drop at `assets/audio/sfx/debuff_applied.mp3`.
 
 ---
 
-## Tier 3 — Nice-to-haves (texture)
+## Tier 3, Nice-to-haves (texture)
 
 ### 3.1 · `tab_switch.mp3`
 
 Bottom-tab navigation between Quests / Character / Settings.
 
-> A soft page turn — a single sheet of heavy parchment lifted and
+> A soft page turn, a single sheet of heavy parchment lifted and
 > dropped. Brief paper rustle, no sharp edges. About 0.3 seconds.
 
 Duration: 0.2-0.4s. Drop at `assets/audio/sfx/tab_switch.mp3`.
@@ -160,9 +160,9 @@ Duration: 0.2-0.4s. Drop at `assets/audio/sfx/tab_switch.mp3`.
 ### 3.2 · `quest_create.mp3`
 
 Plays when "Save quest" succeeds in the new-quest flow. Different
-from button_tap — this is the *commitment* sound.
+from button_tap, this is the *commitment* sound.
 
-> An ink quill scratching out a flourish on parchment — a longer,
+> An ink quill scratching out a flourish on parchment, a longer,
 > more ceremonial scratch than the objective check. Implies the
 > Tome inscribing a new entry. About 0.6 seconds.
 
@@ -179,7 +179,7 @@ For `toggle_on`:
 
 For `toggle_off`:
 
-> The same wooden latch unlatching — a soft thunk and brief release.
+> The same wooden latch unlatching, a soft thunk and brief release.
 > No chime. About 0.2 seconds.
 
 Duration: 0.15-0.25s each. Drop at `assets/audio/sfx/toggle_on.mp3`
@@ -187,7 +187,7 @@ and `assets/audio/sfx/toggle_off.mp3`.
 
 ### 3.4 · `quill_scratch.mp3`
 
-Optional ambient flavor for moments the AI is "thinking" — could
+Optional ambient flavor for moments the AI is "thinking", could
 play during the loading state when the Archivist is forging a quest
 or composing level-up narration.
 
@@ -199,14 +199,14 @@ Duration: 1.0-2.0s, seamless loop. Drop at `assets/audio/sfx/quill_scratch.mp3`.
 
 ---
 
-## Tier 4 — Future (when those features ship)
+## Tier 4, Future (when those features ship)
 
 ### 4.1 · `hero_pledge.mp3`
 
 For when a free user upgrades to Hero. Play during the upgrade
 cinematic (deferred until RevenueCat is wired).
 
-> A small heap of gold coins poured into a brass dish — bright
+> A small heap of gold coins poured into a brass dish, bright
 > metallic clinks, then a single warm horn note acknowledging the
 > donation. Ceremonial, not garish. About 1.5 seconds.
 
@@ -251,5 +251,5 @@ assets/audio/sfx/hero_pledge.mp3       (future)
 Code-side: a `lib/sfx.ts` module exposes `playSfx('button_tap')` etc.,
 backed by silent-placeholder mp3s for every entry above. As real
 files replace the placeholders, the corresponding sound starts firing
-at the corresponding moments — no code change. Triggers wired in
+at the corresponding moments, no code change. Triggers wired in
 parallel to this brief; see the same-day commit.

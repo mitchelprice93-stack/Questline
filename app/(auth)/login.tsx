@@ -100,7 +100,7 @@ export default function Login() {
         </Link>
       </View>
 
-      {/* Apple/Google Sign In intentionally deferred — needs Apple Developer
+      {/* Apple/Google Sign In intentionally deferred, needs Apple Developer
           enrollment + Google Cloud OAuth client setup; revisit before launch. */}
     </View>
   );

@@ -1,4 +1,4 @@
--- Phase 4.x — buff engine.
+-- Phase 4.x, buff engine.
 --
 -- The inverse of debuffs. Each quest can declare a "granted buff" with a
 -- condition; meeting the condition on completion inserts a one-shot buff
@@ -44,7 +44,7 @@ begin
 end $$;
 
 -- ---------------------------------------------------------------------------
--- complete_quest — extended once more, this time to:
+-- complete_quest, extended once more, this time to:
 --   1. Apply unconsumed BUFFS as well as debuffs to the base reward.
 --      Buffs always sum (regardless of difficulty); debuffs still follow
 --      the apprentice/adept "worst only" vs master/legendary "stack" rule.
@@ -185,7 +185,7 @@ begin
       values (v_user_id, quest_id, v_milestone_bonus, 'streak_bonus_' || v_new_streak::text);
   end if;
 
-  -- Consume every unconsumed modifier — both buffs and debuffs are
+  -- Consume every unconsumed modifier, both buffs and debuffs are
   -- "next completion" duration by default, and this was that completion.
   update public.modifiers
     set consumed_at = now()

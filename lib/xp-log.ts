@@ -51,7 +51,7 @@ export async function listXpLog(limit = 200): Promise<XpLogEntry[]> {
  * Render an xp_log row's reason+context as a single readable line.
  * Examples:
  *   ('quest_complete', 'Mow the lawn')   → "Quest completed: Mow the lawn"
- *   ('streak_bonus_7', 'Daily standup')  → "Streak milestone (7) — Daily standup"
+ *   ('streak_bonus_7', 'Daily standup')  → "Streak milestone (7), Daily standup"
  *   ('quest_complete', null)             → "Quest completed (deleted quest)"
  */
 export function describeXpLogReason(reason: string, questTitle: string | null): string {
@@ -60,7 +60,7 @@ export function describeXpLogReason(reason: string, questTitle: string | null): 
   }
   if (reason.startsWith('streak_bonus_')) {
     const n = reason.split('_').pop();
-    const ctx = questTitle ? ` — ${questTitle}` : '';
+    const ctx = questTitle ? `, ${questTitle}` : '';
     return `Streak milestone (${n})${ctx}`;
   }
   return reason;

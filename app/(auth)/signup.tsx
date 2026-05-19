@@ -24,7 +24,7 @@ export default function Signup() {
       // If Supabase has email confirmation on (default), the user lands here
       // and must click the email link before signIn works. If confirmation
       // is off, onAuthStateChange will fire and the protected-route effect
-      // will redirect them onward — this screen state is fine either way.
+      // will redirect them onward, this screen state is fine either way.
       setPendingConfirmation(true);
     }
     setLoading(false);

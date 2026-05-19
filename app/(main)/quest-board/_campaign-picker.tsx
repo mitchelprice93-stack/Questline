@@ -3,7 +3,7 @@
 // so completing it auto-bumps that campaign's progress (the SQL trigger
 // in 20260508000004 does the bumping).
 //
-// Hidden when the user has no active campaigns — leading underscore
+// Hidden when the user has no active campaigns, leading underscore
 // keeps expo-router from treating this as a route.
 //
 // UI delegates to the shared <DropdownPicker> so it matches Tier /

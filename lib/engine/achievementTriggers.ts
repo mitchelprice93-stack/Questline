@@ -1,4 +1,4 @@
-// v1.1 — Achievement trigger orchestration.
+// v1.1, Achievement trigger orchestration.
 //
 // I/O layer that bridges Supabase to the pure check functions in
 // achievements.ts. Each trigger:
@@ -14,7 +14,7 @@
 //     are logged and the trigger returns an empty array.
 //   - Granting is client-side per spec. The unique partial indexes on
 //     achievements_earned (see migration 20260510000000) are the safety
-//     net against the offline-queue replay path double-granting — we still
+//     net against the offline-queue replay path double-granting, we still
 //     pre-filter via EarnedState to avoid most network round-trips.
 //   - Templated achievements pass deterministic metadata (faction_id,
 //     campaign_id) so the unique index dedupes them correctly.
@@ -71,7 +71,7 @@ async function loadEarnedState(userId: string): Promise<EarnedState> {
 /**
  * Insert a single grant row. Returns the EarnedAchievement record on
  * success; null on either a unique-violation race (already earned) or an
- * unknown achievement code (skipped silently — drift between deploys).
+ * unknown achievement code (skipped silently, drift between deploys).
  *
  * Inserting one row at a time so a race on one code doesn't abort sibling
  * grants. The number of grants per event is small (usually 1–3), so the
@@ -98,7 +98,7 @@ async function insertGrant(
     .single();
 
   if (error) {
-    // 23505 = unique_violation. Treat as "already earned" — it means a race
+    // 23505 = unique_violation. Treat as "already earned", it means a race
     // (offline replay or two concurrent triggers). Not a failure.
     if ((error as { code?: string }).code === '23505') return null;
     throw new Error(`insertGrant ${candidate.code}: ${errorMessage(error)}`);
@@ -213,7 +213,7 @@ async function loadQuestCompleteSnapshot(userId: string, justCompleted: Quest): 
   for (const f of (factionRows ?? []) as FactionSummary[]) factionsById.set(f.id, { name: f.name });
 
   // Aggregate. All time-of-day / day / month boundaries are LOCAL to the
-  // device — the achievement is "you completed something in your morning,"
+  // device, the achievement is "you completed something in your morning,"
   // not "you completed something during UTC morning."
   const now = new Date();
   const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());

@@ -1,6 +1,6 @@
 // Full-screen takeover for legendary-tier achievements.
 //
-// Mounted by AchievementSurface — only one at a time, blocks until the user
+// Mounted by AchievementSurface, only one at a time, blocks until the user
 // taps Continue. Sequenced fade-in mirrors the LevelUpTakeover pattern from
 // app/(main)/quest-board/[id].tsx so the two moments feel like siblings.
 //
@@ -33,7 +33,7 @@ interface Props {
 export function AchievementCinematic({ earned, onContinue }: Props) {
   const stagger = (n: number) => FadeInDown.delay(300 + n * 350).duration(700);
 
-  // Pulsing glow behind the title — gives the takeover a "candle flicker"
+  // Pulsing glow behind the title, gives the takeover a "candle flicker"
   // beat while the user reads. Loops indefinitely; cleared on unmount.
   const pulse = useSharedValue(0.25);
   useEffect(() => {

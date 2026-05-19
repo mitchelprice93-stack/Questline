@@ -22,7 +22,7 @@ const IOS_SUBSCRIPTION_URL = 'https://apps.apple.com/account/subscriptions';
  * issues with React Native's new architecture (newArchEnabled: true) and
  * was causing the app to freeze on open. Replaced with a custom in-app
  * screen that deep-links to the platform's native subscription settings
- * — which is what users want to do anyway (cancel, change payment,
+ *, which is what users want to do anyway (cancel, change payment,
  * restore prior purchase) and avoids the broken overlay entirely.
  *
  * Trade-off: we no longer surface receipt history or RC's built-in help
@@ -44,7 +44,7 @@ export default function CustomerCenter() {
   return (
     <ParchmentScreen>
       <ScrollView className="flex-1" contentContainerClassName="px-6 pt-20 pb-12">
-        {/* Explicit route to /settings — router.back() in an Expo Router
+        {/* Explicit route to /settings, router.back() in an Expo Router
             Tabs setup unwinds to the initial tab (Quest Board) rather than
             the previous screen. Customer center is only reached from the
             Settings → Manage subscription button. */}
@@ -83,7 +83,7 @@ export default function CustomerCenter() {
 
         <Text className="mt-6 font-body text-base leading-relaxed text-stone-600">
           Cancellations take effect at the end of the current billing period. Your Hero entitlement
-          remains active until expiry — the Tome stays generous to the end.
+          remains active until expiry, the Tome stays generous to the end.
         </Text>
       </ScrollView>
     </ParchmentScreen>

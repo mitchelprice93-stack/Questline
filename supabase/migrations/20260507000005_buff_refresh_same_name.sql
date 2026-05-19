@@ -1,4 +1,4 @@
--- Phase 5.x — same-name buffs refresh instead of stack.
+-- Phase 5.x, same-name buffs refresh instead of stack.
 --
 -- Earning a buff with the same name as one already active just extends
 -- the active buff's expires_at to whichever is later. Different-named

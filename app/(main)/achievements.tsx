@@ -1,4 +1,4 @@
-// Achievements screen — All / Earned / In Progress / Locked tabs.
+// Achievements screen, All / Earned / In Progress / Locked tabs.
 //
 // Reads the user's snapshot via loadAchievementSnapshot, joins it against
 // the static registry, and groups by status. Templates (faction_devotee,
@@ -141,7 +141,7 @@ export default function AchievementsScreen() {
   return (
     <ParchmentScreen>
       <ScrollView className="flex-1" contentContainerClassName="px-6 pt-20 pb-12">
-        {/* Explicit route to /character-sheet — router.back() in an Expo
+        {/* Explicit route to /character-sheet, router.back() in an Expo
             Router Tabs setup unwinds to the initial tab (Quest Board), not
             the previous screen. Achievements is only reached from the
             character sheet's Achievements card. */}

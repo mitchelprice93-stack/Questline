@@ -15,7 +15,7 @@ Questline mobile app.
 - [Privacy Policy](/Questline/privacy/)
 - [Terms of Service](/Questline/terms/)
 
-For everything else — the app itself, the chronicle, the Archivist —
+For everything else, the app itself, the chronicle, the Archivist -
 download Questline on iOS or Android.
 
 For support, contact us at

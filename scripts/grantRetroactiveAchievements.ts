@@ -1,5 +1,5 @@
 /**
- * v1.1 — Retroactive achievement backfill.
+ * v1.1, Retroactive achievement backfill.
  *
  * Scans every user's historical state and grants every achievement the
  * deterministic checks would have fired had the v1.1 system been live the
@@ -13,7 +13,7 @@
  *   SUPABASE_URL=... SUPABASE_SERVICE_ROLE_KEY=... \
  *     npx tsx scripts/grantRetroactiveAchievements.ts
  *
- * Requires the service-role key — RLS is bypassed by design so the script
+ * Requires the service-role key, RLS is bypassed by design so the script
  * can read and write across every user's data. Never embed the key in the
  * client bundle. Get it from the Supabase dashboard → Settings → API.
  *
@@ -60,7 +60,7 @@ const BATCH_SIZE = 100;
 if (!SUPABASE_URL || !SERVICE_KEY) {
   console.error(
     'Set SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY before running. ' +
-      'Service-role key, not the anon key — the script writes across users.',
+      'Service-role key, not the anon key, the script writes across users.',
   );
   process.exit(1);
 }
@@ -169,7 +169,7 @@ async function upsertProgress(userId: string, updates: ProgressUpdate[]): Promis
  * Compute the set of achievements this user has earned over the lifetime
  * of their chronicle, given everything we can reconstruct from current
  * tables. Uses local-time hour/day boundaries (server-side, the script's
- * own runtime — close enough for backfill purposes).
+ * own runtime, close enough for backfill purposes).
  */
 function computeRetroactiveGrants(
   profile: ProfileRow,
@@ -183,7 +183,7 @@ function computeRetroactiveGrants(
   const factionsById = new Map(factions.map((f) => [f.id, f.name]));
   const questsById = new Map(quests.map((q) => [q.id, q]));
 
-  // Character creation grants — every user with a character_name has begun.
+  // Character creation grants, every user with a character_name has begun.
   if (profile.character_name) {
     grants.push({ code: 'chronicle_begins', metadata: null });
     if (profile.character_title) {
@@ -195,7 +195,7 @@ function computeRetroactiveGrants(
   const completions = xpLog.filter((r) => r.reason === 'quest_complete');
   if (completions.length >= 1) grants.push({ code: 'first_blood', metadata: null });
 
-  // Single-day max + single-month max — group by local date / month string.
+  // Single-day max + single-month max, group by local date / month string.
   const perDay = new Map<string, number>();
   const perMonth = new Map<string, number>();
   let beforeNine = 0;
@@ -277,7 +277,7 @@ function computeRetroactiveGrants(
     }
   }
 
-  // Strategist — current snapshot only (we can't reconstruct historical
+  // Strategist, current snapshot only (we can't reconstruct historical
   // active-quest counts).
   const active = quests.filter((q) => q.status === 'active');
   const activeFactions = new Set(active.map((q) => q.faction_id).filter((f): f is string => !!f));
@@ -319,7 +319,7 @@ function computeRetroactiveGrants(
   if (ageDays >= 365) grants.push({ code: 'final_page', metadata: null });
 
   // ---- Progress for in-flight quantitative achievements -------------------
-  // Only push progress for codes that are NOT in the grants list — that way
+  // Only push progress for codes that are NOT in the grants list, that way
   // the screen shows progress meters for users who are partway there.
   const grantedCodes = new Set(grants.map((g) => g.code));
   const pushProgress = (code: string, current: number, target: number) => {
@@ -382,7 +382,7 @@ async function processUser(profile: ProfileRow): Promise<PerUserStats> {
 }
 
 async function main(): Promise<void> {
-  console.log('— Achievement retroactive backfill —');
+  console.log('- Achievement retroactive backfill -');
   console.log(`Registry: ${ACHIEVEMENTS.length} achievements`);
   console.log(`Batch size: ${BATCH_SIZE}`);
 
@@ -420,7 +420,7 @@ async function main(): Promise<void> {
   }
 
   console.log('');
-  console.log('— Done —');
+  console.log('- Done -');
   console.log(`Users processed: ${totalUsers}`);
   console.log(`New grants: ${totalGrantedNew}`);
   console.log(`Already earned (skipped): ${totalAlready}`);

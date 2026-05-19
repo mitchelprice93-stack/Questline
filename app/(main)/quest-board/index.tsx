@@ -115,7 +115,7 @@ export default function QuestBoard() {
   const [sortKey, setSortKey] = useState<SortKey>('default');
   const [filtersOpen, setFiltersOpen] = useState(false);
 
-  // Refetch when the active tab changes — simpler than caching three lists
+  // Refetch when the active tab changes, simpler than caching three lists
   // and the dataset is small enough that the round-trip is unnoticeable.
   // Also pull the active count separately so the cap indicator stays accurate
   // across tab switches (the visible list might be Completed).
@@ -206,7 +206,7 @@ export default function QuestBoard() {
       </View>
 
       {/* Status tabs. mb-3 lives on an outer wrapper, not inside the
-          TutorialTarget — keeps the tutorial spotlight measuring only the
+          TutorialTarget, keeps the tutorial spotlight measuring only the
           actual row of tab buttons, not the spacing below it. */}
       <View className="mb-3">
       <TutorialTarget id="quest-status-tabs">
@@ -396,7 +396,7 @@ function QuestRow({ quest, status }: { quest: Quest; status: QuestStatus }) {
   }
   const metaLine = metaParts.join(' · ');
 
-  // Lifecycle line — only meaningful for past quests; gives the user a
+  // Lifecycle line, only meaningful for past quests; gives the user a
   // concrete "when" to anchor the entry.
   const lifecycleLine =
     status === 'completed' && quest.completed_at

@@ -54,7 +54,9 @@ export function DropdownPicker<T extends string>({
 
   return (
     <View className="mb-4">
-      <Text className="mb-2 font-body text-xl text-stone-700">{label}</Text>
+      {label ? (
+        <Text className="mb-2 font-body text-xl text-stone-700">{label}</Text>
+      ) : null}
       <Pressable
         onPress={() => setOpen(true)}
         disabled={disabled}

@@ -39,7 +39,7 @@ export default function RootLayout() {
     );
   }
   if (fontError) {
-    // Don't block the app on font errors — fall back to system fonts.
+    // Don't block the app on font errors, fall back to system fonts.
     console.warn('Font load failed; using system fonts:', fontError);
   }
 

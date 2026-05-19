@@ -1,5 +1,5 @@
 // Mounted once at the (main) layout root. Subscribes to the achievement
-// feed and routes each newly-earned event to the right surface — toast for
+// feed and routes each newly-earned event to the right surface, toast for
 // common/uncommon/rare, cinematic for legendary. Maintains a queue so a
 // burst of grants from a single quest completion plays out in sequence
 // rather than stacking on top of each other.
@@ -54,7 +54,7 @@ export function AchievementSurface() {
           />
         ) : null}
       </View>
-      {/* Cinematic layer is full-screen and blocks taps — that's the point.
+      {/* Cinematic layer is full-screen and blocks taps, that's the point.
           Mounted only when there's a legendary in flight. */}
       {currentLegend ? (
         <View style={styles.cinematicLayer} pointerEvents="auto">

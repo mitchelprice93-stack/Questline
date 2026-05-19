@@ -1,4 +1,4 @@
-// Phase 3.6/4-ish — flexible deadline parsing + display.
+// Phase 3.6/4-ish, flexible deadline parsing + display.
 //
 // Users type deadlines in any human format ("May 2nd 2026", "5/2/26",
 // "next Friday", "tomorrow at 5pm"). chrono-node does the parsing; we
@@ -20,7 +20,7 @@ export function parseDeadline(input: string, reference: Date = new Date()): Date
 /**
  * Format an ISO deadline for display: "May 2, 2026" if midnight-aligned,
  * else "May 2, 2026 at 6:00 PM". Returns the raw value if it can't be
- * parsed (defensive — DB might hold something we didn't expect).
+ * parsed (defensive, DB might hold something we didn't expect).
  */
 export function formatDeadline(iso: string | null): string | null {
   if (!iso) return null;
@@ -81,7 +81,7 @@ export function deadlineUrgency(
  * Tailwind class fragments keyed by urgency. Caller composes them into
  * className strings for borders, backgrounds, and text.
  *
- * Text colors are calibrated for the parchment background (light cream) —
+ * Text colors are calibrated for the parchment background (light cream) -
  * previous values (text-red-300, text-orange-300, etc.) were tuned for
  * dark backgrounds and blended into the parchment, making "Due tomorrow"
  * essentially invisible. Switched to darker variants that pop against
@@ -98,7 +98,7 @@ export const urgencyClasses: Record<DeadlineUrgency, { border: string; text: str
 //
 // All period math runs in UTC so the client matches the server-side
 // `date_trunc` checks in complete_quest. A small timezone mismatch around
-// midnight is acceptable — the client uses these to disable buttons; the
+// midnight is acceptable, the client uses these to disable buttons; the
 // RPC is canonical and will reject a stale request with P0003.
 
 /** UTC YYYY-MM-DD for a Date. */
@@ -110,7 +110,7 @@ function utcDayKey(d: Date): string {
 function utcWeekKey(d: Date): string {
   const day = d.getUTCDay(); // 0 = Sunday
   // Postgres date_trunc('week') treats Monday as the start of the week. JS
-  // getUTCDay returns 0 for Sunday — convert to a 0-based offset from Monday.
+  // getUTCDay returns 0 for Sunday, convert to a 0-based offset from Monday.
   const offsetFromMonday = (day + 6) % 7;
   const monday = new Date(
     Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate() - offsetFromMonday),
@@ -129,7 +129,7 @@ function utcYearKey(d: Date): string {
 }
 
 /** Convert a custom interval + unit to milliseconds. Months use 30 days as
- *  an approximation — this drives client-side cooldown UI only; the server
+ *  an approximation, this drives client-side cooldown UI only; the server
  *  uses Postgres's interval arithmetic for the canonical check, so a
  *  small mismatch at month boundaries is acceptable. */
 function customIntervalMs(interval: number, unit: 'days' | 'weeks' | 'months'): number {

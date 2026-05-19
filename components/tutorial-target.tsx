@@ -5,7 +5,7 @@
 // The wrapper renders a transparent View around its children so layout +
 // position are measurable; it adds no visual styling of its own.
 //
-// Positions are measured RELATIVE TO THE TUTORIAL ANCHOR — the (main)
+// Positions are measured RELATIVE TO THE TUTORIAL ANCHOR, the (main)
 // layout's flex-1 wrapper View, which is also the overlay's direct parent.
 // This guarantees the spotlight paints exactly where the target sits,
 // regardless of safe-area insets, edge-to-edge offsets, or any other
@@ -52,7 +52,7 @@ export function TutorialTarget({ id, children, enabled = true }: Props) {
       });
       return;
     }
-    // Fallback when anchor hasn't mounted yet — use raw window coords.
+    // Fallback when anchor hasn't mounted yet, use raw window coords.
     // This races on first launch but self-corrects on the next layout
     // pass once the anchor is set.
     node.measureInWindow((x, y, width, height) => {

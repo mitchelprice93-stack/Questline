@@ -50,7 +50,7 @@ A small amount of data may be retained after account deletion when required by l
 - **Subscription / billing records** are retained for tax and accounting purposes for the period required by law (typically 7 years). These records contain your account ID and subscription state, but you can request deletion of personally identifying information from them by emailing us.
 - **System logs** (request timestamps, error traces) may persist in our infrastructure for up to 30 days before automatic rotation, but are not linked to your identity in a way that allows re-identification.
 
-We never share, sell, or use your data for advertising — see our [Privacy Policy](/Questline/privacy/) for details on what we collect and how we use it.
+We never share, sell, or use your data for advertising, see our [Privacy Policy](/Questline/privacy/) for details on what we collect and how we use it.
 
 ## Subscription cancellation
 

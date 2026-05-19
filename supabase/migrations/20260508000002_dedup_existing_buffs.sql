@@ -1,4 +1,4 @@
--- Phase 5.x — one-time cleanup of stacked same-name buffs.
+-- Phase 5.x, one-time cleanup of stacked same-name buffs.
 --
 -- complete_quest already refreshes-instead-of-stacks for new buffs
 -- (migration 20260507000005), but every buff a user earned BEFORE that

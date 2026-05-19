@@ -63,7 +63,7 @@ type RecurrenceChoice = 'none' | 'daily' | 'weekly' | 'monthly' | 'yearly' | 'cu
 const RECURRENCES: RecurrenceChoice[] = ['none', 'daily', 'weekly', 'monthly', 'yearly', 'custom'];
 
 // Display + description tables shared with the new-quest form's dropdowns.
-// Keep in sync with app/(main)/quest-board/new.tsx — divergence would
+// Keep in sync with app/(main)/quest-board/new.tsx, divergence would
 // mean the chronicler sees different copy when creating vs editing,
 // which is jarring.
 const RECURRENCE_LABELS: Record<RecurrenceChoice, string> = {
@@ -95,7 +95,7 @@ const CLASSIFICATION_DESCRIPTIONS: Record<QuestClassification, string> = {
   daily: 'Routine work, done in minutes.',
   side: 'A standalone thread, away from the main path.',
   main: 'Important work that drives the chronicle.',
-  legendary: 'A magnum opus — multi-day or harder.',
+  legendary: 'A magnum opus, multi-day or harder.',
 };
 
 function recurrenceForDb(choice: RecurrenceChoice): QuestRecurrence {
@@ -130,7 +130,7 @@ interface LevelUpState {
   milestoneBonus?: number;
   /** Streak after this completion (for recurring quests). */
   newStreak?: number;
-  /** Triggering quest title — passed into the AI narration. */
+  /** Triggering quest title, passed into the AI narration. */
   triggeringQuestTitle: string;
   /** Tier of the triggering quest. */
   triggeringQuestTier: QuestTier;
@@ -168,7 +168,7 @@ export default function QuestDetail() {
   const [editObjectives, setEditObjectives] = useState<QuestObjective[]>([]);
   const [editDeadline, setEditDeadline] = useState('');
   const [editRecurrence, setEditRecurrence] = useState<RecurrenceChoice>('none');
-  // Custom-cadence config — only meaningful when editRecurrence === 'custom'.
+  // Custom-cadence config, only meaningful when editRecurrence === 'custom'.
   const [editRecurrenceInterval, setEditRecurrenceInterval] = useState<string>('3');
   const [editRecurrenceUnit, setEditRecurrenceUnit] = useState<RecurrenceUnit>('days');
   const [editBuff, setEditBuff] = useState<BuffDraft>(emptyBuffDraft());
@@ -194,7 +194,7 @@ export default function QuestDetail() {
 
   // Awaits the (already-running) retitle call and shows a follow-up
   // message if the Archivist proposed a new title. Silent when the
-  // promise resolves to null — the AI either declined to retitle, the
+  // promise resolves to null, the AI either declined to retitle, the
   // quest didn't qualify, or the call failed (logged to console).
   const announceRetitle = async (
     pending: Promise<{ newTitle: string; previousTitle: string } | null>,
@@ -221,7 +221,7 @@ export default function QuestDetail() {
       const { level: newLevel } = calculateLevel(result.newTotalXp);
       // Major / legendary quests tied to a faction earn a fresh reputation
       // title from the Archivist. Fire this in parallel with the rest of
-      // the completion UI — its latency shouldn't compound.
+      // the completion UI, its latency shouldn't compound.
       const retitlePromise = shouldRetitle(quest)
         ? retitleFactionFromQuest(quest.faction_id as string, quest)
         : Promise.resolve(null);
@@ -240,7 +240,7 @@ export default function QuestDetail() {
         ? ` · earned: ${result.buffGranted}`
         : '';
       // SFX: completion bell first, then any earned beats stack underneath.
-      // A negative net modifier means a debuff just landed and was applied —
+      // A negative net modifier means a debuff just landed and was applied -
       // play the debuff cue alongside completion so the user hears the cost.
       playSfx('quest_complete');
       if (result.netModifierPct < 0) playSfx('debuff_applied');
@@ -288,7 +288,7 @@ export default function QuestDetail() {
         await announceRetitle(retitlePromise);
         goBack();
       }
-      // For the level-up branch, the takeover owns the immediate moment —
+      // For the level-up branch, the takeover owns the immediate moment -
       // we stash the retitle promise so the takeover's onContinue can
       // announce it after the user dismisses, rather than silently. The
       // DB write happens whenever the promise resolves; the announcement
@@ -331,7 +331,7 @@ export default function QuestDetail() {
     setActionError(null);
     try {
       await abandonQuest(quest.id);
-      // The Mark of the Forsaken just landed — match it with the audio cue.
+      // The Mark of the Forsaken just landed, match it with the audio cue.
       // Hold the navigation back briefly so the SFX has time to start before
       // the screen unmounts; otherwise on web the audio context can be cut.
       playSfx('debuff_applied');
@@ -410,13 +410,14 @@ export default function QuestDetail() {
         setBusy(null);
         return;
       }
-      // Validate + clamp campaign % when a campaign is linked.
+      // Validate + clamp campaign % when a campaign is linked. 0 is
+      // allowed, "link without moving the bar". Matches DB CHECK.
       let parsedPct: number | null = null;
       if (editCampaignId) {
         const raw = Math.floor(Number(editCampaignContributionPct) || 0);
-        if (raw < 1 || raw > 100) {
+        if (raw < 0 || raw > 100) {
           playSfx('error');
-          setActionError('Campaign contribution must be between 1 and 100.');
+          setActionError('Campaign contribution must be between 0 and 100.');
           setBusy(null);
           return;
         }
@@ -625,7 +626,8 @@ export default function QuestDetail() {
               <Text className="font-body text-xl text-stone-700">%</Text>
             </View>
             <Text className="mt-2 font-body text-sm italic text-stone-500">
-              1–100. The campaign auto-closes the moment progress reaches 100%.
+              0–100. Use 0 to keep the quest linked to the campaign without
+              moving the bar. The campaign auto-closes at 100%.
             </Text>
           </View>
         ) : null}
@@ -651,7 +653,7 @@ export default function QuestDetail() {
           editable={busy !== 'save-edits'}
         />
         <Text className="mb-6 font-body text-lg text-stone-500">
-          Plain language is fine — the Tome reads dates loosely. Leave blank to remove.
+          Plain language is fine, the Tome reads dates loosely. Leave blank to remove.
         </Text>
 
         {actionError ? (
@@ -681,7 +683,7 @@ export default function QuestDetail() {
     );
   }
 
-  // View mode — read-only display + actions.
+  // View mode, read-only display + actions.
   const onCooldown = isCompletedThisPeriod(
     quest.recurrence,
     quest.last_completed_at,
@@ -766,7 +768,7 @@ export default function QuestDetail() {
                             ? 'years'
                             : 'cycles'
                   }`
-                : 'No streak yet — complete to start one'}
+                : 'No streak yet, complete to start one'}
             </Text>
             {cooldownLabel ? (
               <Text className="font-body text-lg text-stone-700">{cooldownLabel}</Text>
@@ -967,7 +969,7 @@ function Chip({
   );
 }
 
-// Phase 3.6 — full-screen takeover when a quest completion crosses a level
+// Phase 3.6, full-screen takeover when a quest completion crosses a level
 // threshold. Sequenced fade-in: caption → "LEVEL UP" → new level → XP delta →
 // continue button. Dim background reinforces the moment.
 function LevelUpTakeover({
@@ -986,7 +988,7 @@ function LevelUpTakeover({
   const stagger = (n: number) => FadeInDown.delay(300 + n * 350).duration(700);
   const [narration, setNarration] = useState<string | null>(null);
 
-  // Play the level-up sting once on mount — independent of the AI call.
+  // Play the level-up sting once on mount, independent of the AI call.
   useEffect(() => {
     playSfx('level_up_sting');
   }, []);

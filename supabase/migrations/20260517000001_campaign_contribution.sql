@@ -1,4 +1,4 @@
--- Phase 5.x — per-quest campaign contribution (Option B).
+-- Phase 5.x, per-quest campaign contribution (Option B).
 --
 -- Replaces the tier-scaled auto-advancement in bump_faction_and_campaign
 -- with a per-quest, user-set contribution percentage. The chronicler
@@ -32,7 +32,7 @@ alter table public.quests
 -- Looser pairing rule: contribution_pct can only be set when campaign_id
 -- is also set, BUT it's allowed to be null even when campaign_id is set.
 -- The trigger coalesces to a default in that case (see below). This
--- relaxation matters for deployment ordering — old client code that
+-- relaxation matters for deployment ordering, old client code that
 -- doesn't know about the new column can still insert quests with
 -- campaigns; the trigger fills in the default.
 alter table public.quests
@@ -58,7 +58,7 @@ set campaign_contribution_pct = case tier
 end
 where campaign_id is not null and campaign_contribution_pct is null;
 
--- 3. New trigger function — uses the per-quest column directly.
+-- 3. New trigger function, uses the per-quest column directly.
 create or replace function public.bump_faction_and_campaign()
 returns trigger
 language plpgsql

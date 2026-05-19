@@ -1,5 +1,5 @@
 // Helpers for surfacing errors that come from supabase-js (PostgrestError,
-// FunctionsHttpError, etc.) — these are plain objects, not Error instances,
+// FunctionsHttpError, etc.), these are plain objects, not Error instances,
 // so naive `e instanceof Error ? e.message : String(e)` returns "[object Object]"
 // and loses the real failure detail.
 
