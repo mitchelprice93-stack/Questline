@@ -25,7 +25,6 @@ import {
   formatDeadline,
   formatDeadlineRelative,
   isCompletedThisPeriod,
-  parseDeadline,
   recurrenceStatusLabel,
   urgencyClasses,
 } from '../../../lib/dates';
@@ -521,17 +520,7 @@ export default function QuestDetail() {
     const canSave = editTitle.trim().length > 0 && busy !== 'save-edits';
     return (
       <ParchmentScreen>
-        <ScrollView
-          className="flex-1"
-          contentContainerClassName="px-6 pt-20 pb-12"
-          // Default is "never": with the keyboard open, the FIRST tap on a
-          // Pressable inside the scroll just dismisses the keyboard and the
-          // touchable's onPress NEVER fires. The user has to tap twice to
-          // actually trigger Save. "handled" dismisses the keyboard AND
-          // delivers the press to the touchable in one gesture, so Save
-          // Changes / Cancel etc. all work on the first tap.
-          keyboardShouldPersistTaps="handled"
-        >
+        <ScrollView className="flex-1" contentContainerClassName="px-6 pt-20 pb-12">
         <Pressable onPress={onCancelEdit} className="mb-3 self-start active:opacity-60">
           <Text className="font-body text-xl text-amber-800">← Cancel edit</Text>
         </Pressable>
