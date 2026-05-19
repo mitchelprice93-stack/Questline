@@ -195,13 +195,6 @@ export default function QuestDetail() {
   const [editClassification, setEditClassification] = useState<QuestClassification>('side');
   const [editObjectives, setEditObjectives] = useState<QuestObjective[]>([]);
   const [editDeadline, setEditDeadline] = useState('');
-  // Tracks whether the chronicler actually typed in the deadline field.
-  // If they entered edit mode and tapped Save without touching it, we keep
-  // the existing ISO untouched, this avoids a chrono round-trip parse error
-  // when the prefilled "May 15, 2026 at 1:00 PM" display string doesn't
-  // re-parse cleanly. Set true on any onChangeText, cleared on edit-mode
-  // entry.
-  const [editDeadlineDirty, setEditDeadlineDirty] = useState(false);
   const [editRecurrence, setEditRecurrence] = useState<RecurrenceChoice>('none');
   // Custom-cadence config, only meaningful when editRecurrence === 'custom'.
   const [editRecurrenceInterval, setEditRecurrenceInterval] = useState<string>('3');
@@ -395,7 +388,6 @@ export default function QuestDetail() {
     setEditObjectives(quest.objectives);
     // Pre-fill with the human-readable form so the user can re-edit naturally.
     setEditDeadline(formatDeadline(quest.deadline) ?? '');
-    setEditDeadlineDirty(false);
     setEditRecurrence(recurrenceForUi(quest.recurrence));
     // Pre-fill custom-cadence inputs from the persisted values. Defaults
     // to "every 3 days" when the quest isn't custom so the conditional
@@ -430,25 +422,25 @@ export default function QuestDetail() {
 
   const onSaveEdits = async () => {
     if (!quest) return;
-    // Deadline policy:
-    //   - User never touched the field -> keep the existing ISO. Avoids a
-    //     chrono round-trip parse error on the prefilled display string.
-    //   - User typed and the field is now empty -> deadline removed.
-    //   - User typed something -> parse it. Show error on parse fail.
-    let deadlineIso: string | null = quest.deadline;
-    if (editDeadlineDirty) {
-      if (!editDeadline.trim()) {
-        deadlineIso = null;
-      } else {
-        const parsed = parseDeadline(editDeadline);
-        if (!parsed) {
-          playSfx('error');
-          setActionError(
-            `Couldn't read "${editDeadline.trim()}" as a date. Try something like "May 15, 2026", "5/15/26", or "next Friday".`,
-          );
-          return;
-        }
+    // Deadline policy (chronicler's spec):
+    //   - Whatever is in the input box at save time wins.
+    //   - Empty -> deadline removed (null).
+    //   - Has text and parses cleanly -> use the parsed ISO.
+    //   - Has text but won't parse -> keep the existing ISO so the rest of
+    //     the edits still go through, and show a non-blocking note so the
+    //     chronicler knows their typed value didn't take.
+    const trimmedDeadline = editDeadline.trim();
+    let deadlineIso: string | null;
+    let deadlineWarning: string | null = null;
+    if (!trimmedDeadline) {
+      deadlineIso = null;
+    } else {
+      const parsed = parseDeadline(trimmedDeadline);
+      if (parsed) {
         deadlineIso = parsed.toISOString();
+      } else {
+        deadlineIso = quest.deadline;
+        deadlineWarning = `Couldn't read "${trimmedDeadline}" as a date, deadline kept as it was. Try "May 15, 2026", "5/15/26", or "next Friday".`;
       }
     }
     setBusy('save-edits');
@@ -501,6 +493,12 @@ export default function QuestDetail() {
       setQuest(updated);
       setEditMode(false);
       setBusy(null);
+      // Non-blocking note if the typed deadline didn't parse cleanly so the
+      // chronicler knows their input was ignored, even though everything
+      // else saved.
+      if (deadlineWarning) {
+        void showInfoMessage('Deadline note', deadlineWarning);
+      }
     } catch (e) {
       playSfx('error');
       setActionError(e instanceof Error ? e.message : String(e));
@@ -718,10 +716,7 @@ export default function QuestDetail() {
         <Text className="mb-2 font-body text-xl text-stone-700">Deadline (optional)</Text>
         <TextInput
           value={editDeadline}
-          onChangeText={(text) => {
-            setEditDeadline(text);
-            setEditDeadlineDirty(true);
-          }}
+          onChangeText={setEditDeadline}
           autoCapitalize="none"
           placeholder="e.g., May 15, 2026 · 5/15/26 · next Friday"
           placeholderTextColor="#57534e"
