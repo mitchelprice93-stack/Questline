@@ -32,6 +32,7 @@ import {
 import { CampaignPicker } from './_campaign-picker';
 import { FactionPicker } from './_faction-picker';
 import { ObjectivesEditor } from './_objectives-editor';
+import { MonthDayChips, WeekdayChips } from './_recurrence-day-chips';
 
 const TIERS: QuestTier[] = ['trivial', 'minor', 'standard', 'major', 'legendary'];
 const CLASSIFICATIONS: QuestClassification[] = ['daily', 'side', 'main', 'legendary'];
@@ -129,6 +130,10 @@ export default function NewQuest() {
   // on first reveal.
   const [recurrenceInterval, setRecurrenceInterval] = useState<string>('3');
   const [recurrenceUnit, setRecurrenceUnit] = useState<RecurrenceUnit>('days');
+  // Weekly pinned weekdays (0=Sun..6=Sat). Empty array = "once per week".
+  // Monthly pinned days-of-month (1..31). Empty array = "once per month".
+  const [recurrenceWeekdays, setRecurrenceWeekdays] = useState<number[]>([]);
+  const [recurrenceMonthDays, setRecurrenceMonthDays] = useState<number[]>([]);
   const [buff, setBuff] = useState<BuffDraft>(emptyBuffDraft());
   const [campaignId, setCampaignId] = useState<string | null>(null);
   // % the campaign advances when this quest completes. Defaults via
@@ -249,6 +254,8 @@ export default function NewQuest() {
         recurrence: recurrenceForDb(recurrence),
         recurrenceInterval: parsedInterval,
         recurrenceUnit: recurrence === 'custom' ? recurrenceUnit : null,
+        recurrenceWeekdays: recurrence === 'weekly' ? recurrenceWeekdays : null,
+        recurrenceMonthDays: recurrence === 'monthly' ? recurrenceMonthDays : null,
         grantedBuff: buffDraftToPayload(buff),
         campaignId,
         campaignContributionPct: parsedPct,
@@ -453,6 +460,22 @@ export default function NewQuest() {
         </View>
       ) : null}
 
+      {recurrence === 'weekly' ? (
+        <WeekdayChips
+          value={recurrenceWeekdays}
+          onChange={setRecurrenceWeekdays}
+          disabled={submitting}
+        />
+      ) : null}
+
+      {recurrence === 'monthly' ? (
+        <MonthDayChips
+          value={recurrenceMonthDays}
+          onChange={setRecurrenceMonthDays}
+          disabled={submitting}
+        />
+      ) : null}
+
       {/* Faction + Campaign pickers carry their own labels via DropdownPicker
           so the parent doesn't need a wrapping View+Text, keeps spacing
           consistent with the other dropdowns on this form. */}
@@ -570,3 +593,4 @@ function Chip({
     </Pressable>
   );
 }
+

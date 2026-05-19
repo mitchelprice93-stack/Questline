@@ -56,6 +56,7 @@ import {
 import { CampaignPicker } from './_campaign-picker';
 import { FactionPicker } from './_faction-picker';
 import { ObjectivesEditor } from './_objectives-editor';
+import { MonthDayChips, WeekdayChips } from './_recurrence-day-chips';
 
 const TIERS: QuestTier[] = ['trivial', 'minor', 'standard', 'major', 'legendary'];
 const CLASSIFICATIONS: QuestClassification[] = ['daily', 'side', 'main', 'legendary'];
@@ -171,6 +172,9 @@ export default function QuestDetail() {
   // Custom-cadence config, only meaningful when editRecurrence === 'custom'.
   const [editRecurrenceInterval, setEditRecurrenceInterval] = useState<string>('3');
   const [editRecurrenceUnit, setEditRecurrenceUnit] = useState<RecurrenceUnit>('days');
+  // Weekly pinned weekdays / monthly pinned month-days. Empty = "once per period".
+  const [editRecurrenceWeekdays, setEditRecurrenceWeekdays] = useState<number[]>([]);
+  const [editRecurrenceMonthDays, setEditRecurrenceMonthDays] = useState<number[]>([]);
   const [editBuff, setEditBuff] = useState<BuffDraft>(emptyBuffDraft());
   const [editCampaignId, setEditCampaignId] = useState<string | null>(null);
   // Per-quest campaign contribution %; string for TextInput, parsed at save.
@@ -358,6 +362,8 @@ export default function QuestDetail() {
     // UI has something sensible if the user switches to Custom.
     setEditRecurrenceInterval(String(quest.recurrence_interval ?? 3));
     setEditRecurrenceUnit((quest.recurrence_unit as RecurrenceUnit) ?? 'days');
+    setEditRecurrenceWeekdays(quest.recurrence_weekdays ?? []);
+    setEditRecurrenceMonthDays(quest.recurrence_month_days ?? []);
     setEditBuff(buffDraftFromQuest(quest));
     setEditCampaignId(quest.campaign_id);
     setEditCampaignContributionPct(
@@ -432,6 +438,8 @@ export default function QuestDetail() {
         recurrence: recurrenceForDb(editRecurrence),
         recurrenceInterval: parsedInterval,
         recurrenceUnit: editRecurrence === 'custom' ? editRecurrenceUnit : null,
+        recurrenceWeekdays: editRecurrence === 'weekly' ? editRecurrenceWeekdays : null,
+        recurrenceMonthDays: editRecurrence === 'monthly' ? editRecurrenceMonthDays : null,
         grantedBuff: buffDraftToPayload(editBuff),
         campaignId: editCampaignId,
         campaignContributionPct: parsedPct,
@@ -583,6 +591,22 @@ export default function QuestDetail() {
           </View>
         ) : null}
 
+        {editRecurrence === 'weekly' ? (
+          <WeekdayChips
+            value={editRecurrenceWeekdays}
+            onChange={setEditRecurrenceWeekdays}
+            disabled={busy === 'save-edits'}
+          />
+        ) : null}
+
+        {editRecurrence === 'monthly' ? (
+          <MonthDayChips
+            value={editRecurrenceMonthDays}
+            onChange={setEditRecurrenceMonthDays}
+            disabled={busy === 'save-edits'}
+          />
+        ) : null}
+
         <Text className="mb-2 font-body text-xl text-stone-700">Objectives</Text>
         <View className="mb-6">
           <ObjectivesEditor
@@ -684,12 +708,17 @@ export default function QuestDetail() {
   }
 
   // View mode, read-only display + actions.
+  const pins = {
+    weekdays: quest.recurrence_weekdays,
+    monthDays: quest.recurrence_month_days,
+  };
   const onCooldown = isCompletedThisPeriod(
     quest.recurrence,
     quest.last_completed_at,
     new Date(),
     quest.recurrence_interval,
     quest.recurrence_unit,
+    pins,
   );
   const cooldownLabel = recurrenceStatusLabel(
     quest.recurrence,
@@ -697,6 +726,7 @@ export default function QuestDetail() {
     new Date(),
     quest.recurrence_interval,
     quest.recurrence_unit,
+    pins,
   );
   const isActive = quest.status === 'active';
   const lifecycleStamp =

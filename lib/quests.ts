@@ -59,6 +59,12 @@ export interface CreateQuestInput {
   /** Required for recurrence='custom', null otherwise. The DB enforces this. */
   recurrenceInterval?: number | null;
   recurrenceUnit?: 'days' | 'weeks' | 'months' | null;
+  /** Weekly recurrence: pinned weekdays (0=Sun..6=Sat). Null = "once a week,
+   *  any day" (legacy). Non-null = due on each of these days. */
+  recurrenceWeekdays?: number[] | null;
+  /** Monthly recurrence: pinned days of month (1..31). Null = "once a month".
+   *  Non-null = due on each of these days. */
+  recurrenceMonthDays?: number[] | null;
   /** Optional pre-declared buff awarded on completion if its condition is met. */
   grantedBuff?: GrantedBuff | null;
   /** Optional campaign this quest contributes to. Completing the quest
@@ -80,15 +86,36 @@ function recurrenceColumns(input: {
   recurrence?: QuestRecurrence;
   recurrenceInterval?: number | null;
   recurrenceUnit?: 'days' | 'weeks' | 'months' | null;
+  recurrenceWeekdays?: number[] | null;
+  recurrenceMonthDays?: number[] | null;
 }) {
   const rec = input.recurrence ?? null;
+  // Day-pin arrays are only meaningful for weekly/monthly. Force-null them
+  // for every other cadence so the DB CHECK constraints don't bounce us.
+  const weekdays =
+    rec === 'weekly' && input.recurrenceWeekdays && input.recurrenceWeekdays.length > 0
+      ? [...new Set(input.recurrenceWeekdays)].sort((a, b) => a - b)
+      : null;
+  const monthDays =
+    rec === 'monthly' && input.recurrenceMonthDays && input.recurrenceMonthDays.length > 0
+      ? [...new Set(input.recurrenceMonthDays)].sort((a, b) => a - b)
+      : null;
+
   if (rec !== 'custom') {
-    return { recurrence: rec, recurrence_interval: null, recurrence_unit: null };
+    return {
+      recurrence: rec,
+      recurrence_interval: null,
+      recurrence_unit: null,
+      recurrence_weekdays: weekdays,
+      recurrence_month_days: monthDays,
+    };
   }
   return {
     recurrence: 'custom',
     recurrence_interval: input.recurrenceInterval ?? null,
     recurrence_unit: input.recurrenceUnit ?? null,
+    recurrence_weekdays: null,
+    recurrence_month_days: null,
   };
 }
 
@@ -412,6 +439,10 @@ export interface UpdateQuestInput {
   /** Required when recurrence='custom', null otherwise. */
   recurrenceInterval?: number | null;
   recurrenceUnit?: 'days' | 'weeks' | 'months' | null;
+  /** Weekly recurrence: pinned weekdays (0=Sun..6=Sat). Null for none. */
+  recurrenceWeekdays?: number[] | null;
+  /** Monthly recurrence: pinned days of month (1..31). Null for none. */
+  recurrenceMonthDays?: number[] | null;
   /** Pass null to remove the granted buff; omit to leave unchanged. */
   grantedBuff?: GrantedBuff | null;
   /** Pass null to detach the quest from its campaign, or undefined to

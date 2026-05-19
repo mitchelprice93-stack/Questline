@@ -355,6 +355,7 @@ function QuestRow({ quest, status }: { quest: Quest; status: QuestStatus }) {
     new Date(),
     quest.recurrence_interval,
     quest.recurrence_unit,
+    { weekdays: quest.recurrence_weekdays, monthDays: quest.recurrence_month_days },
   );
 
   // Build the meta line piece-by-piece so we can dedupe when classification

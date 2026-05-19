@@ -152,10 +152,20 @@ type RecurrenceLike =
   | 'custom'
   | null;
 
+/** Extra options for per-day recurrence pinning (weekly with specific
+ *  weekdays, monthly with specific days-of-month). Both null means the
+ *  legacy "once per period" behavior. */
+export interface RecurrenceDayPins {
+  weekdays?: number[] | null; // 0=Sun..6=Sat, only for recurrence='weekly'
+  monthDays?: number[] | null; // 1..31, only for recurrence='monthly'
+}
+
 /**
  * True when the last_completed_at timestamp falls in the same period as
- * `now`. For custom cadence, requires interval + unit. Returns false for
- * one-shot quests and quests that have never been completed.
+ * `now`. For custom cadence, requires interval + unit. For weekly/monthly
+ * with day pins, the "period" is a single day, so this becomes "completed
+ * today". Returns false for one-shot quests and quests that have never
+ * been completed.
  */
 export function isCompletedThisPeriod(
   recurrence: RecurrenceLike,
@@ -163,6 +173,7 @@ export function isCompletedThisPeriod(
   now: Date = new Date(),
   customInterval?: number | null,
   customUnit?: 'days' | 'weeks' | 'months' | null,
+  pins?: RecurrenceDayPins,
 ): boolean {
   if (!recurrence || !lastCompletedAt) return false;
   const last = new Date(lastCompletedAt);
@@ -171,8 +182,16 @@ export function isCompletedThisPeriod(
     case 'daily':
       return utcDayKey(last) === utcDayKey(now);
     case 'weekly':
+      // With weekday pins each selected day is its own due instance,
+      // so "completed this period" means "completed today".
+      if (pins?.weekdays && pins.weekdays.length > 0) {
+        return utcDayKey(last) === utcDayKey(now);
+      }
       return utcWeekKey(last) === utcWeekKey(now);
     case 'monthly':
+      if (pins?.monthDays && pins.monthDays.length > 0) {
+        return utcDayKey(last) === utcDayKey(now);
+      }
       return utcMonthKey(last) === utcMonthKey(now);
     case 'yearly':
       return utcYearKey(last) === utcYearKey(now);
@@ -182,9 +201,46 @@ export function isCompletedThisPeriod(
   }
 }
 
+/** Names of weekdays for display, indexed 0=Sun..6=Sat. */
+const WEEKDAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+/** Ordinal suffix for a day-of-month (1st, 2nd, 3rd, 4th, ...). */
+function ordinal(n: number): string {
+  const s = ['th', 'st', 'nd', 'rd'];
+  const v = n % 100;
+  return n + (s[(v - 20) % 10] ?? s[v] ?? s[0]);
+}
+
+/** For a weekly+weekdays quest, return the next pinned weekday after `now`
+ *  (or today, if today is pinned and not yet completed). */
+function nextWeekdayName(weekdays: number[], now: Date, includeToday: boolean): string | null {
+  if (weekdays.length === 0) return null;
+  const sorted = [...new Set(weekdays)].sort((a, b) => a - b);
+  const today = now.getDay();
+  // Start from tomorrow if today is excluded (e.g. already completed today).
+  const start = includeToday ? 0 : 1;
+  for (let i = start; i < 8; i++) {
+    const d = (today + i) % 7;
+    if (sorted.includes(d)) return WEEKDAY_NAMES[d] ?? null;
+  }
+  return null;
+}
+
+/** For a monthly+month_days quest, return the next pinned day-of-month. */
+function nextMonthDayLabel(monthDays: number[], now: Date, includeToday: boolean): string | null {
+  if (monthDays.length === 0) return null;
+  const sorted = [...new Set(monthDays)].sort((a, b) => a - b);
+  const today = now.getDate();
+  const next = sorted.find((d) => (includeToday ? d >= today : d > today));
+  if (next !== undefined) return `the ${ordinal(next)}`;
+  // Wrap to next month: first pinned day in the next month.
+  return `the ${ordinal(sorted[0]!)} of next month`;
+}
+
 /**
  * Short label for a recurring quest's period status, e.g. "Done today",
- * "Done this week", or null when the quest is ready to be completed.
+ * "Done this week", "Next due Wednesday", or null when the quest is
+ * ready to be completed right now.
  */
 export function recurrenceStatusLabel(
   recurrence: RecurrenceLike,
@@ -192,7 +248,47 @@ export function recurrenceStatusLabel(
   now: Date = new Date(),
   customInterval?: number | null,
   customUnit?: 'days' | 'weeks' | 'months' | null,
+  pins?: RecurrenceDayPins,
 ): string | null {
+  // Weekly with weekday pins: bespoke logic since "this period" is just today.
+  if (recurrence === 'weekly' && pins?.weekdays && pins.weekdays.length > 0) {
+    const completedToday = isCompletedThisPeriod(
+      recurrence,
+      lastCompletedAt,
+      now,
+      customInterval,
+      customUnit,
+      pins,
+    );
+    const todayPinned = pins.weekdays.includes(now.getDay());
+    if (completedToday) {
+      const next = nextWeekdayName(pins.weekdays, now, false);
+      return next ? `Done today, next due ${next}` : 'Done today';
+    }
+    if (todayPinned) return null; // due now, fall through to normal display
+    const next = nextWeekdayName(pins.weekdays, now, true);
+    return next ? `Next due ${next}` : null;
+  }
+  // Monthly with month-day pins: same pattern.
+  if (recurrence === 'monthly' && pins?.monthDays && pins.monthDays.length > 0) {
+    const completedToday = isCompletedThisPeriod(
+      recurrence,
+      lastCompletedAt,
+      now,
+      customInterval,
+      customUnit,
+      pins,
+    );
+    const todayPinned = pins.monthDays.includes(now.getDate());
+    if (completedToday) {
+      const next = nextMonthDayLabel(pins.monthDays, now, false);
+      return next ? `Done today, next due ${next}` : 'Done today';
+    }
+    if (todayPinned) return null;
+    const next = nextMonthDayLabel(pins.monthDays, now, true);
+    return next ? `Next due ${next}` : null;
+  }
+  // Legacy / unpinned: original behavior.
   if (!isCompletedThisPeriod(recurrence, lastCompletedAt, now, customInterval, customUnit)) {
     return null;
   }

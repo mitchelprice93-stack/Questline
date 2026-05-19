@@ -39,6 +39,14 @@ export interface Quest {
   recurrence_interval: number | null;
   /** Custom cadence: the unit ('days', 'weeks', 'months'). Null unless recurrence='custom'. */
   recurrence_unit: QuestRecurrenceUnit | null;
+  /** Weekly recurrence: subset of weekdays this quest is due (0=Sun..6=Sat).
+   *  Null means "due once per week, any day". Non-null means each selected
+   *  day is its own due instance. Only set when recurrence='weekly'. */
+  recurrence_weekdays: number[] | null;
+  /** Monthly recurrence: subset of month-days this quest is due (1..31).
+   *  Null means "due once per month, any day". Non-null means each selected
+   *  day is its own due instance. Only set when recurrence='monthly'. */
+  recurrence_month_days: number[] | null;
   streak_count: number;
   deadline: string | null;
   /** Set when a one-shot quest reaches `completed` status. */
