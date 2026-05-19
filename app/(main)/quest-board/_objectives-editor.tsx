@@ -151,12 +151,22 @@ function ObjectiveRow({
     .onEnd((e) => {
       const shift = Math.round(e.translationY / ROW_HEIGHT);
       const to = Math.max(0, Math.min(count - 1, idx + shift));
-      // Snap back visually; the parent re-renders with the new order.
-      translateY.value = withSpring(0, { damping: 18, stiffness: 220 });
       dragging.value = 0;
       activeDrag.value = null;
       if (to !== idx) {
+        // Reorder commit: snap translateY back instantly rather than spring.
+        // React keys rows by array index, so springing back would animate on
+        // the row that now sits at the OLD index (a different objective after
+        // the swap), which looks wrong. The displaced sibling rows already
+        // made a visual gap exactly where the dragged item lands, so a snap
+        // here is unjarring: the dragged item appears in its slot, and the
+        // siblings finish their displacement animation back to 0.
+        translateY.value = 0;
         runOnJS(onReorder)(idx, to);
+      } else {
+        // No reorder, gentle spring back to the original slot is correct
+        // here because the same component instance stays at the same index.
+        translateY.value = withSpring(0, { damping: 18, stiffness: 220 });
       }
     });
 
