@@ -83,7 +83,7 @@ content but below modals.
 
 ### Constraints
 
-- **Length**: 2–4 minutes, looped seamlessly. The seam must be inaudible
+- **Length**: 2-4 minutes, looped seamlessly. The seam must be inaudible
   with no fade-out / fade-in cliff.
 - **Dynamic range**: compressed. The user will hear it under text reading
   and quest creation, often with their own audio playing nearby, quiet
@@ -209,7 +209,7 @@ Settings to choose where available:
 
 Post-generation processing (whoever masters):
 
-- Normalize to **−23 to −20 LUFS integrated**
+- Normalize to **-23 to -20 LUFS integrated**
 - Trim head and tail to a zero-crossing for clean loop seam
 - Export as 192 kbps stereo MP3 at 44.1 kHz
 

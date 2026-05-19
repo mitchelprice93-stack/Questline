@@ -850,7 +850,7 @@ function CampaignEditor({ initial, busy, onSave, onCancel, onDelete }: CampaignE
   const [status, setStatus] = useState<Campaign['status']>(initial?.status ?? 'active');
   const canSave = arcName.trim().length > 0 && goal.trim().length > 0 && !busy;
 
-  // Constrain to 0–100 on input rather than at submit so the user gets
+  // Constrain to 0-100 on input rather than at submit so the user gets
   // immediate feedback if they typo a wild number.
   const onProgressChange = (text: string) => {
     const cleaned = text.replace(/[^0-9]/g, '').slice(0, 3);
@@ -1015,12 +1015,4 @@ function AnimatedXpBar({ targetFraction }: { targetFraction: number }) {
             height: 8, // matches h-2 (Tailwind 0.5rem on default 16px base)
             width: '100%',
             borderRadius: 9999, // rounded-full
-            backgroundColor: '#f59e0b', // amber-500
-            transformOrigin: 'left',
-          },
-          style,
-        ]}
-      />
-    </View>
-  );
-}
+            backgroundCo

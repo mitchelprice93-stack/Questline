@@ -650,7 +650,7 @@ export default function QuestDetail() {
               <Text className="font-body text-xl text-stone-700">%</Text>
             </View>
             <Text className="mt-2 font-body text-sm italic text-stone-500">
-              0–100. Use 0 to keep the quest linked to the campaign without
+              0-100. Use 0 to keep the quest linked to the campaign without
               moving the bar. The campaign auto-closes at 100%.
             </Text>
           </View>
@@ -1088,42 +1088,4 @@ function LevelUpTakeover({
         <Animated.View entering={stagger(4)}>
           <Text className="mb-6 text-center font-display text-lg uppercase tracking-[0.3em] text-amber-300">
             {newStreak}-streak milestone · +{milestoneBonus} bonus XP
-          </Text>
-        </Animated.View>
-      ) : (
-        <View className="mb-6" />
-      )}
-
-      {/* The Archivist's commentary. Shows a loading line while the AI
-          call is in flight, then fades the narration in over it.
-          Templated fallback fires on error so the slot is never empty. */}
-      <View className="mb-10 max-w-md">
-        {narration ? (
-          <Animated.View entering={FadeIn.duration(900)}>
-            <Text className="text-center font-body italic leading-relaxed text-stone-200">
-              “{narration}”
-            </Text>
-          </Animated.View>
-        ) : (
-          <Text className="text-center font-body italic text-stone-600">
-            The Archivist takes up the quill…
-          </Text>
-        )}
-      </View>
-
-      <Animated.View
-        entering={stagger(milestoneBonus && milestoneBonus > 0 ? 5 : 4)}
-        className="w-full"
-      >
-        <Pressable
-          onPress={onContinue}
-          className="rounded-md bg-amber-600 px-4 py-3 active:bg-amber-700"
-        >
-          <Text className="text-center font-display text-2xl text-stone-100">
-            Continue your chronicle
-          </Text>
-        </Pressable>
-      </Animated.View>
-    </View>
-  );
-}
+   

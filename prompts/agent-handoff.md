@@ -122,7 +122,7 @@ supabase/
                                 # quest_generation, level_up_narration)
     delete-account/index.ts     # admin-key user deletion
     revenuecat-webhook/index.ts # RC → DB subscription state sync
-  migrations/                   # ~20 migrations; latest series Phase 4–5
+  migrations/                   # ~20 migrations; latest series Phase 4-5
 
 prompts/                        # Reference docs (NOT code)
   archivist-v1.md               # Synced into claude-proxy as system prompt
@@ -237,14 +237,14 @@ In rough order, most recent first:
   picker, `quest_generation` schema gains `suggested_faction_id` for
   AI auto-pick, and a new `reputation_retitle` proxy endpoint (Haiku
   4.5, 256 tokens) fires on every major/legendary completion tied to a
-  faction. The Archivist proposes a 1–3 word title themed to the
+  faction. The Archivist proposes a 1-3 word title themed to the
   specific deed; `lib/reputation.ts` validates + persists via
   `updateFaction`. Announced via `showInfoMessage` after the standard
   "Quest completed" alert, or after the level-up takeover dismisses
   (a `pendingRetitleRef` chains the announcement so level-up doesn't
   swallow it). Skips only when the AI returns the EXACT same title.
 - **Quest_generation routes to Haiku 4.5**, was Sonnet, now Haiku for
-  the high-volume schema-bounded endpoint. 2–4s vs 5–15s, 1/3 the cost.
+  the high-volume schema-bounded endpoint. 2-4s vs 5-15s, 1/3 the cost.
   Character creation + level-up narration stay on Sonnet for nuance.
 - **AI campaign auto-suggestion**, `quest_generation` prompt now
   receives the chronicler's active campaigns (id, arc_name,

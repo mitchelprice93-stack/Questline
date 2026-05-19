@@ -508,7 +508,7 @@ export default function NewQuest() {
             <Text className="font-body text-xl text-stone-700">%</Text>
           </View>
           <Text className="mt-2 font-body text-sm italic text-stone-500">
-            0–100. Use 0 to track the quest under the campaign without moving the
+            0-100. Use 0 to track the quest under the campaign without moving the
             bar. The campaign auto-closes the moment progress reaches 100%.
           </Text>
         </View>
@@ -555,42 +555,4 @@ export default function NewQuest() {
           disabled={submitting}
           className="rounded-md border border-stone-700 bg-amber-50/40 px-4 py-3 active:bg-amber-100/60"
         >
-          <Text className="text-center font-body text-stone-700">Regenerate</Text>
-        </Pressable>
-      </View>
-      <Pressable
-        onPress={onDiscard}
-        disabled={submitting}
-        className="rounded-md px-4 py-3 active:bg-amber-50/40"
-      >
-        <Text className="text-center font-body text-xl text-stone-500">Discard and start over</Text>
-      </Pressable>
-      </Animated.View>
-      </ScrollView>
-    </ParchmentScreen>
-  );
-}
-
-function Chip({
-  label,
-  selected,
-  onPress,
-}: {
-  label: string;
-  selected: boolean;
-  onPress: () => void;
-}) {
-  return (
-    <Pressable
-      onPress={onPress}
-      className={`rounded-full border px-3 py-1.5 ${selected ? 'border-amber-500 bg-amber-600/20' : 'border-stone-700 bg-amber-50/40'}`}
-    >
-      <Text
-        className={`font-body-medium text-xl capitalize ${selected ? 'text-amber-800' : 'text-stone-700'}`}
-      >
-        {label}
-      </Text>
-    </Pressable>
-  );
-}
-
+          

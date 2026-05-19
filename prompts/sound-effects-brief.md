@@ -36,8 +36,8 @@ soundscape:
   is fine; reverb tails should be short (under 0.4s).
 - **Mid-range frequency**, no sharp highs, no rumbling lows. The user
   is hearing this from a phone speaker most of the time.
-- **Volume budget**, every SFX gets normalized to **−16 LUFS** before
-  shipping, so nothing startles when stacked against the −23 LUFS
+- **Volume budget**, every SFX gets normalized to **-16 LUFS** before
+  shipping, so nothing startles when stacked against the -23 LUFS
   ambient bed. (See "Mastering" section at the bottom.)
 
 ---
@@ -219,8 +219,8 @@ Duration: 1.2-1.8s. Drop at `assets/audio/sfx/hero_pledge.mp3`.
 Once each clip is generated, run a quick pass before committing:
 
 1. **Trim silence** at head and tail (zero-crossing if possible).
-2. **Normalize to −16 LUFS** integrated. ElevenLabs output is usually
-   too quiet against the −23 LUFS ambient bed; bumping to −16 means
+2. **Normalize to -16 LUFS** integrated. ElevenLabs output is usually
+   too quiet against the -23 LUFS ambient bed; bumping to -16 means
    SFX are clearly audible without being jarring.
 3. **Export as MP3, 192 kbps stereo, 44.1 kHz**.
 

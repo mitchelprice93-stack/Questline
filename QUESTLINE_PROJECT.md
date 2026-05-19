@@ -65,7 +65,7 @@ DEV TOOLS
 
 **Goal:** A working app that lets the user create quests, mark them complete, and earn XP. No AI, no animations, no audio. Just the loop.
 
-**Duration estimate:** Weeks 1–3.
+**Duration estimate:** Weeks 1-3.
 
 **Exit criteria:** I can open the app, create a quest manually, complete it, see my XP increase, and level up. All offline. All persisted.
 
@@ -138,7 +138,7 @@ Test file: `lib/engine/xp.test.ts`. Use Jest. Cover edge cases: zero XP, negativ
 
 **Goal:** The Archivist comes online. Quest creation now generates narrative. Character creation produces a personalized character sheet.
 
-**Duration estimate:** Weeks 4–6.
+**Duration estimate:** Weeks 4-6.
 
 **Exit criteria:** I can fill out the character creation form and receive a fully-narrated character sheet from the Archivist. I can create a quest in plain language and receive a properly-formatted, lore-anchored quest back.
 
@@ -195,7 +195,7 @@ Test file: `lib/engine/xp.test.ts`. Use Jest. Cover edge cases: zero XP, negativ
 
 **Goal:** Questline becomes screenshottable. The cinematic, audio, and animations transform the app from "functional" to "shareable."
 
-**Duration estimate:** Weeks 7–10.
+**Duration estimate:** Weeks 7-10.
 
 **Exit criteria:** A new user opens the app for the first time and gets goosebumps within 30 seconds. The character sheet reveal feels cinematic. The app has visual identity.
 
@@ -254,7 +254,7 @@ Test file: `lib/engine/xp.test.ts`. Use Jest. Cover edge cases: zero XP, negativ
 
 **Goal:** The full RPG system is operational. Recurring quests, debuffs, notifications, and the daily/weekly rhythm.
 
-**Duration estimate:** Weeks 11–13.
+**Duration estimate:** Weeks 11-13.
 
 **Exit criteria:** A user can rely on Questline as their actual task manager for a full week without missing anything important.
 
@@ -267,9 +267,9 @@ Test file: `lib/engine/xp.test.ts`. Use Jest. Cover edge cases: zero XP, negativ
 ## 4.2 Debuff Engine
 - [~] Background job runs daily, deferred to pg_cron once SDK 4.4 lazy-refresh proves out; today refresh_debuffs_for is invoked on character-sheet load
 - [x] Detects neglected quests:
-  - 3 days untouched → "Cobwebs of Procrastination" (−10% XP next completion)
+  - 3 days untouched → "Cobwebs of Procrastination" (-10% XP next completion)
   - 7 days untouched → "Curse of the Idle Blade" (XP halved)
-  - Abandoned quest → "Mark of the Forsaken" (−5% next quest, 1-quest duration)
+  - Abandoned quest → "Mark of the Forsaken" (-5% next quest, 1-quest duration)
 - [x] Debuffs visible on character sheet
 - [x] `+rest` button clears debuffs older than 14 days, once per week
 - [x] Difficulty scaling: Master/Legendary stack debuffs (sum of pcts); Apprentice/Adept apply only the worst
@@ -308,7 +308,7 @@ Test file: `lib/engine/xp.test.ts`. Use Jest. Cover edge cases: zero XP, negativ
 
 **Goal:** Ship to the App Store and Google Play. Validate with real users.
 
-**Duration estimate:** Weeks 14–16.
+**Duration estimate:** Weeks 14-16.
 
 **Exit criteria:** Live on both stores. First 100 users acquired. First paying subscriber.
 
@@ -339,7 +339,7 @@ Test file: `lib/engine/xp.test.ts`. Use Jest. Cover edge cases: zero XP, negativ
 ## 5.3 App Store Assets
 - [ ] App icon (final, all required sizes)
 - [ ] Screenshots: 6 per device size, hero shots from cinematic + character sheet + quest board
-- [ ] App preview video (15–30s), cinematic excerpt + key features
+- [ ] App preview video (15-30s), cinematic excerpt + key features
 - [x] Privacy policy, live at https://mitchelprice93-stack.github.io/Questline/privacy/, lawyer-reviewed, parchment-themed; URL wired in `.env.local`; linked from Settings → Legal
 - [x] Terms of service, live at https://mitchelprice93-stack.github.io/Questline/terms/, same flow; Texas governing law
 - [x] Bundle identifiers, `com.mitchelprice.questline` for both iOS and Android, set in app.json
@@ -355,7 +355,7 @@ Test file: `lib/engine/xp.test.ts`. Use Jest. Cover edge cases: zero XP, negativ
 - [ ] Support URL (a simple landing page or email)
 
 ## 5.4 Beta Testing
-- [ ] TestFlight build distributed to 20–30 testers (mix of YouTube audience + friends)
+- [ ] TestFlight build distributed to 20-30 testers (mix of YouTube audience + friends)
 - [ ] Google Play internal testing track parallel
 - [ ] Feedback form (PostHog or Tally)
 - [ ] 2-week beta minimum before submission
@@ -363,7 +363,7 @@ Test file: `lib/engine/xp.test.ts`. Use Jest. Cover edge cases: zero XP, negativ
 
 ## 5.5 Soft Launch
 - [ ] Submit to App Store + Google Play, restricted to one country (Canada or Australia)
-- [ ] Monitor crash rates, retention, conversion for 1–2 weeks
+- [ ] Monitor crash rates, retention, conversion for 1-2 weeks
 - [ ] Fix critical issues; expand to US once stable
 - [ ] Begin YouTube launch content (build series, behind-the-scenes, walkthrough)
 
@@ -483,7 +483,7 @@ All tables: enable RLS, policy `auth.uid() = user_id`.
 
 # PHASE 2 VAULT (DO NOT BUILD IN V1)
 
-The following ideas are good. They are not v1. Anything that comes up during build that isn't on the Phase 1–5 list goes here.
+The following ideas are good. They are not v1. Anything that comes up during build that isn't on the Phase 1-5 list goes here.
 
 - Multiplayer guilds / shared quest boards
 - AI-generated quest illustrations (per quest, costly)

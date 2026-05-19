@@ -37,7 +37,7 @@ export type SfxName = keyof typeof SOURCES;
 
 // Per-SFX volume tweaks. Most sit at 1.0; some need to be ducked slightly.
 // Tune these by ear once the assets are real (current values are sane
-// defaults for normalized −16 LUFS clips).
+// defaults for normalized -16 LUFS clips).
 const VOLUMES: Partial<Record<SfxName, number>> = {
   button_tap: 0.55, // fires constantly; keep it light
   objective_check: 0.6,

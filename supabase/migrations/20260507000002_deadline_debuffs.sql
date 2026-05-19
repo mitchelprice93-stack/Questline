@@ -89,7 +89,7 @@ begin
         user_id, type, name, effect_description, xp_modifier_pct, source_kind, quest_id
       )
       select p_user_id, 'debuff', 'Cobwebs of Procrastination',
-             '−10% XP on the next completion, the hour has passed.',
+             '-10% XP on the next completion, the hour has passed.',
              -10, 'deadline_missed', v_quest.id
       where not exists (
         select 1 from public.modifiers

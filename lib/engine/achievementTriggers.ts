@@ -74,7 +74,7 @@ async function loadEarnedState(userId: string): Promise<EarnedState> {
  * unknown achievement code (skipped silently, drift between deploys).
  *
  * Inserting one row at a time so a race on one code doesn't abort sibling
- * grants. The number of grants per event is small (usually 1–3), so the
+ * grants. The number of grants per event is small (usually 1-3), so the
  * extra round-trips are immaterial.
  */
 async function insertGrant(

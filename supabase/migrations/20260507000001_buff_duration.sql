@@ -273,7 +273,7 @@ begin
         user_id, type, name, effect_description, xp_modifier_pct, source_kind, quest_id
       )
       select p_user_id, 'debuff', 'Cobwebs of Procrastination',
-             '−10% XP on the next completion',
+             '-10% XP on the next completion',
              -10, 'untouched_3d', v_quest.id
       where not exists (
         select 1 from public.modifiers
