@@ -17,6 +17,7 @@ import {
 } from 'react-native';
 import Animated, { FadeIn, FadeInDown, FadeOut } from 'react-native-reanimated';
 
+import { DeadlinePicker } from '../../../components/deadline-picker';
 import { DropdownPicker } from '../../../components/dropdown-picker';
 import { useAuth } from '../../../lib/auth';
 import {
@@ -194,18 +195,10 @@ export default function QuestDetail() {
   const [editTier, setEditTier] = useState<QuestTier>('standard');
   const [editClassification, setEditClassification] = useState<QuestClassification>('side');
   const [editObjectives, setEditObjectives] = useState<QuestObjective[]>([]);
-  const [editDeadline, setEditDeadline] = useState('');
-  // Synchronous mirror of editDeadline. Updated in onChangeText so the save
-  // handler can read the latest value without depending on React render
-  // timing. Avoids stale-closure reads of editDeadline.
-  const editDeadlineRef = useRef('');
-  // Direct ref to the TextInput so we can call .blur() on save. Blurring
-  // forces Android's IME to commit any composing/swipe/voice text, which
-  // fires onChangeText one last time and lands in editDeadlineRef before
-  // the parse step runs. Targeting this specific input avoids the global
-  // Keyboard.dismiss() approach which was conflicting with the
-  // DropdownPicker modals on some devices.
-  const editDeadlineInputRef = useRef<TextInput>(null);
+  // Stored as an ISO timestamp (or null for no deadline). The DeadlinePicker
+  // component owns its own calendar / time UI; we don't need any of the
+  // ref / blur / IME flush gymnastics the old text-input form required.
+  const [editDeadlineIso, setEditDeadlineIso] = useState<string | null>(null);
   const [editRecurrence, setEditRecurrence] = useState<RecurrenceChoice>('none');
   // Custom-cadence config, only meaningful when editRecurrence === 'custom'.
   const [editRecurrenceInterval, setEditRecurrenceInterval] = useState<string>('3');
@@ -397,10 +390,8 @@ export default function QuestDetail() {
     setEditTier(quest.tier);
     setEditClassification(quest.classification);
     setEditObjectives(quest.objectives);
-    // Pre-fill with the human-readable form so the user can re-edit naturally.
-    const prefill = formatDeadline(quest.deadline) ?? '';
-    setEditDeadline(prefill);
-    editDeadlineRef.current = prefill;
+    // Seed the picker with the current ISO. null means "no deadline".
+    setEditDeadlineIso(quest.deadline);
     setEditRecurrence(recurrenceForUi(quest.recurrence));
     // Pre-fill custom-cadence inputs from the persisted values. Defaults
     // to "every 3 days" when the quest isn't custom so the conditional
@@ -435,35 +426,9 @@ export default function QuestDetail() {
 
   const onSaveEdits = async () => {
     if (!quest) return;
-    // Tap on the Save button dismisses the keyboard via the ScrollView's
-    // keyboardShouldPersistTaps="handled" prop AND registers as a press in
-    // the same gesture. Any IME text committed by the dismiss has already
-    // landed in editDeadlineRef via onChangeText by the time this handler
-    // runs. No blur/wait dance needed.
-
-    // Deadline policy (chronicler's spec):
-    //   - Whatever is in the input box at save time wins.
-    //   - Empty -> deadline removed (null).
-    //   - Has text and parses cleanly -> use the parsed ISO.
-    //   - Has text but won't parse -> keep the existing ISO so the rest of
-    //     the edits still go through, and show a non-blocking note so the
-    //     chronicler knows their typed value didn't take.
-    // Read from the ref, not state, so we get the post-dismiss value even
-    // if React hasn't re-rendered yet.
-    const trimmedDeadline = editDeadlineRef.current.trim();
-    let deadlineIso: string | null;
-    let deadlineWarning: string | null = null;
-    if (!trimmedDeadline) {
-      deadlineIso = null;
-    } else {
-      const parsed = parseDeadline(trimmedDeadline);
-      if (parsed) {
-        deadlineIso = parsed.toISOString();
-      } else {
-        deadlineIso = quest.deadline;
-        deadlineWarning = `Couldn't read "${trimmedDeadline}" as a date, deadline kept as it was. Try "May 15, 2026", "5/15/26", or "next Friday".`;
-      }
-    }
+    // Deadline now comes from the DeadlinePicker as an ISO string (or null).
+    // No more text parsing, no chrono, no IME flush dance.
+    const deadlineIso: string | null = editDeadlineIso;
     setBusy('save-edits');
     setActionError(null);
     try {
@@ -514,12 +479,6 @@ export default function QuestDetail() {
       setQuest(updated);
       setEditMode(false);
       setBusy(null);
-      // Non-blocking note if the typed deadline didn't parse cleanly so the
-      // chronicler knows their input was ignored, even though everything
-      // else saved.
-      if (deadlineWarning) {
-        void showInfoMessage('Deadline note', deadlineWarning);
-      }
     } catch (e) {
       playSfx('error');
       setActionError(e instanceof Error ? e.message : String(e));
@@ -744,23 +703,11 @@ export default function QuestDetail() {
           />
         </View>
 
-        <Text className="mb-2 font-body text-xl text-stone-700">Deadline (optional)</Text>
-        <TextInput
-          ref={editDeadlineInputRef}
-          value={editDeadline}
-          onChangeText={(text) => {
-            setEditDeadline(text);
-            editDeadlineRef.current = text;
-          }}
-          autoCapitalize="none"
-          placeholder="e.g., May 15, 2026 · 5/15/26 · next Friday"
-          placeholderTextColor="#57534e"
-          className="mb-1 rounded-md border border-stone-700 bg-amber-50/40 px-4 py-3 font-body text-stone-900"
-          editable={busy !== 'save-edits'}
+        <DeadlinePicker
+          value={editDeadlineIso}
+          onChange={setEditDeadlineIso}
+          disabled={busy === 'save-edits'}
         />
-        <Text className="mb-6 font-body text-lg text-stone-500">
-          Plain language is fine, the Tome reads dates loosely. Leave blank to remove.
-        </Text>
 
         {actionError ? (
           <Text className="mb-4 font-body text-xl text-red-700">{actionError}</Text>
