@@ -653,10 +653,16 @@ export default function CharacterSheet() {
         <Text className="font-body text-xl text-stone-600">▾</Text>
       </Pressable>
 
+      {/*
+        animationType="none" matches the shared DropdownPicker / DeadlinePicker
+        fix. "fade" keeps the native Modal in the view hierarchy for ~250ms
+        after setOpen(false), and the RN gesture responder eats the next
+        tap during that window. Keep this on "none".
+      */}
       <Modal
         visible={difficultyOpen}
         transparent
-        animationType="fade"
+        animationType="none"
         onRequestClose={() => setDifficultyOpen(false)}
       >
         <Pressable

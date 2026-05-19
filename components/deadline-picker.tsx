@@ -171,7 +171,18 @@ export function DeadlinePicker({ value, onChange, disabled }: Props) {
         <Text className="font-body text-xl text-stone-600">▾</Text>
       </Pressable>
 
-      <Modal visible={open} transparent animationType="fade" onRequestClose={() => setOpen(false)}>
+      {/*
+        animationType="none" (not "fade") is deliberate. With "fade", the
+        Modal stays in the native view hierarchy for ~250ms after
+        setOpen(false) while it animates out. During that window the RN
+        gesture responder system was eating the user's first tap on Save
+        Changes: onPressIn fired on the button (pressed-state showed) but
+        onPress was cancelled mid-gesture as the responder relinquished
+        ownership. "none" pulls the Modal instantly so the next tap lands
+        cleanly on the button beneath it. Don't change this back without
+        re-verifying the double-tap issue.
+      */}
+      <Modal visible={open} transparent animationType="none" onRequestClose={() => setOpen(false)}>
         <Pressable
           onPress={() => setOpen(false)}
           className="flex-1 items-center justify-center bg-stone-950/70 px-6"

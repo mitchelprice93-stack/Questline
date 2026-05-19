@@ -9,7 +9,7 @@
 // opening the menu.
 
 import { useState } from 'react';
-import { Keyboard, Modal, Pressable, Text, View } from 'react-native';
+import { Modal, Pressable, Text, View } from 'react-native';
 
 export interface DropdownOption<T extends string> {
   value: T;
@@ -58,15 +58,7 @@ export function DropdownPicker<T extends string>({
         <Text className="mb-2 font-body text-xl text-stone-700">{label}</Text>
       ) : null}
       <Pressable
-        onPress={() => {
-          // Dismiss any open keyboard before showing the modal. Without
-          // this, on Android the keyboard from a TextInput elsewhere on
-          // the form can cover or steal focus from the option list,
-          // making the dropdown look "frozen" until the keyboard goes
-          // away on its own.
-          Keyboard.dismiss();
-          setOpen(true);
-        }}
+        onPress={() => setOpen(true)}
         disabled={disabled}
         className="flex-row items-center justify-between rounded-md border border-stone-700 bg-amber-50/40 px-4 py-3 active:bg-amber-100/60"
       >
@@ -81,10 +73,20 @@ export function DropdownPicker<T extends string>({
         <Text className="font-body text-xl text-stone-600">▾</Text>
       </Pressable>
 
+      {/*
+        animationType="none" (not "fade") is deliberate. With "fade", the
+        Modal stays in the native view hierarchy for ~250ms after
+        setOpen(false) while it animates out. During that window the RN
+        gesture responder system was eating the user's next tap anywhere
+        on the screen: onPressIn fired (pressed-state showed) but onPress
+        was cancelled mid-gesture as the responder relinquished. "none"
+        pulls the Modal instantly so the next tap lands cleanly. Don't
+        change this back without re-verifying the dead-input pause.
+      */}
       <Modal
         visible={open}
         transparent
-        animationType="fade"
+        animationType="none"
         onRequestClose={() => setOpen(false)}
       >
         <Pressable
