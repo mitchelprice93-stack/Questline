@@ -1,3 +1,4 @@
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import {
@@ -162,6 +163,11 @@ export default function QuestDetail() {
   // Edit-mode state. Populated from the loaded quest on entry, written back via
   // updateQuest on save.
   const [editMode, setEditMode] = useState(false);
+  // Granted-buff card defaults collapsed in view mode. Tester feedback: it
+  // was eating real estate at the top of the screen for info the chronicler
+  // only checks occasionally. Lives at the bottom now, tucked behind a header
+  // chevron so the deadline/objectives flow stays the focus.
+  const [buffExpanded, setBuffExpanded] = useState(false);
   const [editTitle, setEditTitle] = useState('');
   const [editDescription, setEditDescription] = useState('');
   const [editTier, setEditTier] = useState<QuestTier>('standard');
@@ -807,36 +813,6 @@ export default function QuestDetail() {
         </View>
       ) : null}
 
-      {quest.granted_buff_name && quest.granted_buff_pct !== null ? (
-        <View className="mb-6 rounded-md border border-emerald-900/50 bg-amber-50/40 p-4">
-          <View className="flex-row items-baseline justify-between">
-            <Text className="font-display text-lg uppercase tracking-widest text-emerald-800">
-              Granted buff
-            </Text>
-            <Text className="font-body text-lg text-emerald-800">
-              +{quest.granted_buff_pct}%
-            </Text>
-          </View>
-          <Text className="mt-1 font-body-medium text-2xl text-stone-900">
-            {quest.granted_buff_name}
-          </Text>
-          {quest.granted_buff_description ? (
-            <Text className="mt-0.5 font-body text-lg text-stone-700">
-              {quest.granted_buff_description}
-            </Text>
-          ) : null}
-          <Text className="mt-2 font-body text-lg text-stone-500">
-            {quest.granted_buff_condition === 'on_time'
-              ? 'Earned if you finish before the deadline.'
-              : quest.granted_buff_condition === 'all_objectives'
-                ? 'Earned if every objective box is checked.'
-                : 'Earned on completion.'}
-            {' '}Lasts {buffDurationDaysForTier(quest.tier)} day
-            {buffDurationDaysForTier(quest.tier) === 1 ? '' : 's'} once earned.
-          </Text>
-        </View>
-      ) : null}
-
       {quest.description ? (
         <Text className="mb-6 font-body text-stone-700">{quest.description}</Text>
       ) : (
@@ -887,6 +863,54 @@ export default function QuestDetail() {
               </Text>
             </Pressable>
           ))}
+        </View>
+      ) : null}
+
+      {quest.granted_buff_name && quest.granted_buff_pct !== null ? (
+        <View className="mb-6 overflow-hidden rounded-md border border-emerald-900/50 bg-amber-50/40">
+          <Pressable
+            onPress={() => setBuffExpanded((v) => !v)}
+            className="flex-row items-center justify-between px-4 py-3 active:bg-amber-100/60"
+            accessibilityRole="button"
+            accessibilityLabel={
+              buffExpanded ? 'Collapse granted buff details' : 'Expand granted buff details'
+            }
+          >
+            <View className="flex-1 flex-row items-baseline">
+              <Text className="font-display text-lg uppercase tracking-widest text-emerald-800">
+                Granted buff
+              </Text>
+              <Text className="ml-2 font-body text-base text-emerald-800/80">
+                +{quest.granted_buff_pct}% · {quest.granted_buff_name}
+              </Text>
+            </View>
+            <MaterialCommunityIcons
+              name={buffExpanded ? 'chevron-up' : 'chevron-down'}
+              size={24}
+              color="#065f46"
+            />
+          </Pressable>
+          {buffExpanded ? (
+            <View className="border-t border-emerald-900/30 px-4 py-3">
+              <Text className="font-body-medium text-2xl text-stone-900">
+                {quest.granted_buff_name}
+              </Text>
+              {quest.granted_buff_description ? (
+                <Text className="mt-0.5 font-body text-lg text-stone-700">
+                  {quest.granted_buff_description}
+                </Text>
+              ) : null}
+              <Text className="mt-2 font-body text-lg text-stone-500">
+                {quest.granted_buff_condition === 'on_time'
+                  ? 'Earned if you finish before the deadline.'
+                  : quest.granted_buff_condition === 'all_objectives'
+                    ? 'Earned if every objective box is checked.'
+                    : 'Earned on completion.'}
+                {' '}Lasts {buffDurationDaysForTier(quest.tier)} day
+                {buffDurationDaysForTier(quest.tier) === 1 ? '' : 's'} once earned.
+              </Text>
+            </View>
+          ) : null}
         </View>
       ) : null}
 
