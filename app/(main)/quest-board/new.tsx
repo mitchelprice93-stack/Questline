@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import Animated, { Easing, withTiming } from 'react-native-reanimated';
 
+import { DeadlinePicker } from '../../../components/deadline-picker';
 import { DropdownPicker } from '../../../components/dropdown-picker';
 import { parseDeadline } from '../../../lib/dates';
 import { xpForTier, type QuestTier } from '../../../lib/engine/xp';
@@ -123,7 +124,11 @@ export default function NewQuest() {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [objectives, setObjectives] = useState<QuestObjective[]>([]);
-  const [deadlineRaw, setDeadlineRaw] = useState('');
+  // Deadline as an ISO timestamp (or null for none). On forge we run chrono
+  // against the user's original prompt to seed it with any date they
+  // mentioned ("by next Friday", "due April 15", etc). The DeadlinePicker
+  // owns the calendar/time UI from there.
+  const [deadlineIso, setDeadlineIso] = useState<string | null>(null);
   const [recurrence, setRecurrence] = useState<RecurrenceChoice>('none');
   // Custom-cadence config, only meaningful when recurrence === 'custom'.
   // Defaults to "every 3 days" so the conditional UI doesn't appear empty
@@ -160,6 +165,12 @@ export default function NewQuest() {
       setTier(generated.suggested_tier);
       setClassification(generated.classification);
       setObjectives(generated.objectives);
+      // Seed the deadline from anything date-shaped in the original prompt.
+      // chrono picks up phrases like "by next Friday", "due May 15", or a
+      // bare "April 1". If nothing matches, the picker shows "No deadline"
+      // and the chronicler can tap it to set one manually.
+      const sniffed = parseDeadline(input);
+      setDeadlineIso(sniffed ? sniffed.toISOString() : null);
       // Prefill the buff editor from the AI's design, user can tweak or
       // remove on review.
       setBuff({
@@ -204,18 +215,7 @@ export default function NewQuest() {
 
   const onSave = async () => {
     if (!draft) return;
-    let deadlineIso: string | null = null;
-    if (deadlineRaw.trim()) {
-      const parsed = parseDeadline(deadlineRaw);
-      if (!parsed) {
-        playSfx('error');
-        setError(
-          `Couldn't read "${deadlineRaw.trim()}" as a date. Try something like "May 15, 2026", "5/15/26", or "next Friday".`,
-        );
-        return;
-      }
-      deadlineIso = parsed.toISOString();
-    }
+    // Deadline comes from the DeadlinePicker as ISO already, no parsing.
     setSubmitting(true);
     setError(null);
     try {
@@ -315,7 +315,11 @@ export default function NewQuest() {
   if (phase === 'input') {
     return (
       <ParchmentScreen>
-        <ScrollView className="flex-1" contentContainerClassName="px-6 pt-20 pb-12">
+        <ScrollView
+          className="flex-1"
+          contentContainerClassName="px-6 pt-20 pb-12"
+          keyboardShouldPersistTaps="handled"
+        >
         <Text className="mb-1 font-display text-4xl text-stone-900">New endeavor</Text>
         <Text className="mb-6 font-body text-stone-700">
           Tell the Archivist what you need to do, in plain language. They will forge it into a quest
@@ -524,19 +528,11 @@ export default function NewQuest() {
         <BuffEditor draft={buff} onChange={setBuff} questTier={tier} disabled={submitting} />
       </View>
 
-      <Text className="mb-2 font-body text-xl text-stone-700">Deadline (optional)</Text>
-      <TextInput
-        value={deadlineRaw}
-        onChangeText={setDeadlineRaw}
-        autoCapitalize="none"
-        placeholder="e.g., May 15, 2026 · 5/15/26 · next Friday"
-        placeholderTextColor="#57534e"
-        className="mb-1 rounded-md border border-stone-700 bg-amber-50/40 px-4 py-3 font-body text-stone-900"
-        editable={!submitting}
+      <DeadlinePicker
+        value={deadlineIso}
+        onChange={setDeadlineIso}
+        disabled={submitting}
       />
-      <Text className="mb-6 font-body text-lg text-stone-500">
-        Plain language is fine, the Tome reads dates loosely.
-      </Text>
 
       {error ? <Text className="mb-4 font-body text-xl text-red-700">{error}</Text> : null}
 
