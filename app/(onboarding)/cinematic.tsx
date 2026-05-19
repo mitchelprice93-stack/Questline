@@ -3,6 +3,7 @@ import { useVideoPlayer, VideoView } from 'expo-video';
 import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useAuth } from '../../lib/auth';
 import { getAudioMuted } from '../../lib/audio-prefs';
@@ -21,6 +22,12 @@ type Phase = 'idle' | 'intro' | 'loop';
 export default function Cinematic() {
   const router = useRouter();
   const { markCinematicSeen, markCinematicSeenOnDevice, profile, session } = useAuth();
+  // Lift the bottom-anchored Skip and "Begin your chronicle" buttons above
+  // the Android nav bar / iOS home indicator. bottom-10 (40px) base + inset
+  // keeps the existing visual rhythm on gesture-nav devices while clearing
+  // the system buttons on 3-button-nav devices.
+  const insets = useSafeAreaInsets();
+  const bottomOffset = 40 + insets.bottom;
 
   // 'idle' = pre-tap (web autoplay-with-audio is blocked without a user
   // gesture). 'intro' = narrated video playing through. 'loop' = ambient
@@ -132,7 +139,11 @@ export default function Cinematic() {
       {/* Skip floats bottom-right during the intro only. Once we're looping the
           ambient region the Begin button takes over. */}
       {skipVisible && phase === 'intro' ? (
-        <Animated.View entering={FadeIn.duration(400)} className="absolute bottom-10 right-6">
+        <Animated.View
+          entering={FadeIn.duration(400)}
+          className="absolute right-6"
+          style={{ bottom: bottomOffset }}
+        >
           <Pressable onPress={onContinue} className="px-3 py-2 active:opacity-60">
             <Text className="font-display text-xs uppercase tracking-[0.4em] text-stone-300">
               Skip
@@ -144,7 +155,8 @@ export default function Cinematic() {
       {phase === 'loop' ? (
         <Animated.View
           entering={FadeIn.duration(700).delay(200)}
-          className="absolute bottom-10 left-6 right-6"
+          className="absolute left-6 right-6"
+          style={{ bottom: bottomOffset }}
         >
           <Pressable
             onPress={onContinue}
