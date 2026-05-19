@@ -555,4 +555,18 @@ export default function NewQuest() {
           disabled={submitting}
           className="rounded-md border border-stone-700 bg-amber-50/40 px-4 py-3 active:bg-amber-100/60"
         >
-          
+          <Text className="text-center font-body text-stone-700">Regenerate</Text>
+        </Pressable>
+      </View>
+      <Pressable
+        onPress={onDiscard}
+        disabled={submitting}
+        className="rounded-md px-4 py-3 active:bg-amber-50/40"
+      >
+        <Text className="text-center font-body text-xl text-stone-500">Discard and start over</Text>
+      </Pressable>
+      </Animated.View>
+      </ScrollView>
+    </ParchmentScreen>
+  );
+}
