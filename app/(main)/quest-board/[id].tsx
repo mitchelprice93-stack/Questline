@@ -435,15 +435,11 @@ export default function QuestDetail() {
 
   const onSaveEdits = async () => {
     if (!quest) return;
-    // Flush any uncommitted IME / autocorrect / swipe-typing text into
-    // state by blurring the deadline input specifically. Touching only
-    // this input (rather than Keyboard.dismiss which acts globally)
-    // avoids interfering with other modal/dropdown state. The blur
-    // fires the IME commit -> onChangeText -> ref update chain.
-    editDeadlineInputRef.current?.blur();
-    // Small tick so the blur-triggered onChangeText can update
-    // editDeadlineRef.current before we read it.
-    await new Promise((resolve) => setTimeout(resolve, 30));
+    // Tap on the Save button dismisses the keyboard via the ScrollView's
+    // keyboardShouldPersistTaps="handled" prop AND registers as a press in
+    // the same gesture. Any IME text committed by the dismiss has already
+    // landed in editDeadlineRef via onChangeText by the time this handler
+    // runs. No blur/wait dance needed.
 
     // Deadline policy (chronicler's spec):
     //   - Whatever is in the input box at save time wins.
@@ -566,7 +562,17 @@ export default function QuestDetail() {
     const canSave = editTitle.trim().length > 0 && busy !== 'save-edits';
     return (
       <ParchmentScreen>
-        <ScrollView className="flex-1" contentContainerClassName="px-6 pt-20 pb-12">
+        <ScrollView
+          className="flex-1"
+          contentContainerClassName="px-6 pt-20 pb-12"
+          // Default is "never": with the keyboard open, the FIRST tap on a
+          // Pressable inside the scroll just dismisses the keyboard and the
+          // touchable's onPress NEVER fires. The user has to tap twice to
+          // actually trigger Save. "handled" dismisses the keyboard AND
+          // delivers the press to the touchable in one gesture, so Save
+          // Changes / Cancel etc. all work on the first tap.
+          keyboardShouldPersistTaps="handled"
+        >
         <Pressable onPress={onCancelEdit} className="mb-3 self-start active:opacity-60">
           <Text className="font-body text-xl text-amber-800">← Cancel edit</Text>
         </Pressable>
