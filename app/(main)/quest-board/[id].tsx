@@ -1,5 +1,10 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+
+import {
+  QuestCompleteScroll,
+  type QuestCompleteData,
+} from '../../../components/quest-complete-scroll';
 import { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
@@ -168,6 +173,22 @@ export default function QuestDetail() {
   // only checks occasionally. Lives at the bottom now, tucked behind a header
   // chevron so the deadline/objectives flow stays the focus.
   const [buffExpanded, setBuffExpanded] = useState(false);
+  // Lore-themed completion popup (replaces a generic Alert). The promise
+  // resolver lives in a ref so the caller can await dismissal just like the
+  // old Alert.alert-based showInfoMessage did.
+  const [completeBanner, setCompleteBanner] = useState<QuestCompleteData | null>(null);
+  const completeBannerResolverRef = useRef<(() => void) | null>(null);
+  const showCompleteBanner = (data: QuestCompleteData): Promise<void> =>
+    new Promise((resolve) => {
+      completeBannerResolverRef.current = resolve;
+      setCompleteBanner(data);
+    });
+  const onCompleteBannerDismiss = () => {
+    const resolve = completeBannerResolverRef.current;
+    completeBannerResolverRef.current = null;
+    setCompleteBanner(null);
+    if (resolve) resolve();
+  };
   const [editTitle, setEditTitle] = useState('');
   const [editDescription, setEditDescription] = useState('');
   const [editTier, setEditTier] = useState<QuestTier>('standard');
@@ -281,20 +302,25 @@ export default function QuestDetail() {
       } else if (quest.recurrence) {
         // Recurring: stay on the page so the user can see the streak update.
         // Refresh quest to pick up the new last_completed_at + streak_count.
-        await showInfoMessage(
-          'Quest completed',
-          `+${result.xpChange} XP earned${streakLine}${milestoneLine}${modifierLine}${buffLine}`,
-        );
+        await showCompleteBanner({
+          xpChange: result.xpChange,
+          streak: result.newStreak,
+          milestoneBonus: result.milestoneBonus,
+          modifierPct: result.netModifierPct,
+          buffGranted: result.buffGranted,
+        });
         await announceRetitle(retitlePromise);
         const fresh = await getQuest(quest.id);
         if (fresh) setQuest(fresh);
         refetchProfile();
         setBusy(null);
       } else {
-        await showInfoMessage(
-          'Quest completed',
-          `+${result.xpChange} XP earned${modifierLine}${buffLine} · ${result.newTotalXp} total`,
-        );
+        await showCompleteBanner({
+          xpChange: result.xpChange,
+          newTotalXp: result.newTotalXp,
+          modifierPct: result.netModifierPct,
+          buffGranted: result.buffGranted,
+        });
         await announceRetitle(retitlePromise);
         goBack();
       }
@@ -744,6 +770,7 @@ export default function QuestDetail() {
   return (
     <ParchmentScreen>
       {showShimmer ? <CompletionShimmer /> : null}
+      <QuestCompleteScroll data={completeBanner} onDismiss={onCompleteBannerDismiss} />
       <ScrollView className="flex-1" contentContainerClassName="px-6 pt-20 pb-12">
       <Pressable onPress={goBack} className="mb-3 self-start active:opacity-60">
         <Text className="font-body text-xl text-amber-800">← Quest Board</Text>
