@@ -1015,4 +1015,12 @@ function AnimatedXpBar({ targetFraction }: { targetFraction: number }) {
             height: 8, // matches h-2 (Tailwind 0.5rem on default 16px base)
             width: '100%',
             borderRadius: 9999, // rounded-full
-            backgroundCo
+            backgroundColor: '#f59e0b', // amber-500
+            transformOrigin: 'left',
+          },
+          style,
+        ]}
+      />
+    </View>
+  );
+}
