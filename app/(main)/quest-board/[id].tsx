@@ -8,7 +8,6 @@ import {
 import { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
-  Keyboard,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -196,13 +195,17 @@ export default function QuestDetail() {
   const [editClassification, setEditClassification] = useState<QuestClassification>('side');
   const [editObjectives, setEditObjectives] = useState<QuestObjective[]>([]);
   const [editDeadline, setEditDeadline] = useState('');
-  // Mirrors editDeadline synchronously so the save handler can read the
-  // very latest value even when Android's IME has uncommitted composing
-  // text. Without this, the first Save tap blurs the input (committing
-  // composed text via onChangeText) but the closure-captured editDeadline
-  // is still the pre-commit value, so the user has to tap Save twice.
-  // Updated in onChangeText alongside setEditDeadline.
+  // Synchronous mirror of editDeadline. Updated in onChangeText so the save
+  // handler can read the latest value without depending on React render
+  // timing. Avoids stale-closure reads of editDeadline.
   const editDeadlineRef = useRef('');
+  // Direct ref to the TextInput so we can call .blur() on save. Blurring
+  // forces Android's IME to commit any composing/swipe/voice text, which
+  // fires onChangeText one last time and lands in editDeadlineRef before
+  // the parse step runs. Targeting this specific input avoids the global
+  // Keyboard.dismiss() approach which was conflicting with the
+  // DropdownPicker modals on some devices.
+  const editDeadlineInputRef = useRef<TextInput>(null);
   const [editRecurrence, setEditRecurrence] = useState<RecurrenceChoice>('none');
   // Custom-cadence config, only meaningful when editRecurrence === 'custom'.
   const [editRecurrenceInterval, setEditRecurrenceInterval] = useState<string>('3');
@@ -432,17 +435,15 @@ export default function QuestDetail() {
 
   const onSaveEdits = async () => {
     if (!quest) return;
-    // Flush any uncommitted IME / autocorrect / swipe-typing text BEFORE
-    // reading the deadline field. Android keyboards routinely hold
-    // composing text that hasn't fired onChangeText yet. Dismissing the
-    // keyboard blurs the active input, which forces the IME to commit
-    // that text. Without this, the first Save tap captured stale state
-    // and the chronicler had to tap Save twice.
-    Keyboard.dismiss();
-    // Tiny wait so the commit can propagate through the bridge and update
-    // editDeadlineRef.current (we update the ref synchronously in
-    // onChangeText). 60ms is well under perceptible latency.
-    await new Promise((resolve) => setTimeout(resolve, 60));
+    // Flush any uncommitted IME / autocorrect / swipe-typing text into
+    // state by blurring the deadline input specifically. Touching only
+    // this input (rather than Keyboard.dismiss which acts globally)
+    // avoids interfering with other modal/dropdown state. The blur
+    // fires the IME commit -> onChangeText -> ref update chain.
+    editDeadlineInputRef.current?.blur();
+    // Small tick so the blur-triggered onChangeText can update
+    // editDeadlineRef.current before we read it.
+    await new Promise((resolve) => setTimeout(resolve, 30));
 
     // Deadline policy (chronicler's spec):
     //   - Whatever is in the input box at save time wins.
@@ -739,6 +740,7 @@ export default function QuestDetail() {
 
         <Text className="mb-2 font-body text-xl text-stone-700">Deadline (optional)</Text>
         <TextInput
+          ref={editDeadlineInputRef}
           value={editDeadline}
           onChangeText={(text) => {
             setEditDeadline(text);

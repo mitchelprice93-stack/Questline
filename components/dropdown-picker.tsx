@@ -9,7 +9,7 @@
 // opening the menu.
 
 import { useState } from 'react';
-import { Modal, Pressable, Text, View } from 'react-native';
+import { Keyboard, Modal, Pressable, Text, View } from 'react-native';
 
 export interface DropdownOption<T extends string> {
   value: T;
@@ -58,7 +58,15 @@ export function DropdownPicker<T extends string>({
         <Text className="mb-2 font-body text-xl text-stone-700">{label}</Text>
       ) : null}
       <Pressable
-        onPress={() => setOpen(true)}
+        onPress={() => {
+          // Dismiss any open keyboard before showing the modal. Without
+          // this, on Android the keyboard from a TextInput elsewhere on
+          // the form can cover or steal focus from the option list,
+          // making the dropdown look "frozen" until the keyboard goes
+          // away on its own.
+          Keyboard.dismiss();
+          setOpen(true);
+        }}
         disabled={disabled}
         className="flex-row items-center justify-between rounded-md border border-stone-700 bg-amber-50/40 px-4 py-3 active:bg-amber-100/60"
       >
