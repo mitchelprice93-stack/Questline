@@ -102,55 +102,46 @@ export function QuestCompleteScroll({ data, onDismiss }: Props) {
             </Text>
 
             {/* XP centerpiece */}
-            <View className="mb-4 items-center">
+            <View className="mb-3 items-center">
               <Text className="font-display-bold text-4xl text-amber-700">
                 +{xpChange.toLocaleString()} XP
               </Text>
-              {modifierPct !== undefined && modifierPct !== 0 ? (
-                <Text className="mt-1 font-body text-sm italic text-stone-600">
-                  {modifierPct > 0
-                    ? `with the wind at your back, +${modifierPct}%`
-                    : `against the tide, ${modifierPct}%`}
-                </Text>
-              ) : null}
             </View>
 
-            {/* Optional streak line. The Tome notes ongoing cadence. */}
+            {/* Compact stat lines. Each row only renders when relevant. Single
+                "label: value" form, in keeping with the chronicler's request
+                for terse stat sheet readouts rather than narrated prose. */}
             {streak && streak > 0 ? (
-              <View className="mb-2 items-center">
-                <Text className="font-display text-sm uppercase tracking-widest text-stone-600">
-                  Streak
-                </Text>
-                <Text className="font-display-bold text-2xl text-amber-800">
-                  {streak} {streak === 1 ? 'turning' : 'turnings'} of the page
-                </Text>
-              </View>
+              <Text className="mb-1 text-center font-body text-lg text-stone-700">
+                Streak: <Text className="font-body-medium text-amber-800">{streak}</Text>
+              </Text>
             ) : null}
 
-            {/* Milestone bonus. Only shown when a streak threshold paid out. */}
+            {modifierPct !== undefined && modifierPct !== 0 ? (
+              <Text className="mb-1 text-center font-body text-lg text-stone-700">
+                Applied Buffs:{' '}
+                <Text
+                  className={`font-body-medium ${
+                    modifierPct > 0 ? 'text-emerald-800' : 'text-red-800'
+                  }`}
+                >
+                  {modifierPct > 0 ? '+' : ''}
+                  {modifierPct}%
+                </Text>
+              </Text>
+            ) : null}
+
             {milestoneBonus && milestoneBonus > 0 ? (
-              <View className="mb-2 items-center">
-                <Text className="font-body text-base italic text-amber-700">
-                  Milestone bonus, +{milestoneBonus} XP
-                </Text>
-              </View>
+              <Text className="mb-1 text-center font-body text-lg text-stone-700">
+                Milestone Bonus:{' '}
+                <Text className="font-body-medium text-amber-800">+{milestoneBonus} XP</Text>
+              </Text>
             ) : null}
 
-            {/* Granted buff. */}
             {buffGranted ? (
-              <View className="mb-2 items-center">
-                <Text className="font-display text-sm uppercase tracking-widest text-emerald-800">
-                  Boon earned
-                </Text>
-                <Text className="font-body-medium text-lg text-stone-900">{buffGranted}</Text>
-              </View>
-            ) : null}
-
-            {/* One-shot quests show the running total at the bottom. Recurring
-                quests omit it; the streak is more meaningful for them. */}
-            {newTotalXp !== undefined ? (
-              <Text className="mt-3 text-center font-body text-sm italic text-stone-600">
-                The Tome now bears {newTotalXp.toLocaleString()} XP in your name.
+              <Text className="mb-1 text-center font-body text-lg text-stone-700">
+                Boon Earned:{' '}
+                <Text className="font-body-medium text-emerald-800">{buffGranted}</Text>
               </Text>
             ) : null}
 
