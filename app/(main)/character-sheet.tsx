@@ -255,8 +255,8 @@ export default function CharacterSheet() {
         <AnimatedXpBar targetFraction={atMaxLevel ? 1 : levelProgressFraction(totalXp)} />
         <Text className="font-body text-lg text-stone-500">
           {atMaxLevel
-            ? `${animatedTotalXp.toLocaleString()} XP · max level reached`
-            : `${currentLevelXp.toLocaleString()} / ${nextLevelXp.toLocaleString()} XP into this level · ${animatedTotalXp.toLocaleString()} total`}
+            ? 'Max level reached'
+            : `${currentLevelXp.toLocaleString()} / ${nextLevelXp.toLocaleString()} XP`}
         </Text>
         <Pressable
           onPress={() => router.push('/xp-history')}
