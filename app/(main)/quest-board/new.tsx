@@ -1,6 +1,11 @@
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Pressable, Text, TextInput, View } from 'react-native';
+// ScrollView from gesture-handler, not react-native. RN's ScrollView gets
+// its responder stuck after a Modal dismiss on Android, eating the next
+// tap as a potential scroll. See app/(main)/quest-board/[id].tsx for the
+// full note.
+import { ScrollView } from 'react-native-gesture-handler';
 import Animated, { Easing, withTiming } from 'react-native-reanimated';
 
 import { DeadlinePicker } from '../../../components/deadline-picker';
@@ -315,11 +320,7 @@ export default function NewQuest() {
   if (phase === 'input') {
     return (
       <ParchmentScreen>
-        <ScrollView
-          className="flex-1"
-          contentContainerClassName="px-6 pt-20 pb-12"
-          keyboardShouldPersistTaps="handled"
-        >
+        <ScrollView className="flex-1" contentContainerClassName="px-6 pt-20 pb-12">
         <Text className="mb-1 font-display text-4xl text-stone-900">New endeavor</Text>
         <Text className="mb-6 font-body text-stone-700">
           Tell the Archivist what you need to do, in plain language. They will forge it into a quest

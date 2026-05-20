@@ -2,7 +2,12 @@ import Constants from 'expo-constants';
 import { useRouter } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import { useEffect, useState } from 'react';
-import { Linking, Platform, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import { Linking, Platform, Pressable, Text, TextInput, View } from 'react-native';
+// ScrollView from gesture-handler, not react-native. RN's ScrollView gets
+// its responder stuck after a Modal dismiss on Android, eating the next
+// tap as a potential scroll. See app/(main)/quest-board/[id].tsx for the
+// full note.
+import { ScrollView } from 'react-native-gesture-handler';
 
 import {
   deleteAccount,

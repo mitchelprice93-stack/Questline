@@ -9,12 +9,21 @@ import { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Pressable,
-  ScrollView,
   StyleSheet,
   Text,
   TextInput,
   View,
 } from 'react-native';
+// ScrollView intentionally pulled from react-native-gesture-handler, not
+// react-native. RN's built-in ScrollView gets its onInterceptTouchEvent
+// state stuck after a Modal dismiss on Android, swallowing the user's
+// next tap as a potential scroll. GH's ScrollView negotiates the
+// responder via gesture-handler's gesture system, which recovers cleanly
+// (and it composes correctly with the GestureHandlerRootView wrap used
+// for objectives drag-to-reorder). Symptom if reverted: tap on Save
+// Changes after picking from a dropdown does nothing until the user
+// scrolls.
+import { ScrollView } from 'react-native-gesture-handler';
 import Animated, { FadeIn, FadeInDown, FadeOut } from 'react-native-reanimated';
 
 import { DeadlinePicker } from '../../../components/deadline-picker';

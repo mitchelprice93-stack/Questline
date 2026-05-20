@@ -1,6 +1,11 @@
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Modal, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Modal, Pressable, Text, TextInput, View } from 'react-native';
+// ScrollView from gesture-handler, not react-native. RN's ScrollView gets
+// its responder stuck after a Modal dismiss on Android, eating the next
+// tap as a potential scroll. See app/(main)/quest-board/[id].tsx for the
+// full note.
+import { ScrollView } from 'react-native-gesture-handler';
 import Animated, {
   Easing,
   useAnimatedStyle,
