@@ -23,7 +23,16 @@ import {
 // for objectives drag-to-reorder). Symptom if reverted: tap on Save
 // Changes after picking from a dropdown does nothing until the user
 // scrolls.
-import { ScrollView } from 'react-native-gesture-handler';
+//
+// Pressable from gesture-handler (aliased as GHPressable) is used for
+// the Save Changes button specifically. The GH ScrollView swap fixed
+// the dead-tap for dropdowns near the top of the form (where the user
+// naturally scrolls down to reach Save and that scroll resets the
+// responder), but the DeadlinePicker and buff-condition dropdown sit
+// near the bottom, so Save is in view and no scroll happens. GH's
+// Pressable uses gesture-handler's gesture engine instead of RN's
+// responder, which doesn't get stuck after a Modal dismiss.
+import { ScrollView, Pressable as GHPressable } from 'react-native-gesture-handler';
 import Animated, { FadeIn, FadeInDown, FadeOut } from 'react-native-reanimated';
 
 import { DeadlinePicker } from '../../../components/deadline-picker';
@@ -712,7 +721,15 @@ export default function QuestDetail() {
         ) : null}
 
         <View className="flex-row gap-3">
-          <Pressable
+          {/* GHPressable (gesture-handler's Pressable), not RN's Pressable.
+              RN's Pressable goes through the responder system, which can
+              be left in a stuck state after a Modal close on Android,
+              eating the first tap. GH's Pressable uses gesture-handler's
+              gesture engine and is unaffected. Specifically fixes the
+              dead-tap after closing the DeadlinePicker or the buff
+              condition dropdown (both sit at the bottom of the form so
+              the user doesn't scroll before reaching Save). */}
+          <GHPressable
             onPress={onSaveEdits}
             disabled={!canSave}
             className={`flex-1 rounded-md px-4 py-3 ${canSave ? 'bg-amber-600 active:bg-amber-700' : 'bg-amber-100/40'}`}
@@ -720,7 +737,7 @@ export default function QuestDetail() {
             <Text className="text-center font-display text-2xl text-stone-900">
               {busy === 'save-edits' ? 'Saving…' : 'Save changes'}
             </Text>
-          </Pressable>
+          </GHPressable>
           <Pressable
             onPress={onCancelEdit}
             disabled={busy === 'save-edits'}

@@ -66,12 +66,15 @@ function daysInMonth(year: number, month: number): number {
   return new Date(year, month + 1, 0).getDate();
 }
 
-/** Format an ISO string for the trigger display. */
+/** Format an ISO string for the trigger display. Includes weekday so the
+ *  chronicler can verify alignment between the picked grid cell and the
+ *  committed date at a glance, e.g. "Wed, May 20, 2026 · 9:00 AM". */
 function triggerDisplay(iso: string | null): string {
   if (!iso) return 'No deadline';
   const d = new Date(iso);
   if (isNaN(d.getTime())) return 'No deadline';
   const dateStr = d.toLocaleDateString('en-US', {
+    weekday: 'short',
     year: 'numeric',
     month: 'short',
     day: 'numeric',
@@ -150,14 +153,23 @@ export function DeadlinePicker({ value, onChange, disabled }: Props) {
     setOpen(false);
   };
 
-  // Build the day grid: leading blanks for the offset of the 1st of the
-  // month, then the days, padded to a multiple of 7.
+  // Build the day grid as an array of weeks (each is 7 cells). Leading
+  // blanks for the offset of the 1st of the month, then the days, padded
+  // to a multiple of 7. Rendering as explicit week rows below (rather
+  // than one big flex-wrap) guarantees columns align with the header
+  // row, since both use flex-1 cells. The previous flex-wrap + percentage
+  // approach could shift the first row by sub-pixel rounding, putting
+  // dates under the wrong weekday header.
   const firstDayOfMonth = new Date(year, month, 1).getDay(); // 0=Sun
   const totalDays = daysInMonth(year, month);
-  const cells: (number | null)[] = [];
-  for (let i = 0; i < firstDayOfMonth; i++) cells.push(null);
-  for (let d = 1; d <= totalDays; d++) cells.push(d);
-  while (cells.length % 7 !== 0) cells.push(null);
+  const flatCells: (number | null)[] = [];
+  for (let i = 0; i < firstDayOfMonth; i++) flatCells.push(null);
+  for (let d = 1; d <= totalDays; d++) flatCells.push(d);
+  while (flatCells.length % 7 !== 0) flatCells.push(null);
+  const weeks: (number | null)[][] = [];
+  for (let i = 0; i < flatCells.length; i += 7) {
+    weeks.push(flatCells.slice(i, i + 7));
+  }
 
   return (
     <View className="mb-4">
@@ -222,32 +234,38 @@ export function DeadlinePicker({ value, onChange, disabled }: Props) {
                 ))}
               </View>
 
-              {/* Day grid */}
-              <View className="mb-3 flex-row flex-wrap">
-                {cells.map((cell, idx) => {
-                  const selected = cell !== null && cell === day;
-                  return (
-                    <Pressable
-                      key={idx}
-                      onPress={() => {
-                        if (cell !== null) setDay(cell);
-                      }}
-                      disabled={cell === null}
-                      // 1/7 width per day so the row always holds exactly 7 cells.
-                      className={`w-[14.2857%] items-center justify-center py-2 ${
-                        selected ? 'rounded-md bg-amber-600' : ''
-                      }`}
-                    >
-                      <Text
-                        className={`font-body text-lg ${
-                          selected ? 'font-body-medium text-amber-50' : 'text-stone-800'
-                        } ${cell === null ? 'opacity-0' : ''}`}
-                      >
-                        {cell ?? '·'}
-                      </Text>
-                    </Pressable>
-                  );
-                })}
+              {/* Day grid, one flex-row per week so columns align with the
+                  flex-1 header row above. Cells inside each week are
+                  flex-1 (matching the header layout), so column N of the
+                  cells lives under column N of the header by construction. */}
+              <View className="mb-3">
+                {weeks.map((week, weekIdx) => (
+                  <View key={weekIdx} className="flex-row">
+                    {week.map((cell, colIdx) => {
+                      const selected = cell !== null && cell === day;
+                      return (
+                        <Pressable
+                          key={colIdx}
+                          onPress={() => {
+                            if (cell !== null) setDay(cell);
+                          }}
+                          disabled={cell === null}
+                          className={`flex-1 items-center justify-center py-2 ${
+                            selected ? 'rounded-md bg-amber-600' : ''
+                          }`}
+                        >
+                          <Text
+                            className={`font-body text-lg ${
+                              selected ? 'font-body-medium text-amber-50' : 'text-stone-800'
+                            } ${cell === null ? 'opacity-0' : ''}`}
+                          >
+                            {cell ?? '·'}
+                          </Text>
+                        </Pressable>
+                      );
+                    })}
+                  </View>
+                ))}
               </View>
 
               {/* Time row */}
