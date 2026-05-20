@@ -728,15 +728,29 @@ export default function QuestDetail() {
               gesture engine and is unaffected. Specifically fixes the
               dead-tap after closing the DeadlinePicker or the buff
               condition dropdown (both sit at the bottom of the form so
-              the user doesn't scroll before reaching Save). */}
+              the user doesn't scroll before reaching Save).
+
+              The visual styling lives on the child View, not on
+              GHPressable itself, because NativeWind's className doesn't
+              wire through to gesture-handler's Pressable. GHPressable
+              owns layout (flex:1) and pressed-opacity feedback via its
+              style callback; the View carries the rounded amber surface
+              the chronicler actually sees. */}
           <GHPressable
             onPress={onSaveEdits}
             disabled={!canSave}
-            className={`flex-1 rounded-md px-4 py-3 ${canSave ? 'bg-amber-600 active:bg-amber-700' : 'bg-amber-100/40'}`}
+            style={({ pressed }) => ({
+              flex: 1,
+              opacity: pressed && canSave ? 0.85 : 1,
+            })}
           >
-            <Text className="text-center font-display text-2xl text-stone-900">
-              {busy === 'save-edits' ? 'Saving…' : 'Save changes'}
-            </Text>
+            <View
+              className={`rounded-md px-4 py-3 ${canSave ? 'bg-amber-600' : 'bg-amber-100/40'}`}
+            >
+              <Text className="text-center font-display text-2xl text-stone-900">
+                {busy === 'save-edits' ? 'Saving…' : 'Save changes'}
+              </Text>
+            </View>
           </GHPressable>
           <Pressable
             onPress={onCancelEdit}
