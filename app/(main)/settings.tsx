@@ -482,7 +482,7 @@ export default function Settings() {
         }`}
       >
         <Text className="text-center font-body text-2xl text-stone-800">
-          {passwordBusy ? 'Sending…' : 'Send password reset email'}
+          {passwordBusy ? 'Sending…' : 'Reset Password'}
         </Text>
       </Pressable>
       {passwordError ? (
