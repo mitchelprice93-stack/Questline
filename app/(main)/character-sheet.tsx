@@ -14,6 +14,11 @@ import Animated, {
 } from 'react-native-reanimated';
 
 import { ModifierCard } from '../../components/modifier-card';
+import {
+  regenerateCampaignArcName,
+  regenerateCharacterTitle,
+  regenerateFactionName,
+} from '../../lib/regenerate';
 import { useAnimatedNumber } from '../../lib/animated-number';
 import { useAuth } from '../../lib/auth';
 import {
@@ -24,6 +29,7 @@ import {
   updateCampaign,
   updateDifficulty,
   updateFaction,
+  updateIdentity,
 } from '../../lib/character-sheet';
 import {
   listActiveBuffs,
@@ -36,6 +42,7 @@ import { confirmDestructive, showInfoMessage } from '../../lib/dialogs';
 import { ACHIEVEMENTS } from '../../lib/engine/achievements';
 import { loadAchievementSnapshot } from '../../lib/engine/achievementTriggers';
 import { calculateLevel, levelProgressFraction, type Difficulty } from '../../lib/engine/xp';
+import { formatXp } from '../../lib/numbers';
 import { errorMessage } from '../../lib/errors';
 import { ParchmentScreen } from '../../lib/parchment';
 import {
@@ -89,6 +96,18 @@ export default function CharacterSheet() {
   // Dropdown state for the Difficulty selector. Modal opens on trigger
   // press; tapping an option closes it and applies the change.
   const [difficultyOpen, setDifficultyOpen] = useState(false);
+  // Inline name + title editor. Opened from the Edit affordance next to the
+  // chronicler's name at the top. State is seeded from the current profile
+  // when the modal opens. Includes a "Regenerate title" button that asks
+  // the Archivist for a fresh take, ignoring the user's typed title.
+  const [identityEditorOpen, setIdentityEditorOpen] = useState(false);
+  const [identityName, setIdentityName] = useState('');
+  const [identityTitle, setIdentityTitle] = useState('');
+  const [identityBusy, setIdentityBusy] = useState<'save' | 'regen' | null>(null);
+  // Per-faction / per-campaign regenerate-in-flight tracking. Lets us dim
+  // the specific row whose name is being asked for, leaving siblings tappable.
+  const [regenFactionId, setRegenFactionId] = useState<string | null>(null);
+  const [regenCampaignId, setRegenCampaignId] = useState<string | null>(null);
 
   // Tick the displayed XP from its previous value to the new total when
   // a quest completes. Must be called before any early returns to satisfy
@@ -97,7 +116,12 @@ export default function CharacterSheet() {
   // width derives from the raw float so it glides continuously even when
   // the rounded number text snaps integer-by-integer.
   const totalXp = data?.profile?.total_xp ?? 0;
-  const animatedTotalXpFloat = useAnimatedNumber(totalXp, 900);
+  // ready=false while data is still loading. The hook stays primed at the
+  // initial value (0) and never animates the load transition. The moment
+  // data arrives, ready flips true and the hook snaps to the real total
+  // without ticking up from 0. Only actual XP gains after that point
+  // produce animations.
+  const animatedTotalXpFloat = useAnimatedNumber(totalXp, 900, !!data);
 
   const refresh = useCallback(async () => {
     setError(null);
@@ -169,6 +193,102 @@ export default function CharacterSheet() {
     }
   };
 
+  const onOpenIdentityEditor = () => {
+    setIdentityName(data?.profile?.character_name ?? '');
+    setIdentityTitle(data?.profile?.character_title ?? '');
+    setActionError(null);
+    setIdentityEditorOpen(true);
+  };
+
+  const onSaveIdentity = async () => {
+    if (!data?.profile) return;
+    setActionError(null);
+    setIdentityBusy('save');
+    try {
+      await updateIdentity({
+        character_name: identityName.trim() || data.profile.character_name || 'Wanderer',
+        character_title: identityTitle.trim() ? identityTitle.trim() : null,
+      });
+      await Promise.all([refetchProfile(), refresh()]);
+      setIdentityEditorOpen(false);
+    } catch (e) {
+      setActionError(errorMessage(e));
+    } finally {
+      setIdentityBusy(null);
+    }
+  };
+
+  const onRegenerateTitle = async () => {
+    if (!data?.profile) return;
+    setActionError(null);
+    setIdentityBusy('regen');
+    try {
+      const next = await regenerateCharacterTitle({
+        name: identityName.trim() || data.profile.character_name || 'Wanderer',
+        current_title: identityTitle.trim() || data.profile.character_title || null,
+        background: null, // backstory isn't on the profile; AI works from name + title context
+        proficiencies: null,
+        life_summary: null,
+      });
+      setIdentityTitle(next);
+    } catch (e) {
+      setActionError(errorMessage(e));
+    } finally {
+      setIdentityBusy(null);
+    }
+  };
+
+  const onRegenerateFactionName = async (faction: Faction) => {
+    if (!faction.real_world_domain?.trim()) {
+      setActionError('This faction has no real-world domain to draw from.');
+      return;
+    }
+    setActionError(null);
+    setRegenFactionId(faction.id);
+    try {
+      const newName = await regenerateFactionName({
+        real_world_domain: faction.real_world_domain,
+        current_name: faction.name,
+      });
+      await updateFaction(faction.id, {
+        name: newName,
+        real_world_domain: faction.real_world_domain,
+        reputation_title: faction.reputation_title,
+      });
+      await refresh();
+    } catch (e) {
+      setActionError(errorMessage(e));
+    } finally {
+      setRegenFactionId(null);
+    }
+  };
+
+  const onRegenerateCampaignName = async (campaign: Campaign) => {
+    if (!campaign.real_world_goal?.trim()) {
+      setActionError('This campaign has no real-world goal to draw from.');
+      return;
+    }
+    setActionError(null);
+    setRegenCampaignId(campaign.id);
+    try {
+      const newArcName = await regenerateCampaignArcName({
+        real_world_goal: campaign.real_world_goal,
+        current_arc_name: campaign.arc_name,
+      });
+      await updateCampaign(campaign.id, {
+        arc_name: newArcName,
+        real_world_goal: campaign.real_world_goal,
+        progress_pct: campaign.progress_pct,
+        status: campaign.status,
+      });
+      await refresh();
+    } catch (e) {
+      setActionError(errorMessage(e));
+    } finally {
+      setRegenCampaignId(null);
+    }
+  };
+
   const onRest = async () => {
     setActionError(null);
     setBusy(true);
@@ -231,7 +351,19 @@ export default function CharacterSheet() {
   return (
     <ParchmentScreen>
       <ScrollView className="flex-1" contentContainerClassName="px-6 pt-20 pb-12">
-      <Text className="mb-1 font-display text-4xl text-stone-900">{displayName}</Text>
+      <View className="mb-1 flex-row items-baseline justify-between">
+        <Text className="font-display text-4xl text-stone-900">{displayName}</Text>
+        {profile?.character_name ? (
+          <Pressable
+            onPress={onOpenIdentityEditor}
+            className="active:opacity-60"
+            accessibilityRole="button"
+            accessibilityLabel="Edit name and title"
+          >
+            <Text className="font-body text-base text-amber-800">Edit ✎</Text>
+          </Pressable>
+        ) : null}
+      </View>
       {profile?.character_title ? (
         <Text className="mb-6 font-display text-amber-800">{profile.character_title}</Text>
       ) : (
@@ -256,7 +388,7 @@ export default function CharacterSheet() {
         <Text className="font-body text-lg text-stone-500">
           {atMaxLevel
             ? 'Max level reached'
-            : `${currentLevelXp.toLocaleString()} / ${nextLevelXp.toLocaleString()} XP`}
+            : `${formatXp(currentLevelXp)} / ${formatXp(nextLevelXp)} XP`}
         </Text>
         <Pressable
           onPress={() => router.push('/xp-history')}
@@ -497,9 +629,27 @@ export default function CharacterSheet() {
                 </Text>
               </View>
               <Text className="font-body text-lg text-stone-500">{f.real_world_domain}</Text>
-              <Text className="mt-1 font-body text-sm text-stone-600">
-                {f.reputation_count} {f.reputation_count === 1 ? 'deed' : 'deeds'} inscribed
-              </Text>
+              <View className="mt-1 flex-row items-baseline justify-between">
+                <Text className="font-body text-sm text-stone-600">
+                  {f.reputation_count} {f.reputation_count === 1 ? 'deed' : 'deeds'} inscribed
+                </Text>
+                <Pressable
+                  onPress={(e) => {
+                    // Don't bubble to the parent Pressable (which would open
+                    // the editor). The regen button is a sibling action.
+                    e.stopPropagation?.();
+                    void onRegenerateFactionName(f);
+                  }}
+                  disabled={regenFactionId !== null || editingFactionId !== null}
+                  className="active:opacity-60"
+                  accessibilityRole="button"
+                  accessibilityLabel="Regenerate faction name"
+                >
+                  <Text className="font-body text-sm text-amber-800">
+                    {regenFactionId === f.id ? 'Regenerating…' : 'Regenerate name ✶'}
+                  </Text>
+                </Pressable>
+              </View>
             </Pressable>
           ),
         )}
@@ -610,6 +760,22 @@ export default function CharacterSheet() {
                   style={{ width: `${Math.max(c.progress_pct, 1)}%` }}
                 />
               </View>
+              <View className="mt-2 flex-row justify-end">
+                <Pressable
+                  onPress={(e) => {
+                    e.stopPropagation?.();
+                    void onRegenerateCampaignName(c);
+                  }}
+                  disabled={regenCampaignId !== null || editingCampaignId !== null}
+                  className="active:opacity-60"
+                  accessibilityRole="button"
+                  accessibilityLabel="Regenerate campaign arc name"
+                >
+                  <Text className="font-body text-sm text-amber-800">
+                    {regenCampaignId === c.id ? 'Regenerating…' : 'Regenerate name ✶'}
+                  </Text>
+                </Pressable>
+              </View>
             </Pressable>
           ),
         )}
@@ -715,6 +881,83 @@ export default function CharacterSheet() {
               Harder difficulty earns less XP per quest.
             </Text>
           </View>
+        </Pressable>
+      </Modal>
+
+      {/* Identity editor, name + title with a Regenerate-title button. */}
+      <Modal
+        visible={identityEditorOpen}
+        transparent
+        animationType="none"
+        onRequestClose={() => setIdentityEditorOpen(false)}
+      >
+        <Pressable
+          onPress={() => setIdentityEditorOpen(false)}
+          className="flex-1 items-center justify-center bg-stone-950/70 px-6"
+        >
+          <Pressable onPress={() => undefined} className="w-full max-w-md">
+            <View className="rounded-md border border-amber-900 bg-amber-50 p-4">
+              <Text className="mb-3 font-display text-xl text-stone-900">
+                Edit your identity
+              </Text>
+
+              <Text className="mb-1 font-display text-xs uppercase tracking-widest text-stone-500">
+                Name
+              </Text>
+              <TextInput
+                value={identityName}
+                onChangeText={setIdentityName}
+                editable={identityBusy === null}
+                className="mb-3 rounded-md border border-stone-700 bg-amber-50/40 px-3 py-2 font-body text-lg text-stone-900"
+              />
+
+              <Text className="mb-1 font-display text-xs uppercase tracking-widest text-stone-500">
+                Title
+              </Text>
+              <TextInput
+                value={identityTitle}
+                onChangeText={setIdentityTitle}
+                editable={identityBusy === null}
+                placeholder="The Archivist's bestowal, or your own"
+                placeholderTextColor="#78716c"
+                className="mb-2 rounded-md border border-stone-700 bg-amber-50/40 px-3 py-2 font-body text-lg text-stone-900"
+              />
+              <Pressable
+                onPress={onRegenerateTitle}
+                disabled={identityBusy !== null}
+                className={`mb-4 self-start rounded-md border border-amber-700 px-3 py-2 ${
+                  identityBusy === 'regen' ? 'bg-amber-100/40' : 'active:bg-amber-100'
+                }`}
+              >
+                <Text className="font-body text-base text-amber-800">
+                  {identityBusy === 'regen' ? 'The Archivist ponders…' : 'Regenerate title ✶'}
+                </Text>
+              </Pressable>
+
+              <View className="flex-row gap-2">
+                <Pressable
+                  onPress={() => setIdentityEditorOpen(false)}
+                  disabled={identityBusy !== null}
+                  className="flex-1 rounded-md border border-stone-700 bg-amber-50/40 px-3 py-3 active:bg-amber-100"
+                >
+                  <Text className="text-center font-body text-lg text-stone-700">Cancel</Text>
+                </Pressable>
+                <Pressable
+                  onPress={onSaveIdentity}
+                  disabled={identityBusy !== null || !identityName.trim()}
+                  className={`flex-1 rounded-md px-3 py-3 ${
+                    identityBusy !== null || !identityName.trim()
+                      ? 'bg-amber-100/40'
+                      : 'bg-amber-600 active:bg-amber-700'
+                  }`}
+                >
+                  <Text className="text-center font-body-medium text-lg text-stone-900">
+                    {identityBusy === 'save' ? 'Saving…' : 'Save'}
+                  </Text>
+                </Pressable>
+              </View>
+            </View>
+          </Pressable>
         </Pressable>
       </Modal>
       </ScrollView>
