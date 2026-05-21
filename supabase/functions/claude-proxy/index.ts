@@ -576,9 +576,15 @@ Deno.serve(async (req) => {
   }
   if (
     !body.endpoint ||
-    !['character_creation', 'quest_generation', 'level_up_narration', 'reputation_retitle'].includes(
-      body.endpoint,
-    )
+    ![
+      'character_creation',
+      'quest_generation',
+      'level_up_narration',
+      'reputation_retitle',
+      'regenerate_title',
+      'regenerate_faction_name',
+      'regenerate_campaign_name',
+    ].includes(body.endpoint)
   ) {
     return jsonResponse({ error: 'Invalid or missing endpoint' }, 400);
   }
