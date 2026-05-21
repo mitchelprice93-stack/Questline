@@ -116,12 +116,17 @@ export default function CharacterSheet() {
   // width derives from the raw float so it glides continuously even when
   // the rounded number text snaps integer-by-integer.
   const totalXp = data?.profile?.total_xp ?? 0;
-  // ready=false while data is still loading. The hook stays primed at the
-  // initial value (0) and never animates the load transition. The moment
-  // data arrives, ready flips true and the hook snaps to the real total
-  // without ticking up from 0. Only actual XP gains after that point
-  // produce animations.
-  const animatedTotalXpFloat = useAnimatedNumber(totalXp, 900, !!data);
+  // ready=false while data is still loading; prevents the fallback-zero
+  // load transition from animating. persistKey lets the hook remember
+  // what the user last SAW across screen mounts:
+  //   - First-ever mount: no cache, snap to total (no animation).
+  //   - Returning mount with same total: cache match, no animation.
+  //   - Returning mount with higher total (XP earned while away): cache
+  //     misses target, animate from cached value up to the new total.
+  // Scoped per user id so multiple sign-ins on the same device don't
+  // bleed XP totals between chronicles.
+  const xpPersistKey = session?.user.id ? `xp:${session.user.id}` : undefined;
+  const animatedTotalXpFloat = useAnimatedNumber(totalXp, 900, !!data, xpPersistKey);
 
   const refresh = useCallback(async () => {
     setError(null);
