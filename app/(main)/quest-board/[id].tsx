@@ -40,6 +40,7 @@ import { DropdownPicker } from '../../../components/dropdown-picker';
 import { useAuth } from '../../../lib/auth';
 import {
   deadlineUrgency,
+  effectiveStreak,
   formatDeadline,
   formatDeadlineRelative,
   isCompletedThisPeriod,
@@ -53,6 +54,7 @@ import {
   xpForTier,
   type QuestTier,
 } from '../../../lib/engine/xp';
+import { formatXp } from '../../../lib/numbers';
 import { generateLevelUpNarration } from '../../../lib/level-up';
 import { ParchmentScreen } from '../../../lib/parchment';
 import { retitleFactionFromQuest, shouldRetitle } from '../../../lib/reputation';
@@ -845,19 +847,32 @@ export default function QuestDetail() {
           </Text>
           <View className="mt-1 flex-row items-baseline justify-between">
             <Text className="font-body text-xl text-stone-700">
-              {quest.streak_count > 0
-                ? `Streak · ${quest.streak_count} ${
-                    quest.recurrence === 'daily'
-                      ? 'days'
-                      : quest.recurrence === 'weekly'
-                        ? 'weeks'
-                        : quest.recurrence === 'monthly'
-                          ? 'months'
-                          : quest.recurrence === 'yearly'
-                            ? 'years'
-                            : 'cycles'
-                  }`
-                : 'No streak yet, complete to start one'}
+              {(() => {
+                // Display the EFFECTIVE streak (0 if the chronicler missed a
+                // cycle), not the raw DB value. The DB only updates on the
+                // next completion, so without this client-side check the UI
+                // keeps showing the old number until that completion fires.
+                const live = effectiveStreak(
+                  quest.recurrence,
+                  quest.streak_count,
+                  quest.last_completed_at,
+                  new Date(),
+                  quest.recurrence_interval,
+                  quest.recurrence_unit,
+                );
+                if (live <= 0) return 'No streak yet, complete to start one';
+                const unit =
+                  quest.recurrence === 'daily'
+                    ? 'days'
+                    : quest.recurrence === 'weekly'
+                      ? 'weeks'
+                      : quest.recurrence === 'monthly'
+                        ? 'months'
+                        : quest.recurrence === 'yearly'
+                          ? 'years'
+                          : 'cycles';
+                return `Streak · ${live} ${unit}`;
+              })()}
             </Text>
             {cooldownLabel ? (
               <Text className="font-body text-lg text-stone-700">{cooldownLabel}</Text>
@@ -1158,7 +1173,7 @@ function LevelUpTakeover({
       </Animated.View>
       <Animated.View entering={stagger(3)}>
         <Text className="mb-2 text-center font-body text-stone-500">
-          +{xpChange.toLocaleString()} XP · {newTotalXp.toLocaleString()} total
+          +{formatXp(xpChange)} XP · {formatXp(newTotalXp)} total
         </Text>
       </Animated.View>
       {milestoneBonus && milestoneBonus > 0 && newStreak ? (

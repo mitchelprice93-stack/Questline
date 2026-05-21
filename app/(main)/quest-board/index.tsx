@@ -7,6 +7,7 @@ import { TutorialTarget } from '../../../components/tutorial-target';
 import { useAuth } from '../../../lib/auth';
 import {
   deadlineUrgency,
+  effectiveStreak,
   formatDeadlineRelative,
   recurrenceStatusLabel,
   urgencyClasses,
@@ -375,7 +376,18 @@ function QuestRow({ quest, status }: { quest: Quest; status: QuestStatus }) {
               ? 'Yearly'
               : `Every ${quest.recurrence_interval} ${quest.recurrence_unit}`,
     );
-    if (quest.streak_count > 0) {
+    // Display the EFFECTIVE streak so missed cycles show 0 (which we hide)
+    // instead of the stale DB value. The DB only updates on the next
+    // completion, this client-side gate keeps the card honest in between.
+    const liveStreak = effectiveStreak(
+      quest.recurrence,
+      quest.streak_count,
+      quest.last_completed_at,
+      new Date(),
+      quest.recurrence_interval,
+      quest.recurrence_unit,
+    );
+    if (liveStreak > 0) {
       // Streak suffix: short letter for the cadence (d/w/m/y) or generic
       // "streak" for custom. Keeps the meta row compact.
       const streakSuffix =
@@ -389,9 +401,7 @@ function QuestRow({ quest, status }: { quest: Quest; status: QuestStatus }) {
                 ? 'y'
                 : '';
       metaParts.push(
-        streakSuffix
-          ? `${quest.streak_count}${streakSuffix} streak`
-          : `${quest.streak_count} streak`,
+        streakSuffix ? `${liveStreak}${streakSuffix} streak` : `${liveStreak} streak`,
       );
     }
   }

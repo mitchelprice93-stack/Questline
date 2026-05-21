@@ -152,6 +152,78 @@ type RecurrenceLike =
   | 'custom'
   | null;
 
+/**
+ * True when a recurring quest's streak is still "alive" given the last
+ * completion timestamp. A streak is alive if the last completion fell in
+ * the current period or the immediately previous one; otherwise the
+ * chronicler missed a cycle and the streak should display as broken.
+ *
+ * The DB's streak_count column only updates on completion, so without
+ * this derived check the UI keeps showing the last-known streak until
+ * the next completion resets it to 1. With this check we display the
+ * effective streak (0 when broken).
+ */
+export function isStreakAlive(
+  recurrence: RecurrenceLike,
+  lastCompletedAt: string | null,
+  now: Date = new Date(),
+  customInterval?: number | null,
+  customUnit?: 'days' | 'weeks' | 'months' | null,
+): boolean {
+  if (!recurrence || !lastCompletedAt) return false;
+  const last = new Date(lastCompletedAt);
+  if (isNaN(last.getTime())) return false;
+  const dayMs = 24 * 60 * 60 * 1000;
+  switch (recurrence) {
+    case 'daily': {
+      const yesterday = new Date(now.getTime() - dayMs);
+      return utcDayKey(last) === utcDayKey(now) || utcDayKey(last) === utcDayKey(yesterday);
+    }
+    case 'weekly': {
+      const lastWeek = new Date(now.getTime() - 7 * dayMs);
+      return utcWeekKey(last) === utcWeekKey(now) || utcWeekKey(last) === utcWeekKey(lastWeek);
+    }
+    case 'monthly': {
+      // Subtract one month by building a date with the previous month index.
+      // JS normalizes day overflow on its own (e.g. Mar 31 - 1 month -> Mar 3
+      // becomes Feb 28/29 friendly).
+      const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+      return utcMonthKey(last) === utcMonthKey(now) || utcMonthKey(last) === utcMonthKey(lastMonth);
+    }
+    case 'yearly': {
+      const lastYear = new Date(now.getFullYear() - 1, now.getMonth(), now.getDate());
+      return utcYearKey(last) === utcYearKey(now) || utcYearKey(last) === utcYearKey(lastYear);
+    }
+    case 'custom': {
+      if (!customInterval || !customUnit) return false;
+      // Custom cadence: alive if the last completion is within two intervals
+      // (one full window plus a grace window equal to the next one). After
+      // that, the chronicler has clearly skipped a cycle.
+      return now.getTime() - last.getTime() <= 2 * customIntervalMs(customInterval, customUnit);
+    }
+  }
+}
+
+/**
+ * Returns the streak count to show in the UI: the DB value when the
+ * streak is still alive, or 0 when the chronicler has missed a period
+ * and broken it. Use everywhere streak_count is rendered.
+ */
+export function effectiveStreak(
+  recurrence: RecurrenceLike,
+  storedStreak: number,
+  lastCompletedAt: string | null,
+  now: Date = new Date(),
+  customInterval?: number | null,
+  customUnit?: 'days' | 'weeks' | 'months' | null,
+): number {
+  if (!recurrence) return 0;
+  if (storedStreak <= 0) return 0;
+  return isStreakAlive(recurrence, lastCompletedAt, now, customInterval, customUnit)
+    ? storedStreak
+    : 0;
+}
+
 /** Extra options for per-day recurrence pinning (weekly with specific
  *  weekdays, monthly with specific days-of-month). Both null means the
  *  legacy "once per period" behavior. */
