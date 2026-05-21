@@ -71,7 +71,8 @@ export default function Login() {
       {error ? <Text className="mb-4 font-body text-sm text-red-400">{error}</Text> : null}
       {resetSent ? (
         <Text className="mb-4 font-body text-sm text-amber-400">
-          A reset letter has been sent to {email.trim()}. Check your inbox (and spam) for the link.
+          The Archivist has dispatched a sealed scroll to {email.trim()}. Look for it in your inbox
+          (and check the spam pile, ravens sometimes wander).
         </Text>
       ) : null}
 

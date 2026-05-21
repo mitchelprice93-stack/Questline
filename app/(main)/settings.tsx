@@ -382,8 +382,8 @@ export default function Settings() {
   const onSendPasswordReset = async () => {
     if (!session?.user.email) return;
     const proceed = await confirmDestructive(
-      'Send reset email?',
-      `A password-reset link will be sent to ${session.user.email}. Click through it to set a new password.`,
+      'Summon the Archivist?',
+      `A sealed scroll will be dispatched to ${session.user.email}. Touch its rune to inscribe a new password.`,
     );
     if (!proceed) return;
     setPasswordError(null);
@@ -391,8 +391,8 @@ export default function Settings() {
     try {
       await requestPasswordReset(session.user.email);
       await showInfoMessage(
-        'Reset email sent',
-        `Check ${session.user.email} for the link.`,
+        'The scroll is on its way',
+        `The Archivist has dispatched it to ${session.user.email}. Look in your inbox, and the spam pile if the raven wandered.`,
       );
     } catch (e) {
       setPasswordError(errorMessage(e));
@@ -479,7 +479,7 @@ export default function Settings() {
         }`}
       >
         <Text className="text-center font-body text-2xl text-stone-800">
-          {passwordBusy ? 'Sending…' : 'Send password reset email'}
+          {passwordBusy ? 'Dispatching the scroll…' : 'Summon a reset scroll'}
         </Text>
       </Pressable>
       {passwordError ? (
