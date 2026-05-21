@@ -49,7 +49,10 @@ interface ProxyRequest {
     | 'character_creation'
     | 'quest_generation'
     | 'level_up_narration'
-    | 'reputation_retitle';
+    | 'reputation_retitle'
+    | 'regenerate_title'
+    | 'regenerate_faction_name'
+    | 'regenerate_campaign_name';
   payload: unknown;
 }
 
@@ -250,6 +253,56 @@ const REPUTATION_RETITLE_SCHEMA = {
   required: ['new_reputation_title'],
 };
 
+const REGENERATE_TITLE_SCHEMA = {
+  type: 'object',
+  additionalProperties: false,
+  properties: {
+    new_character_title: {
+      type: 'string',
+      description:
+        "A short in-voice character title for the chronicler, drawn from their background and proficiencies. " +
+        "Examples: 'the Restless', 'Forge-Touched', 'Keeper of Quiet Hours', 'the Unfinished'. " +
+        "1 to 4 words. Avoid generic 'the Wanderer' unless nothing in the profile suggests otherwise. " +
+        "MUST be different from the current_title in the payload, the chronicler asked for a fresh one.",
+    },
+  },
+  required: ['new_character_title'],
+};
+
+const REGENERATE_FACTION_NAME_SCHEMA = {
+  type: 'object',
+  additionalProperties: false,
+  properties: {
+    new_name: {
+      type: 'string',
+      description:
+        "A short in-voice faction name derived from the real_world_domain. " +
+        "Examples: real_world_domain 'carpentry' becomes 'The Joiner's Hall' or 'Hearthwright Guild'. " +
+        "real_world_domain 'software engineering' becomes 'The Cipher Conclave' or 'Wardsmith Order'. " +
+        "real_world_domain 'teaching' becomes 'The Lectern' or 'Hall of Letters'. " +
+        "2 to 5 words usually, may include 'The'. MUST be different from the current_name in the payload.",
+    },
+  },
+  required: ['new_name'],
+};
+
+const REGENERATE_CAMPAIGN_NAME_SCHEMA = {
+  type: 'object',
+  additionalProperties: false,
+  properties: {
+    new_arc_name: {
+      type: 'string',
+      description:
+        "A short in-voice campaign arc name derived from the real_world_goal. " +
+        "Examples: real_world_goal 'finish my thesis' becomes 'The Last Scroll' or 'Chapter of the Sealed Quill'. " +
+        "real_world_goal 'lose 20 pounds' becomes 'The Long Pilgrimage' or 'Trial of the Hollowed Hearth'. " +
+        "real_world_goal 'launch the side business' becomes 'The Founding' or 'Banner of First Light'. " +
+        "2 to 6 words, evocative but grounded. MUST be different from the current_arc_name in the payload.",
+    },
+  },
+  required: ['new_arc_name'],
+};
+
 function corsHeaders(): Record<string, string> {
   return {
     'Access-Control-Allow-Origin': '*',
@@ -400,6 +453,39 @@ function buildUserMessage(req: ProxyRequest): { content: string; schema: unknown
           `Return JSON with a single 'new_reputation_title' field, ONE string, 1 to 3 words.`,
         schema: REPUTATION_RETITLE_SCHEMA,
       };
+    case 'regenerate_title':
+      return {
+        content:
+          `The chronicler asks for a fresh title. Their profile, verbatim:\n\n${JSON.stringify(req.payload, null, 2)}\n\n` +
+          `Propose ONE new character_title that fits their background, proficiencies, and life summary. ` +
+          `MUST be different from the current_title in the payload. ` +
+          `1 to 4 words. Avoid bland generics like 'the Wanderer' unless nothing in the profile suggests otherwise. ` +
+          `Lean into specific imagery from their work and story.\n\n` +
+          `Return JSON with a single 'new_character_title' field.`,
+        schema: REGENERATE_TITLE_SCHEMA,
+      };
+    case 'regenerate_faction_name':
+      return {
+        content:
+          `The chronicler asks for a fresh in-voice name for one of their factions. Payload:\n\n${JSON.stringify(req.payload, null, 2)}\n\n` +
+          `Propose ONE new faction name derived from the real_world_domain. ` +
+          `MUST be different from the current_name in the payload. ` +
+          `Match the flavor to the domain (craft → guild ranks; medicine → healer orders; service → martial orders; ` +
+          `scholarship → halls/lecterns/conclaves; commerce → mercantile companies). ` +
+          `2 to 5 words usually, may include 'The'.\n\n` +
+          `Return JSON with a single 'new_name' field.`,
+        schema: REGENERATE_FACTION_NAME_SCHEMA,
+      };
+    case 'regenerate_campaign_name':
+      return {
+        content:
+          `The chronicler asks for a fresh in-voice arc name for one of their campaigns. Payload:\n\n${JSON.stringify(req.payload, null, 2)}\n\n` +
+          `Propose ONE new arc_name derived from the real_world_goal. ` +
+          `MUST be different from the current_arc_name in the payload. ` +
+          `Evocative but grounded, 2 to 6 words. Pull imagery from the actual goal where possible.\n\n` +
+          `Return JSON with a single 'new_arc_name' field.`,
+        schema: REGENERATE_CAMPAIGN_NAME_SCHEMA,
+      };
   }
 }
 
@@ -415,6 +501,9 @@ function pickModel(endpoint: ProxyRequest['endpoint']): keyof typeof PRICING {
       return 'claude-sonnet-4-6';
     case 'quest_generation':
     case 'reputation_retitle':
+    case 'regenerate_title':
+    case 'regenerate_faction_name':
+    case 'regenerate_campaign_name':
       return 'claude-haiku-4-5-20251001';
   }
 }
@@ -439,6 +528,12 @@ const ENDPOINT_INFERENCE: Record<ProxyRequest['endpoint'], EndpointInferenceConf
   level_up_narration: { thinking: { type: 'disabled' }, max_tokens: 512 },
   // Single short title; thinking off, tokens minimal.
   reputation_retitle: { thinking: { type: 'disabled' }, max_tokens: 256 },
+  // Tiny regeneration calls: 1 short string each. Thinking off, very small
+  // token cap; these are user-initiated taps in the Character menu and need
+  // to feel instant.
+  regenerate_title: { thinking: { type: 'disabled' }, max_tokens: 256 },
+  regenerate_faction_name: { thinking: { type: 'disabled' }, max_tokens: 256 },
+  regenerate_campaign_name: { thinking: { type: 'disabled' }, max_tokens: 256 },
 };
 
 function calculateCostUsd(
