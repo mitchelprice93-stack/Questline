@@ -1,6 +1,6 @@
 import { Link, useFocusEffect } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
-import { ActivityIndicator, FlatList, Pressable, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 
 import { DropdownPicker, type DropdownOption } from '../../../components/dropdown-picker';
 import { TutorialTarget } from '../../../components/tutorial-target';
@@ -23,7 +23,8 @@ import {
 } from '../../../lib/quests';
 import { playSfx } from '../../../lib/sfx';
 import { FREE_TIER_QUEST_CAP } from '../../../lib/subscription';
-import type { Faction, Quest, QuestStatus } from '../../../lib/types/models';
+import type { Campaign, Faction, Quest, QuestStatus } from '../../../lib/types/models';
+import { listCampaigns } from '../../../lib/profile';
 
 const STATUS_TABS: { key: QuestStatus; label: string }[] = [
   { key: 'active', label: 'Active' },
@@ -79,6 +80,33 @@ const TIER_WEIGHT: Record<QuestTier, number> = {
   legendary: 5,
 };
 
+// Grouping splits the (filtered+sorted) quest list into collapsible
+// sections. 'none' = flat list (current behavior). The other three
+// modes build sections from each quest's metadata so the board stays
+// scannable once the chronicler has 20+ active quests.
+type GroupKey = 'none' | 'campaign' | 'faction' | 'tier';
+
+const GROUP_OPTIONS: DropdownOption<GroupKey>[] = [
+  { value: 'none', label: 'No grouping', description: 'Show as a flat list.' },
+  {
+    value: 'campaign',
+    label: 'By campaign',
+    description: 'One folder per linked campaign, plus Unaffiliated.',
+  },
+  {
+    value: 'faction',
+    label: 'By faction',
+    description: 'One folder per faction, plus Unaffiliated.',
+  },
+  {
+    value: 'tier',
+    label: 'By tier',
+    description: 'Legendary, Major, Standard, Minor, Trivial.',
+  },
+];
+
+const TIER_DISPLAY_ORDER: QuestTier[] = ['legendary', 'major', 'standard', 'minor', 'trivial'];
+
 function applySort(quests: Quest[], key: SortKey): Quest[] {
   if (key === 'default') return quests;
   const arr = [...quests];
@@ -114,6 +142,17 @@ export default function QuestBoard() {
   const [factionFilter, setFactionFilter] = useState<string>('all');
   const [timeRange, setTimeRange] = useState<TimeRange>('all');
   const [sortKey, setSortKey] = useState<SortKey>('default');
+  // Grouping mode for the rendered list. 'none' = flat list, others build
+  // collapsible sections. Pinned quests always appear at the top in their
+  // own "Pinned" section regardless of this setting. Defaulting to
+  // 'campaign' so the feature is discoverable on first launch, chroniclers
+  // can switch back to 'No grouping' from the filters panel.
+  const [groupBy, setGroupBy] = useState<GroupKey>('campaign');
+  // Set of collapsed group keys (e.g. "tier:major", "campaign:abc-123").
+  // Tap a group header to toggle collapsed state. Resets only when the
+  // groupBy mode changes so different modes start fully expanded.
+  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
+  const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [filtersOpen, setFiltersOpen] = useState(false);
 
   // Refetch when the active tab changes, simpler than caching three lists
@@ -125,12 +164,18 @@ export default function QuestBoard() {
       let cancelled = false;
       setError(null);
       setQuests(null);
-      Promise.all([listQuests(status), listFactions(), listQuests('active')])
-        .then(([rows, fx, active]) => {
+      Promise.all([
+        listQuests(status),
+        listFactions(),
+        listQuests('active'),
+        listCampaigns('active'),
+      ])
+        .then(([rows, fx, active, cmps]) => {
           if (cancelled) return;
           setQuests(rows);
           setFactions(fx);
           setActiveQuestCount(active.length);
+          setCampaigns(cmps);
         })
         .catch((e: unknown) => {
           if (!cancelled) setError(e instanceof Error ? e.message : String(e));
@@ -164,7 +209,130 @@ export default function QuestBoard() {
     (tierFilter !== 'all' ? 1 : 0) +
     (factionFilter !== 'all' ? 1 : 0) +
     (status !== 'active' && timeRange !== 'all' ? 1 : 0) +
-    (sortKey !== 'default' ? 1 : 0);
+    (sortKey !== 'default' ? 1 : 0) +
+    (groupBy !== 'none' ? 1 : 0);
+
+  // Whenever the grouping mode changes, start with every group expanded so
+  // the chronicler immediately sees what they grouped into.
+  const onChangeGroupBy = (next: GroupKey) => {
+    setGroupBy(next);
+    setCollapsedGroups(new Set());
+  };
+
+  // Split the filtered/sorted list into pinned + grouped sections. The
+  // Pinned section is always first when any quest is pinned. The other
+  // sections come from the active groupBy mode. Each section has a stable
+  // key used for collapse state. Sort within sections inherits sortKey.
+  const sections = useMemo(() => {
+    if (!filtered) return null;
+    const pinned = filtered.filter((q) => !!q.pinned_at);
+    // Within Pinned, most-recently-pinned first.
+    pinned.sort((a, b) => {
+      const ap = a.pinned_at ? new Date(a.pinned_at).getTime() : 0;
+      const bp = b.pinned_at ? new Date(b.pinned_at).getTime() : 0;
+      return bp - ap;
+    });
+    const unpinned = filtered.filter((q) => !q.pinned_at);
+
+    const result: { key: string; label: string; quests: Quest[]; collapsible: boolean }[] = [];
+    if (pinned.length > 0) {
+      result.push({ key: 'pinned', label: 'Pinned', quests: pinned, collapsible: false });
+    }
+
+    if (groupBy === 'none') {
+      if (unpinned.length > 0) {
+        result.push({ key: 'all', label: '', quests: unpinned, collapsible: false });
+      }
+      return result;
+    }
+
+    if (groupBy === 'tier') {
+      for (const tier of TIER_DISPLAY_ORDER) {
+        const group = unpinned.filter((q) => q.tier === tier);
+        if (group.length > 0) {
+          result.push({
+            key: `tier:${tier}`,
+            label: tier.charAt(0).toUpperCase() + tier.slice(1),
+            quests: group,
+            collapsible: true,
+          });
+        }
+      }
+      return result;
+    }
+
+    if (groupBy === 'campaign') {
+      // One section per campaign that has at least one quest, in the order
+      // the campaigns list returns them (most recently active first).
+      const byCampaign = new Map<string, Quest[]>();
+      for (const q of unpinned) {
+        const cid = q.campaign_id ?? '__none__';
+        const list = byCampaign.get(cid) ?? [];
+        list.push(q);
+        byCampaign.set(cid, list);
+      }
+      for (const c of campaigns) {
+        const group = byCampaign.get(c.id);
+        if (group && group.length > 0) {
+          result.push({
+            key: `campaign:${c.id}`,
+            label: c.arc_name,
+            quests: group,
+            collapsible: true,
+          });
+        }
+      }
+      const noneGroup = byCampaign.get('__none__');
+      if (noneGroup && noneGroup.length > 0) {
+        result.push({
+          key: 'campaign:none',
+          label: 'Unaffiliated',
+          quests: noneGroup,
+          collapsible: true,
+        });
+      }
+      return result;
+    }
+
+    // groupBy === 'faction'
+    const byFaction = new Map<string, Quest[]>();
+    for (const q of unpinned) {
+      const fid = q.faction_id ?? '__none__';
+      const list = byFaction.get(fid) ?? [];
+      list.push(q);
+      byFaction.set(fid, list);
+    }
+    for (const f of factions) {
+      const group = byFaction.get(f.id);
+      if (group && group.length > 0) {
+        result.push({
+          key: `faction:${f.id}`,
+          label: f.name,
+          quests: group,
+          collapsible: true,
+        });
+      }
+    }
+    const noneGroup = byFaction.get('__none__');
+    if (noneGroup && noneGroup.length > 0) {
+      result.push({
+        key: 'faction:none',
+        label: 'Unaffiliated',
+        quests: noneGroup,
+        collapsible: true,
+      });
+    }
+    return result;
+  }, [filtered, groupBy, campaigns, factions]);
+
+  const toggleGroupCollapse = (key: string) => {
+    setCollapsedGroups((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  };
 
   const onClearFilters = () => {
     setSearchText('');
@@ -172,6 +340,8 @@ export default function QuestBoard() {
     setFactionFilter('all');
     setTimeRange('all');
     setSortKey('default');
+    setGroupBy('none');
+    setCollapsedGroups(new Set());
   };
 
   // Build the Faction dropdown options dynamically from the user's
@@ -297,6 +467,12 @@ export default function QuestBoard() {
             onChange={setSortKey}
             options={SORT_OPTIONS}
           />
+          <DropdownPicker
+            label="Group by"
+            value={groupBy}
+            onChange={onChangeGroupBy}
+            options={GROUP_OPTIONS}
+          />
           {activeFilterCount > 0 ? (
             <Pressable
               onPress={onClearFilters}
@@ -310,7 +486,7 @@ export default function QuestBoard() {
 
       {error ? (
         <Text className="mb-4 font-body text-xl text-red-700">{error}</Text>
-      ) : quests === null || filtered === null ? (
+      ) : quests === null || filtered === null || sections === null ? (
         <ActivityIndicator className="mt-8" color="#a8a29e" />
       ) : filtered.length === 0 ? (
         <View className="mt-8 items-center">
@@ -322,13 +498,61 @@ export default function QuestBoard() {
           ) : null}
         </View>
       ) : (
-        <FlatList
-          data={filtered}
-          keyExtractor={(q) => q.id}
-          ItemSeparatorComponent={() => <View className="h-3" />}
-          contentContainerStyle={{ paddingBottom: 24 }}
-          renderItem={({ item }) => <QuestRow quest={item} status={status} />}
-        />
+        // Plain map render (no FlatList) so collapsible group headers can
+        // intersperse with rows. Lists are small enough that virtualization
+        // doesn't matter; wrap in a ScrollView to allow scrolling once the
+        // list grows past one screen.
+        <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: 24 }}>
+          {sections.map((section, sIdx) => {
+            const collapsed = collapsedGroups.has(section.key);
+            const hasHeader = section.collapsible || section.key === 'pinned';
+            return (
+              <View key={section.key} className={sIdx > 0 ? 'mt-4' : ''}>
+                {hasHeader ? (
+                  <Pressable
+                    onPress={
+                      section.collapsible ? () => toggleGroupCollapse(section.key) : undefined
+                    }
+                    disabled={!section.collapsible}
+                    className="mb-2 flex-row items-center justify-between rounded-md border border-amber-900/30 bg-amber-50/60 px-3 py-2 active:bg-amber-100/60"
+                  >
+                    <View className="flex-1 flex-row items-baseline gap-2">
+                      {section.key === 'pinned' ? (
+                        <Text className="font-display text-base">📌</Text>
+                      ) : null}
+                      <Text className="font-display text-lg uppercase tracking-widest text-stone-800">
+                        {section.label || 'Quests'}
+                      </Text>
+                      {/* Count hidden for the Pinned section, chronicler can
+                          see at a glance how many are there and the count
+                          eats header real estate without adding useful info.
+                          Other grouped sections keep the count so the
+                          chronicler knows how many quests collapse behind
+                          a fold. */}
+                      {section.key !== 'pinned' ? (
+                        <Text className="font-body text-base text-stone-500">
+                          {section.quests.length}
+                        </Text>
+                      ) : null}
+                    </View>
+                    {section.collapsible ? (
+                      <Text className="font-body text-xl text-stone-600">
+                        {collapsed ? '▸' : '▾'}
+                      </Text>
+                    ) : null}
+                  </Pressable>
+                ) : null}
+                {!collapsed
+                  ? section.quests.map((q, qIdx) => (
+                      <View key={q.id} className={qIdx > 0 ? 'mt-3' : ''}>
+                        <QuestRow quest={q} status={status} />
+                      </View>
+                    ))
+                  : null}
+              </View>
+            );
+          })}
+        </ScrollView>
       )}
       </View>
     </ParchmentScreen>
@@ -422,14 +646,19 @@ function QuestRow({ quest, status }: { quest: Quest; status: QuestStatus }) {
         className={`rounded-md border bg-amber-50/40 p-4 active:bg-amber-100/60 ${palette.border}`}
       >
         <View className="flex-row items-start justify-between">
-          <Text
-            className="flex-1 font-display text-2xl leading-7 text-stone-900"
-            numberOfLines={2}
-            adjustsFontSizeToFit
-            minimumFontScale={0.75}
-          >
-            {quest.title}
-          </Text>
+          <View className="flex-1 flex-row items-baseline">
+            {quest.pinned_at ? (
+              <Text className="mr-1 font-body text-base text-amber-800">📌</Text>
+            ) : null}
+            <Text
+              className="flex-1 font-display text-2xl leading-7 text-stone-900"
+              numberOfLines={2}
+              adjustsFontSizeToFit
+              minimumFontScale={0.75}
+            >
+              {quest.title}
+            </Text>
+          </View>
           <Text className="ml-3 mt-1 font-display text-lg uppercase tracking-widest text-amber-800">
             {quest.tier}
           </Text>
