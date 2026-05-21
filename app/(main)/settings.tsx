@@ -382,14 +382,17 @@ export default function Settings() {
   const onSendPasswordReset = async () => {
     if (!session?.user.email) return;
     const proceed = await confirmDestructive(
-      'Summon the Archivist?',
-      `A sealed scroll will be dispatched to ${session.user.email}. Touch its rune to inscribe a new password.`,
+      'Send reset email?',
+      `A password-reset link will be sent to ${session.user.email}. Click through it to set a new password.`,
     );
     if (!proceed) return;
     setPasswordError(null);
     setPasswordBusy(true);
     try {
       await requestPasswordReset(session.user.email);
+      // After-press confirmation, in voice. The pre-action confirm above
+      // stays plain so the chronicler reads the consequence clearly before
+      // committing; only the success bubble gets the lore treatment.
       await showInfoMessage(
         'The scroll is on its way',
         `The Archivist has dispatched it to ${session.user.email}. Look in your inbox, and the spam pile if the raven wandered.`,
@@ -479,7 +482,7 @@ export default function Settings() {
         }`}
       >
         <Text className="text-center font-body text-2xl text-stone-800">
-          {passwordBusy ? 'Dispatching the scroll…' : 'Summon a reset scroll'}
+          {passwordBusy ? 'Sending…' : 'Send password reset email'}
         </Text>
       </Pressable>
       {passwordError ? (
