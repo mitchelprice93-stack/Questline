@@ -523,17 +523,6 @@ export default function QuestBoard() {
                       <Text className="font-display text-lg uppercase tracking-widest text-stone-800">
                         {section.label || 'Quests'}
                       </Text>
-                      {/* Count hidden for the Pinned section, chronicler can
-                          see at a glance how many are there and the count
-                          eats header real estate without adding useful info.
-                          Other grouped sections keep the count so the
-                          chronicler knows how many quests collapse behind
-                          a fold. */}
-                      {section.key !== 'pinned' ? (
-                        <Text className="font-body text-base text-stone-500">
-                          {section.quests.length}
-                        </Text>
-                      ) : null}
                     </View>
                     {section.collapsible ? (
                       <Text className="font-body text-xl text-stone-600">

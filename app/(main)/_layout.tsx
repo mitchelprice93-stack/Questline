@@ -1,7 +1,7 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Tabs, useRouter } from 'expo-router';
 import { useCallback, useEffect } from 'react';
-import { Dimensions, View } from 'react-native';
+import { Dimensions, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AchievementSurface } from '../../components/AchievementSurface';
@@ -19,6 +19,34 @@ import { TutorialProvider, useTutorial } from '../../lib/tutorial-context';
 // so the labels and tap targets clear the system buttons. The tutorial
 // spotlight rect uses the SAME effective height so it tracks the live bar.
 const TAB_BAR_HEIGHT_BASE = 92;
+
+// Renders a tab label with auto-shrink so longer words like "CHARACTER"
+// fit narrow phones. The default tabBarLabelStyle font size is generous;
+// we let RN scale it down to 70% before clipping. numberOfLines=1 keeps
+// it on a single row.
+function tabLabel(label: string) {
+  return ({ color, focused }: { color: string; focused: boolean }) => (
+    <Text
+      numberOfLines={1}
+      adjustsFontSizeToFit
+      minimumFontScale={0.7}
+      style={{
+        fontFamily: 'Cinzel_400Regular',
+        fontSize: 16,
+        textTransform: 'uppercase',
+        letterSpacing: 1.2,
+        marginTop: 2,
+        color,
+        textAlign: 'center',
+        // Slight padding shrink for the active state so the larger ink
+        // weight doesn't push the bounds outward.
+        paddingHorizontal: focused ? 2 : 4,
+      }}
+    >
+      {label}
+    </Text>
+  );
+}
 
 export default function MainLayout() {
   const router = useRouter();
@@ -80,6 +108,7 @@ export default function MainLayout() {
             name="quest-board"
             options={{
               title: 'Quests',
+              tabBarLabel: tabLabel('Quests'),
               tabBarIcon: ({ color, size }) => (
                 <MaterialCommunityIcons name="book-open-page-variant" size={size} color={color} />
               ),
@@ -89,6 +118,7 @@ export default function MainLayout() {
             name="character-sheet"
             options={{
               title: 'Character',
+              tabBarLabel: tabLabel('Character'),
               tabBarIcon: ({ color, size }) => (
                 <MaterialCommunityIcons name="shield-account" size={size} color={color} />
               ),
@@ -98,6 +128,7 @@ export default function MainLayout() {
             name="settings"
             options={{
               title: 'Settings',
+              tabBarLabel: tabLabel('Settings'),
               tabBarIcon: ({ color, size }) => (
                 <MaterialCommunityIcons name="cog" size={size} color={color} />
               ),
