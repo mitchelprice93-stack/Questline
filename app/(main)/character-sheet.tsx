@@ -614,6 +614,8 @@ export default function CharacterSheet() {
                 }
               }}
               onCancel={() => setEditingFactionId(null)}
+              onRegenerate={() => onRegenerateFactionName(f)}
+              regenerating={regenFactionId === f.id}
             />
           ) : (
             <Pressable
@@ -634,27 +636,9 @@ export default function CharacterSheet() {
                 </Text>
               </View>
               <Text className="font-body text-lg text-stone-500">{f.real_world_domain}</Text>
-              <View className="mt-1 flex-row items-baseline justify-between">
-                <Text className="font-body text-sm text-stone-600">
-                  {f.reputation_count} {f.reputation_count === 1 ? 'deed' : 'deeds'} inscribed
-                </Text>
-                <Pressable
-                  onPress={(e) => {
-                    // Don't bubble to the parent Pressable (which would open
-                    // the editor). The regen button is a sibling action.
-                    e.stopPropagation?.();
-                    void onRegenerateFactionName(f);
-                  }}
-                  disabled={regenFactionId !== null || editingFactionId !== null}
-                  className="active:opacity-60"
-                  accessibilityRole="button"
-                  accessibilityLabel="Regenerate faction name"
-                >
-                  <Text className="font-body text-sm text-amber-800">
-                    {regenFactionId === f.id ? 'Regenerating…' : 'Regenerate name ✶'}
-                  </Text>
-                </Pressable>
-              </View>
+              <Text className="mt-1 font-body text-sm text-stone-600">
+                {f.reputation_count} {f.reputation_count === 1 ? 'deed' : 'deeds'} inscribed
+              </Text>
             </Pressable>
           ),
         )}
@@ -739,6 +723,8 @@ export default function CharacterSheet() {
                 }
               }}
               onCancel={() => setEditingCampaignId(null)}
+              onRegenerate={() => onRegenerateCampaignName(c)}
+              regenerating={regenCampaignId === c.id}
             />
           ) : (
             <Pressable
@@ -764,22 +750,6 @@ export default function CharacterSheet() {
                   className="h-2 rounded-full bg-amber-600"
                   style={{ width: `${Math.max(c.progress_pct, 1)}%` }}
                 />
-              </View>
-              <View className="mt-2 flex-row justify-end">
-                <Pressable
-                  onPress={(e) => {
-                    e.stopPropagation?.();
-                    void onRegenerateCampaignName(c);
-                  }}
-                  disabled={regenCampaignId !== null || editingCampaignId !== null}
-                  className="active:opacity-60"
-                  accessibilityRole="button"
-                  accessibilityLabel="Regenerate campaign arc name"
-                >
-                  <Text className="font-body text-sm text-amber-800">
-                    {regenCampaignId === c.id ? 'Regenerating…' : 'Regenerate name ✶'}
-                  </Text>
-                </Pressable>
               </View>
             </Pressable>
           ),
@@ -1006,13 +976,31 @@ interface FactionEditorProps {
   }) => void | Promise<void>;
   onCancel: () => void;
   onDelete?: () => void | Promise<void>;
+  /** Optional: called when the chronicler taps "Regenerate name". Parent
+   *  owns the AI call. Omit for the draft (new) editor since there's
+   *  nothing to regenerate yet. */
+  onRegenerate?: () => void | Promise<void>;
+  regenerating?: boolean;
 }
 
-function FactionEditor({ initial, busy, onSave, onCancel, onDelete }: FactionEditorProps) {
+function FactionEditor({
+  initial,
+  busy,
+  onSave,
+  onCancel,
+  onDelete,
+  onRegenerate,
+  regenerating,
+}: FactionEditorProps) {
   const [name, setName] = useState(initial?.name ?? '');
   const [domain, setDomain] = useState(initial?.real_world_domain ?? '');
   const [reputation, setReputation] = useState(initial?.reputation_title ?? 'Initiate');
   const canSave = name.trim().length > 0 && domain.trim().length > 0 && !busy;
+  // Reflect a freshly-regenerated name back into the local edit field
+  // so the chronicler sees what the Archivist proposed before they save.
+  useEffect(() => {
+    if (initial?.name) setName(initial.name);
+  }, [initial?.name]);
 
   return (
     <View className="rounded-md border border-amber-900/50 bg-amber-50/40 p-3">
@@ -1025,8 +1013,23 @@ function FactionEditor({ initial, busy, onSave, onCancel, onDelete }: FactionEdi
         placeholder="e.g. The Crown Forge"
         placeholderTextColor="#57534e"
         editable={!busy}
-        className="mb-3 rounded-md border border-stone-700  px-3 py-2 font-body text-stone-900"
+        className="mb-2 rounded-md border border-stone-700  px-3 py-2 font-body text-stone-900"
       />
+      {onRegenerate ? (
+        <Pressable
+          onPress={() => void onRegenerate()}
+          disabled={busy || regenerating}
+          className={`mb-3 self-start rounded-md border border-amber-700 px-3 py-2 ${
+            regenerating ? 'bg-amber-100/40' : 'active:bg-amber-100'
+          }`}
+          accessibilityRole="button"
+          accessibilityLabel="Regenerate faction name"
+        >
+          <Text className="font-body text-base text-amber-800">
+            {regenerating ? 'The Archivist ponders…' : 'Regenerate name ✶'}
+          </Text>
+        </Pressable>
+      ) : null}
       <Text className="mb-1 font-display text-base uppercase tracking-widest text-stone-500">
         Real-world domain
       </Text>
@@ -1100,14 +1103,30 @@ interface CampaignEditorProps {
   }) => void | Promise<void>;
   onCancel: () => void;
   onDelete?: () => void | Promise<void>;
+  /** Optional: regenerate the in-voice arc name from the real-world goal. */
+  onRegenerate?: () => void | Promise<void>;
+  regenerating?: boolean;
 }
 
-function CampaignEditor({ initial, busy, onSave, onCancel, onDelete }: CampaignEditorProps) {
+function CampaignEditor({
+  initial,
+  busy,
+  onSave,
+  onCancel,
+  onDelete,
+  onRegenerate,
+  regenerating,
+}: CampaignEditorProps) {
   const [arcName, setArcName] = useState(initial?.arc_name ?? '');
   const [goal, setGoal] = useState(initial?.real_world_goal ?? '');
   const [progress, setProgress] = useState(String(initial?.progress_pct ?? 0));
   const [status, setStatus] = useState<Campaign['status']>(initial?.status ?? 'active');
   const canSave = arcName.trim().length > 0 && goal.trim().length > 0 && !busy;
+  // Pick up freshly-regenerated arc names so the editor reflects what the
+  // Archivist proposed before the chronicler taps Save.
+  useEffect(() => {
+    if (initial?.arc_name) setArcName(initial.arc_name);
+  }, [initial?.arc_name]);
 
   // Constrain to 0-100 on input rather than at submit so the user gets
   // immediate feedback if they typo a wild number.
@@ -1132,8 +1151,23 @@ function CampaignEditor({ initial, busy, onSave, onCancel, onDelete }: CampaignE
         placeholder="e.g. The Iron Marathon"
         placeholderTextColor="#57534e"
         editable={!busy}
-        className="mb-3 rounded-md border border-stone-700  px-3 py-2 font-body text-stone-900"
+        className="mb-2 rounded-md border border-stone-700  px-3 py-2 font-body text-stone-900"
       />
+      {onRegenerate ? (
+        <Pressable
+          onPress={() => void onRegenerate()}
+          disabled={busy || regenerating}
+          className={`mb-3 self-start rounded-md border border-amber-700 px-3 py-2 ${
+            regenerating ? 'bg-amber-100/40' : 'active:bg-amber-100'
+          }`}
+          accessibilityRole="button"
+          accessibilityLabel="Regenerate arc name"
+        >
+          <Text className="font-body text-base text-amber-800">
+            {regenerating ? 'The Archivist ponders…' : 'Regenerate name ✶'}
+          </Text>
+        </Pressable>
+      ) : null}
       <Text className="mb-1 font-display text-base uppercase tracking-widest text-stone-500">
         Real-world goal
       </Text>
@@ -1176,6 +1210,9 @@ function CampaignEditor({ initial, busy, onSave, onCancel, onDelete }: CampaignE
                   }`}
                 >
                   <Text
+                    numberOfLines={1}
+                    adjustsFontSizeToFit
+                    minimumFontScale={0.7}
                     className={`text-center font-body text-lg uppercase tracking-widest ${
                       selected ? 'text-amber-800' : 'text-stone-700'
                     }`}
