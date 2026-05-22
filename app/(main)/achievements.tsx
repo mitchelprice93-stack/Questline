@@ -285,7 +285,13 @@ function AchievementCard({ view }: { view: AchievementView }) {
         >
           {hidden ? '???' : achievement.name}
         </Text>
-        <Text className="font-display text-xs uppercase tracking-widest text-amber-800">
+        {/* Same anti-wrap treatment as the Personal badge: shrink-0 to
+            preserve natural width, numberOfLines={1} so the badge can't
+            split (Legendary in particular is wide enough to risk it). */}
+        <Text
+          className="shrink-0 font-display text-xs uppercase tracking-wider text-amber-800"
+          numberOfLines={1}
+        >
           {TIER_LABEL[tier]}
         </Text>
       </View>
@@ -383,7 +389,14 @@ function CampaignAchievementCard({ row }: { row: CampaignAchievement }) {
         >
           {row.title}
         </Text>
-        <Text className="font-display text-xs uppercase tracking-widest text-amber-800">
+        {/* shrink-0 keeps the badge at its natural width so the flex-1
+            title can't squeeze it and force the L to wrap below.
+            numberOfLines={1} is the safety net in case a future tweak
+            ever brings tracking back wide enough to push it. */}
+        <Text
+          className="shrink-0 font-display text-xs uppercase tracking-wider text-amber-800"
+          numberOfLines={1}
+        >
           Personal
         </Text>
       </View>
