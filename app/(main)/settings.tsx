@@ -1,8 +1,10 @@
 import Constants from 'expo-constants';
 import { useRouter } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
+import type { ReactNode } from 'react';
 import { useEffect, useState } from 'react';
 import { Linking, Platform, Pressable, Text, TextInput, View } from 'react-native';
+import { CollapsibleSection } from '../../components/collapsible-section';
 // ScrollView from gesture-handler, not react-native. RN's ScrollView gets
 // its responder stuck after a Modal dismiss on Android, eating the next
 // tap as a potential scroll. See app/(main)/quest-board/[id].tsx for the
@@ -410,7 +412,7 @@ export default function Settings() {
       <Text className="mb-6 font-display text-4xl text-stone-900">Settings</Text>
 
       {/* Account */}
-      <SectionHeader>Account</SectionHeader>
+      <SectionHeader id="account" title="Account">
       {session?.user.email ? (
         <View className="mb-3">
           <Text className="mb-1 font-display text-lg uppercase tracking-widest text-stone-500">
@@ -576,10 +578,10 @@ export default function Settings() {
       {deleteError ? (
         <Text className="mb-3 font-body text-base text-red-700">{deleteError}</Text>
       ) : null}
-      <View className="mb-8" />
+      </SectionHeader>
 
       {/* Chronicle */}
-      <SectionHeader>Chronicle</SectionHeader>
+      <SectionHeader id="chronicle" title="Chronicle">
       <Pressable
         onPress={onExport}
         disabled={exporting}
@@ -620,9 +622,10 @@ export default function Settings() {
           Replay orientation
         </Text>
       </Pressable>
+      </SectionHeader>
 
       {/* Subscription */}
-      <SectionHeader>Subscription</SectionHeader>
+      <SectionHeader id="subscription" title="Subscription">
       <View
         className={`mb-3 rounded-md border px-4 py-3 ${
           subscription?.tier === 'hero'
@@ -668,9 +671,10 @@ export default function Settings() {
           </Text>
         </Pressable>
       )}
+      </SectionHeader>
 
       {/* Notifications */}
-      <SectionHeader>Notifications</SectionHeader>
+      <SectionHeader id="notifications" title="Notifications">
       {permissionStatus === 'unsupported' ? (
         <View className="mb-3 rounded-md border border-stone-800 bg-amber-50/40 px-4 py-3">
           <Text className="font-body text-xl text-stone-700">
@@ -797,9 +801,10 @@ export default function Settings() {
           )}
         </>
       )}
+      </SectionHeader>
 
       {/* Audio */}
-      <SectionHeader>Audio</SectionHeader>
+      <SectionHeader id="audio" title="Audio">
       <Pressable
         onPress={() => void setMuted(!muted)}
         className="mb-3 flex-row items-center justify-between rounded-md border border-stone-700 bg-amber-50/40 px-4 py-3 active:bg-amber-100/60"
@@ -819,25 +824,24 @@ export default function Settings() {
           />
         </View>
       </Pressable>
+      </SectionHeader>
 
       {/* Help & feedback. Bug report opens the user's mail client with a
           structured, pre-filled report addressed to the support inbox. */}
-      <View className="mt-8">
-        <SectionHeader>Help & Feedback</SectionHeader>
+      <SectionHeader id="help" title="Help & Feedback">
         <Pressable
           onPress={onReportBug}
           className="mb-3 rounded-md border border-stone-700 bg-amber-50/40 px-4 py-3 active:bg-amber-100/60"
         >
           <Text className="text-center font-body text-lg text-stone-800">Report a bug</Text>
         </Pressable>
-        <Text className="mb-8 px-2 font-body text-sm italic text-stone-500">
+        <Text className="mb-2 px-2 font-body text-sm italic text-stone-500">
           Opens your mail app with a pre-filled report. The Archivist reads every dispatch.
         </Text>
-      </View>
+      </SectionHeader>
 
       {/* Legal */}
-      <View className="mt-8">
-        <SectionHeader>Legal</SectionHeader>
+      <SectionHeader id="legal" title="Legal">
         <Pressable
           onPress={() => onOpenLegal(privacyUrl, 'Privacy policy')}
           className="mb-3 rounded-md border border-stone-700 bg-amber-50/40 px-4 py-3 active:bg-amber-100/60"
@@ -846,20 +850,32 @@ export default function Settings() {
         </Pressable>
         <Pressable
           onPress={() => onOpenLegal(termsUrl, 'Terms of service')}
-          className="mb-8 rounded-md border border-stone-700 bg-amber-50/40 px-4 py-3 active:bg-amber-100/60"
+          className="mb-2 rounded-md border border-stone-700 bg-amber-50/40 px-4 py-3 active:bg-amber-100/60"
         >
           <Text className="text-center font-body text-lg text-stone-800">Terms of service</Text>
         </Pressable>
-      </View>
+      </SectionHeader>
       </ScrollView>
     </ParchmentScreen>
   );
 }
 
-function SectionHeader({ children }: { children: string }) {
+// Settings section wrapper: title row + collapsible content. Restyled from
+// the old presentational-only SectionHeader so each category gets an arrow
+// chevron and persists its collapsed state across launches. id is stable
+// per section so AsyncStorage keeps the chronicler's preference.
+function SectionHeader({
+  id,
+  title,
+  children,
+}: {
+  id: string;
+  title: string;
+  children: ReactNode;
+}) {
   return (
-    <Text className="mb-3 font-display text-lg uppercase tracking-[0.3em] text-amber-800">
+    <CollapsibleSection id={`settings-${id}`} title={title} className="mb-8">
       {children}
-    </Text>
+    </CollapsibleSection>
   );
 }

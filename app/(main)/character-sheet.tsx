@@ -34,6 +34,7 @@ import {
   updateIdentity,
 } from '../../lib/character-sheet';
 import { ReorderableRow } from '../../components/reorderable-row';
+import { CollapsibleSection } from '../../components/collapsible-section';
 import {
   listActiveBuffs,
   listActiveDebuffs,
@@ -479,152 +480,163 @@ export default function CharacterSheet() {
           chronicler asked for "DnD and Fallout" style, the six are the most
           universally recognized. Values render as em-dashes so it reads as a
           real stat sheet that isn't filled in yet, not an empty placeholder. */}
-      <View className="mb-4 rounded-md border border-amber-900/30 bg-amber-50/20 p-4">
-        <View className="mb-3 flex-row items-center justify-between">
-          <Text className="font-display text-lg uppercase tracking-widest text-stone-700">
-            Attributes
-          </Text>
+      <CollapsibleSection
+        id="char-attributes"
+        title="Attributes"
+        className="mb-4"
+        headerRight={
           <View className="rounded-full border border-amber-700 bg-amber-100/60 px-2.5 py-0.5">
             <Text className="font-display text-xs uppercase tracking-widest text-amber-800">
               Coming Soon
             </Text>
           </View>
+        }
+      >
+        <View className="rounded-md border border-amber-900/30 bg-amber-50/20 p-4">
+          <View className="mb-3 flex-row flex-wrap">
+            {[
+              { key: 'STR', name: 'Strength' },
+              { key: 'DEX', name: 'Dexterity' },
+              { key: 'CON', name: 'Constitution' },
+              { key: 'INT', name: 'Intellect' },
+              { key: 'WIS', name: 'Wisdom' },
+              { key: 'CHA', name: 'Charisma' },
+            ].map((attr) => (
+              <View key={attr.key} className="mb-2 w-1/3 items-center">
+                <Text className="font-display text-xs uppercase tracking-widest text-amber-800/70">
+                  {attr.key}
+                </Text>
+                <Text className="font-display-bold text-2xl text-stone-500">-</Text>
+                <Text className="font-body text-xs italic text-stone-500">{attr.name}</Text>
+              </View>
+            ))}
+          </View>
+          <Text className="font-body text-lg italic text-stone-600">
+            Quests will one day temper the chronicler's traits, sharpened wit from study, hardened
+            sinew from labor, silvered tongue from parley. The Archivist still measures the
+            weights.
+          </Text>
         </View>
-        <View className="mb-3 flex-row flex-wrap">
-          {[
-            { key: 'STR', name: 'Strength' },
-            { key: 'DEX', name: 'Dexterity' },
-            { key: 'CON', name: 'Constitution' },
-            { key: 'INT', name: 'Intellect' },
-            { key: 'WIS', name: 'Wisdom' },
-            { key: 'CHA', name: 'Charisma' },
-          ].map((attr) => (
-            <View
-              key={attr.key}
-              className="mb-2 w-1/3 items-center"
-            >
-              <Text className="font-display text-xs uppercase tracking-widest text-amber-800/70">
-                {attr.key}
-              </Text>
-              <Text className="font-display-bold text-2xl text-stone-500">-</Text>
-              <Text className="font-body text-xs italic text-stone-500">{attr.name}</Text>
-            </View>
-          ))}
-        </View>
-        <Text className="font-body text-lg italic text-stone-600">
-          Quests will one day temper the chronicler's traits, sharpened wit from study, hardened
-          sinew from labor, silvered tongue from parley. The Archivist still measures the weights.
-        </Text>
-      </View>
+      </CollapsibleSection>
 
       {/* Perk Tree, placeholder for v1.1+. Non-interactive teaser that
           seeds anticipation for both free chroniclers (a glimpse of what
           Hero will unlock) and Hero subscribers (signaling that more is
           on the way). Visually dimmer than the active sections so it
           reads as "coming, not here yet" without an explicit lock icon. */}
-      <View className="mb-8 rounded-md border border-amber-900/30 bg-amber-50/20 p-4">
-        <View className="mb-2 flex-row items-center justify-between">
-          <Text className="font-display text-lg uppercase tracking-widest text-stone-700">
-            Perk Tree
-          </Text>
+      <CollapsibleSection
+        id="char-perk-tree"
+        title="Perk Tree"
+        className="mb-8"
+        headerRight={
           <View className="rounded-full border border-amber-700 bg-amber-100/60 px-2.5 py-0.5">
             <Text className="font-display text-xs uppercase tracking-widest text-amber-800">
               Coming Soon
             </Text>
           </View>
+        }
+      >
+        <View className="rounded-md border border-amber-900/30 bg-amber-50/20 p-4">
+          <Text className="font-body text-lg italic text-stone-600">
+            The Archivist is weaving a new branch of boons into the chronicle. Soon, each
+            chronicler will chart their own path of power.
+          </Text>
         </View>
-        <Text className="font-body text-lg italic text-stone-600">
-          The Archivist is weaving a new branch of boons into the chronicle. Soon, each chronicler
-          will chart their own path of power.
-        </Text>
-      </View>
+      </CollapsibleSection>
 
       {/* Buffs, earned by completing quests under their granted-buff
           conditions. Persist for a tier-scaled lifetime; stack while
           active. Always render the section with an empty state so the
           layout matches Debuffs below, consistency was a tester request. */}
-      <Text className="mb-2 font-display text-lg uppercase tracking-widest text-stone-700">
-        Buffs
-      </Text>
-      <View className="mb-8 gap-2">
-        {buffs.length === 0 ? (
-          <Text className="font-body italic text-stone-500">
-            No buffs. Earn them by completing quests on time.
-          </Text>
-        ) : (
-          buffs.map((b) => (
-            <ModifierCard
-              key={b.id}
-              modifier={b}
-              remainingLabel={formatBuffRemaining(b.expires_at)}
-            />
-          ))
-        )}
-      </View>
+      <CollapsibleSection id="char-buffs" title="Buffs" className="mb-8">
+        <View className="gap-2">
+          {buffs.length === 0 ? (
+            <Text className="font-body italic text-stone-500">
+              No buffs. Earn them by completing quests on time.
+            </Text>
+          ) : (
+            buffs.map((b) => (
+              <ModifierCard
+                key={b.id}
+                modifier={b}
+                remainingLabel={formatBuffRemaining(b.expires_at)}
+              />
+            ))
+          )}
+        </View>
+      </CollapsibleSection>
 
       {/* Debuffs, visible whenever any are active. Rest button always
           renders but disables on cooldown. */}
-      <View className="mb-2 flex-row items-baseline justify-between">
-        <Text className="font-display text-lg uppercase tracking-widest text-stone-700">
-          Debuffs
-        </Text>
-        <Pressable
-          onPress={onRest}
-          disabled={busy || restOnCooldown}
-          className={`rounded-md border px-3 py-1.5 ${
-            busy || restOnCooldown
-              ? 'border-stone-800 bg-amber-50/40'
-              : 'border-amber-700 bg-amber-900/40 active:bg-amber-900/60'
-          }`}
-        >
-          <Text
-            className={`font-body-medium text-lg uppercase tracking-widest ${
-              busy || restOnCooldown ? 'text-stone-500' : 'text-amber-800'
+      <CollapsibleSection
+        id="char-debuffs"
+        title="Debuffs"
+        className="mb-8"
+        headerRight={
+          <Pressable
+            onPress={onRest}
+            disabled={busy || restOnCooldown}
+            className={`rounded-md border px-3 py-1.5 ${
+              busy || restOnCooldown
+                ? 'border-stone-800 bg-amber-50/40'
+                : 'border-amber-700 bg-amber-900/40 active:bg-amber-900/60'
             }`}
           >
-            {restOnCooldown
-              ? `Rest avail. ${formatRestDate(new Date(restAvailableAt).toISOString())}`
-              : '+rest'}
-          </Text>
-        </Pressable>
-      </View>
-      <View className="mb-8 gap-2">
-        {debuffs.length === 0 ? (
-          <Text className="font-body italic text-stone-500">
-            No debuffs. Keep tending the Tome.
-          </Text>
-        ) : (
-          debuffs.map((d) => <ModifierCard key={d.id} modifier={d} />)
-        )}
-      </View>
+            <Text
+              className={`font-body-medium text-lg uppercase tracking-widest ${
+                busy || restOnCooldown ? 'text-stone-500' : 'text-amber-800'
+              }`}
+            >
+              {restOnCooldown
+                ? `Rest avail. ${formatRestDate(new Date(restAvailableAt).toISOString())}`
+                : '+rest'}
+            </Text>
+          </Pressable>
+        }
+      >
+        <View className="gap-2">
+          {debuffs.length === 0 ? (
+            <Text className="font-body italic text-stone-500">
+              No debuffs. Keep tending the Tome.
+            </Text>
+          ) : (
+            debuffs.map((d) => <ModifierCard key={d.id} modifier={d} />)
+          )}
+        </View>
+      </CollapsibleSection>
 
       {/* Factions */}
-      <View className="mb-2 flex-row items-center justify-between">
-        <Text className="font-display text-lg uppercase tracking-widest text-stone-700">
-          Factions
-        </Text>
-        <View className="flex-row items-center gap-3">
-          {factions.length > 1 && editingFactionId === null ? (
-            // GHPressable: flipping reorder mode mounts new GestureDetectors
-            // beneath, and RN's stock Pressable leaves the responder stuck
-            // after the tap (other buttons go dead until you scroll). GH's
-            // Pressable releases cleanly. className is dropped by
-            // GHPressable, so styling moves to a wrapping View.
-            <GHPressable onPress={() => setReorderingFactions((v) => !v)}>
-              <View className="rounded-md border border-stone-700 bg-amber-50/40 px-3 py-1">
-                <Text className="font-body text-base text-stone-700">
-                  {reorderingFactions ? 'Done' : 'Reorder'}
-                </Text>
-              </View>
-            </GHPressable>
-          ) : null}
-          {!showFactionDraft && editingFactionId === null ? (
-            <Pressable onPress={() => setEditingFactionId(DRAFT_ID)} className="active:opacity-60">
-              <Text className="font-body text-lg text-amber-800">+ Add</Text>
-            </Pressable>
-          ) : null}
-        </View>
-      </View>
+      <CollapsibleSection
+        id="char-factions"
+        title="Factions"
+        className="mb-0"
+        headerRight={
+          <View className="flex-row items-center gap-3">
+            {factions.length > 1 && editingFactionId === null ? (
+              // GHPressable: flipping reorder mode mounts new GestureDetectors
+              // beneath, and RN's stock Pressable leaves the responder stuck
+              // after the tap (other buttons go dead until you scroll). GH's
+              // Pressable releases cleanly. className is dropped by
+              // GHPressable, so styling moves to a wrapping View.
+              <GHPressable onPress={() => setReorderingFactions((v) => !v)}>
+                <View className="rounded-md border border-stone-700 bg-amber-50/40 px-3 py-1">
+                  <Text className="font-body text-base text-stone-700">
+                    {reorderingFactions ? 'Done' : 'Reorder'}
+                  </Text>
+                </View>
+              </GHPressable>
+            ) : null}
+            {!showFactionDraft && editingFactionId === null ? (
+              <Pressable
+                onPress={() => setEditingFactionId(DRAFT_ID)}
+                className="active:opacity-60"
+              >
+                <Text className="font-body text-lg text-amber-800">+ Add</Text>
+              </Pressable>
+            ) : null}
+          </View>
+        }
+      >
       <View className="mb-8 gap-2">
         {factions.length === 0 && !showFactionDraft ? (
           <Text className="font-body italic text-stone-500">
@@ -749,32 +761,38 @@ export default function CharacterSheet() {
             onCancel={() => setEditingFactionId(null)}
           />
         ) : null}
-      </View>
+        </View>
+      </CollapsibleSection>
 
       {/* Campaigns */}
-      <View className="mb-2 flex-row items-center justify-between">
-        <Text className="font-display text-lg uppercase tracking-widest text-stone-700">
-          Campaigns
-        </Text>
-        <View className="flex-row items-center gap-3">
-          {campaigns.length > 1 && editingCampaignId === null ? (
-            // Same GHPressable rationale as the Factions Reorder button above.
-            <GHPressable onPress={() => setReorderingCampaigns((v) => !v)}>
-              <View className="rounded-md border border-stone-700 bg-amber-50/40 px-3 py-1">
-                <Text className="font-body text-base text-stone-700">
-                  {reorderingCampaigns ? 'Done' : 'Reorder'}
-                </Text>
-              </View>
-            </GHPressable>
-          ) : null}
-          {!showCampaignDraft && editingCampaignId === null ? (
-            <Pressable onPress={() => setEditingCampaignId(DRAFT_ID)} className="active:opacity-60">
-              <Text className="font-body text-lg text-amber-800">+ Add</Text>
-            </Pressable>
-          ) : null}
-        </View>
-      </View>
-      <View className="mb-8 gap-2">
+      <CollapsibleSection
+        id="char-campaigns"
+        title="Campaigns"
+        className="mb-0"
+        headerRight={
+          <View className="flex-row items-center gap-3">
+            {campaigns.length > 1 && editingCampaignId === null ? (
+              // Same GHPressable rationale as the Factions Reorder button above.
+              <GHPressable onPress={() => setReorderingCampaigns((v) => !v)}>
+                <View className="rounded-md border border-stone-700 bg-amber-50/40 px-3 py-1">
+                  <Text className="font-body text-base text-stone-700">
+                    {reorderingCampaigns ? 'Done' : 'Reorder'}
+                  </Text>
+                </View>
+              </GHPressable>
+            ) : null}
+            {!showCampaignDraft && editingCampaignId === null ? (
+              <Pressable
+                onPress={() => setEditingCampaignId(DRAFT_ID)}
+                className="active:opacity-60"
+              >
+                <Text className="font-body text-lg text-amber-800">+ Add</Text>
+              </Pressable>
+            ) : null}
+          </View>
+        }
+      >
+        <View className="mb-8 gap-2">
         {campaigns.length === 0 && !showCampaignDraft ? (
           <Text className="font-body italic text-stone-500">
             No active arcs. Forge new ones as your chronicle unfolds.
@@ -899,26 +917,26 @@ export default function CharacterSheet() {
             onCancel={() => setEditingCampaignId(null)}
           />
         ) : null}
-      </View>
+        </View>
+      </CollapsibleSection>
 
       {/* Difficulty, dropdown selector. Tapping persists immediately and
           refetches the profile so XP-modifier changes go live everywhere.
           Used to be a 4-button segmented control but the labels (especially
           LEGENDARY) crowded the row on narrow phones, so it's now a single
           trigger + Modal-based option list. */}
-      <Text className="mb-2 font-display text-lg uppercase tracking-widest text-stone-700">
-        Difficulty
-      </Text>
-      <Pressable
-        onPress={() => setDifficultyOpen(true)}
-        disabled={busy}
-        className="mb-2 flex-row items-center justify-between rounded-md border border-stone-800 bg-amber-50/40 px-4 py-3 active:bg-amber-100/60"
-      >
-        <Text className="font-display text-2xl uppercase tracking-widest text-amber-800">
-          {profile?.difficulty ?? 'apprentice'}
-        </Text>
-        <Text className="font-body text-xl text-stone-600">▾</Text>
-      </Pressable>
+      <CollapsibleSection id="char-difficulty" title="Difficulty" className="mb-6">
+        <Pressable
+          onPress={() => setDifficultyOpen(true)}
+          disabled={busy}
+          className="flex-row items-center justify-between rounded-md border border-stone-800 bg-amber-50/40 px-4 py-3 active:bg-amber-100/60"
+        >
+          <Text className="font-display text-2xl uppercase tracking-widest text-amber-800">
+            {profile?.difficulty ?? 'apprentice'}
+          </Text>
+          <Text className="font-body text-xl text-stone-600">▾</Text>
+        </Pressable>
+      </CollapsibleSection>
 
       {/*
         animationType="none" matches the shared DropdownPicker / DeadlinePicker
