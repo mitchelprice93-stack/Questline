@@ -60,15 +60,17 @@ export function DropdownPicker<T extends string>({
       <Pressable
         onPress={() => {
           // Dismiss any open soft keyboard before showing the modal.
-          // Without this, on Android the keyboard from a TextInput elsewhere
-          // on the form (Title, Description, custom-cadence interval, etc.)
-          // covers or fights with the option list, making the dropdown look
-          // "frozen" until the user manually dismisses the keyboard. Safe
-          // here now that the deadline field is a calendar picker rather
-          // than a text input, the keyboard manipulation that previously
-          // conflicted with Save Changes is gone.
+          // Without this, the keyboard from a TextInput elsewhere on the
+          // form covers or fights with the option list.
           Keyboard.dismiss();
-          setOpen(true);
+          // Defer opening the modal until the next frame. Opening it on the
+          // same tick as Keyboard.dismiss() can race the keyboard's exit
+          // animation, leaving the modal mounted with stale touch handlers,
+          // the chronicler sees the options but taps go through to the
+          // screen underneath until something forces a re-layout (like a
+          // scroll). One frame of breathing room fixes it without a
+          // perceptible delay.
+          requestAnimationFrame(() => setOpen(true));
         }}
         disabled={disabled}
         className="flex-row items-center justify-between rounded-md border border-stone-700 bg-amber-50/40 px-4 py-3 active:bg-amber-100/60"
