@@ -9,8 +9,18 @@
 // items, so per-row height measurement isn't worth the complexity here).
 
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { Pressable, Text, TextInput, View } from 'react-native';
-import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import { Text, TextInput, View } from 'react-native';
+import {
+  Gesture,
+  GestureDetector,
+  // GHPressable lives next to a Pan GestureDetector in each row. RN's
+  // stock Pressable leaves the responder stuck when a sibling
+  // GestureDetector mounts/unmounts as reorderMode flips, so the next
+  // tap dies (have to scroll to reset). GH's Pressable releases
+  // cleanly. className is dropped by GHPressable so the styled View
+  // wraps the icon text. See feedback-rn-modal-dead-tap memory.
+  Pressable as GHPressable,
+} from 'react-native-gesture-handler';
 import Animated, {
   makeMutable,
   runOnJS,
@@ -73,13 +83,11 @@ export function ObjectivesEditor({ objectives, onChange, disabled, reorderMode }
           onReorder={reorder}
         />
       ))}
-      <Pressable
-        onPress={add}
-        disabled={disabled}
-        className="mt-1 rounded-md border border-dashed border-stone-700 px-3 py-2 active:bg-amber-50/40"
-      >
-        <Text className="text-center font-body text-xl text-stone-700">+ Add objective</Text>
-      </Pressable>
+      <GHPressable onPress={add} disabled={disabled}>
+        <View className="mt-1 rounded-md border border-dashed border-stone-700 px-3 py-2">
+          <Text className="text-center font-body text-xl text-stone-700">+ Add objective</Text>
+        </View>
+      </GHPressable>
     </View>
   );
 }
@@ -204,13 +212,11 @@ function ObjectiveRow({
           </View>
         </GestureDetector>
       ) : null}
-      <Pressable
-        onPress={onToggleComplete}
-        disabled={disabled}
-        className="rounded-md border border-stone-700 bg-amber-50/40 px-3 py-2 active:bg-amber-100/60"
-      >
-        <Text className="font-body text-stone-700">{obj.completed ? '☑' : '☐'}</Text>
-      </Pressable>
+      <GHPressable onPress={onToggleComplete} disabled={disabled}>
+        <View className="rounded-md border border-stone-700 bg-amber-50/40 px-3 py-2">
+          <Text className="font-body text-stone-700">{obj.completed ? '☑' : '☐'}</Text>
+        </View>
+      </GHPressable>
       <TextInput
         value={obj.text}
         onChangeText={onChangeText}
@@ -227,13 +233,11 @@ function ObjectiveRow({
         scrollEnabled={false}
         className="flex-1 rounded-md border border-stone-700 bg-amber-50/40 px-3 py-2 font-body text-stone-900"
       />
-      <Pressable
-        onPress={onRemove}
-        disabled={disabled}
-        className="rounded-md border border-stone-800 bg-amber-50/40 px-3 py-2 active:bg-amber-100/60"
-      >
-        <Text className="font-body text-stone-700">×</Text>
-      </Pressable>
+      <GHPressable onPress={onRemove} disabled={disabled}>
+        <View className="rounded-md border border-stone-800 bg-amber-50/40 px-3 py-2">
+          <Text className="font-body text-stone-700">×</Text>
+        </View>
+      </GHPressable>
     </Animated.View>
   );
 }
