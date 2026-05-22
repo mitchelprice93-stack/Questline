@@ -8,6 +8,11 @@ module.exports = {
     './lib/**/*.{js,jsx,ts,tsx}',
   ],
   presets: [require('nativewind/preset')],
+  // Class-based dark mode: NativeWind's setColorScheme() toggles the
+  // 'dark' class on the root and every `dark:` variant kicks in. We use
+  // class mode (not media) so the chronicler's manual override in
+  // Settings can beat the system preference when chosen.
+  darkMode: 'class',
   theme: {
     extend: {
       // Phase 3.1 typography: Cinzel for display headings, EB Garamond for body.

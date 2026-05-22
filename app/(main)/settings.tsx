@@ -5,6 +5,7 @@ import type { ReactNode } from 'react';
 import { useEffect, useState } from 'react';
 import { Linking, Platform, Pressable, Text, TextInput, View } from 'react-native';
 import { CollapsibleSection } from '../../components/collapsible-section';
+import { useColorMode, type ColorModePreference } from '../../lib/color-mode';
 // ScrollView from gesture-handler, not react-native. RN's ScrollView gets
 // its responder stuck after a Modal dismiss on Android, eating the next
 // tap as a potential scroll. See app/(main)/quest-board/[id].tsx for the
@@ -826,6 +827,13 @@ export default function Settings() {
       </Pressable>
       </SectionHeader>
 
+      {/* Appearance: System / Light / Midnight Chronicle. The chronicler's
+          choice is persisted across launches; 'System' tracks the OS dark
+          mode toggle live. */}
+      <SectionHeader id="appearance" title="Appearance">
+        <AppearancePicker />
+      </SectionHeader>
+
       {/* Help & feedback. Bug report opens the user's mail client with a
           structured, pre-filled report addressed to the support inbox. */}
       <SectionHeader id="help" title="Help & Feedback">
@@ -857,6 +865,56 @@ export default function Settings() {
       </SectionHeader>
       </ScrollView>
     </ParchmentScreen>
+  );
+}
+
+/** Three-option picker for the chronicler's color-mode preference. System
+ *  follows the OS toggle live; Light forces the parchment-by-sunlight look;
+ *  Dark is the Midnight Chronicle palette. */
+function AppearancePicker() {
+  const { preference, setPreference } = useColorMode();
+  const options: { value: ColorModePreference; label: string; hint: string }[] = [
+    {
+      value: 'system',
+      label: 'System',
+      hint: 'Follows your device’s light/dark setting.',
+    },
+    {
+      value: 'light',
+      label: 'Light',
+      hint: 'Parchment by sunlight. The Archivist’s default look.',
+    },
+    {
+      value: 'dark',
+      label: 'Midnight Chronicle',
+      hint: 'Dark vellum, candle-warm accents. Easier on the eyes after dusk.',
+    },
+  ];
+  return (
+    <View className="gap-2">
+      {options.map((opt) => {
+        const selected = preference === opt.value;
+        return (
+          <Pressable
+            key={opt.value}
+            onPress={() => void setPreference(opt.value)}
+            className={`rounded-md border px-4 py-3 ${
+              selected
+                ? 'border-amber-700 bg-amber-100/60'
+                : 'border-stone-700 bg-amber-50/40 active:bg-amber-100/60'
+            }`}
+          >
+            <View className="flex-row items-center justify-between">
+              <Text className="font-body-medium text-xl text-stone-900">{opt.label}</Text>
+              {selected ? (
+                <Text className="font-display text-base text-amber-800">✓</Text>
+              ) : null}
+            </View>
+            <Text className="mt-0.5 font-body text-sm text-stone-500">{opt.hint}</Text>
+          </Pressable>
+        );
+      })}
+    </View>
   );
 }
 
