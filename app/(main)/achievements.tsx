@@ -209,7 +209,15 @@ export default function AchievementsScreen() {
             : ''}
         </Text>
 
-        {/* Tab strip */}
+        {/* Tab strip. With 4 tabs each at flex-1 and a 2px gap, every label
+            gets just under a quarter of the screen width. PERSONAL at
+            tracking-widest is the worst offender, on narrow phones (~360dp)
+            the L wraps to a second line. Fix is three layers:
+              1) shrink the horizontal padding (px-1 instead of px-2) so the
+                 label has more room to breathe inside the pill,
+              2) drop tracking-widest → tracking-wider, slightly narrower,
+              3) numberOfLines={1} + adjustsFontSizeToFit so any future
+                 longer label auto-shrinks rather than wraps. */}
         <View className="mb-4 flex-row gap-2">
           {TABS.map((tab) => {
             const selected = activeTab === tab.key;
@@ -217,14 +225,17 @@ export default function AchievementsScreen() {
               <Pressable
                 key={tab.key}
                 onPress={() => setActiveTab(tab.key)}
-                className={`flex-1 rounded-md border px-2 py-2 ${
+                className={`flex-1 rounded-md border px-1 py-2 ${
                   selected
                     ? 'border-amber-600 bg-amber-900/40'
                     : 'border-stone-800 bg-amber-50/40 active:bg-amber-100/60'
                 }`}
               >
                 <Text
-                  className={`text-center font-body-medium text-base uppercase tracking-widest ${
+                  numberOfLines={1}
+                  adjustsFontSizeToFit
+                  minimumFontScale={0.7}
+                  className={`text-center font-body-medium text-base uppercase tracking-wider ${
                     selected ? 'text-amber-800' : 'text-stone-700'
                   }`}
                 >
