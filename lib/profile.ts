@@ -36,9 +36,13 @@ export async function getActiveQuestCount(): Promise<number> {
 }
 
 export async function listFactions(): Promise<Faction[]> {
+  // Primary sort by chronicler-set display_order, with created_at as a
+  // stable tiebreak for rows that share an order value (default 0 for
+  // newly-inserted rows before the user has reordered).
   const { data, error } = await supabase
     .from('factions')
     .select('*')
+    .order('display_order', { ascending: true })
     .order('created_at', { ascending: true });
   if (error) throw asError(error);
   return (data ?? []) as Faction[];
@@ -49,6 +53,7 @@ export async function listCampaigns(status: Campaign['status'] = 'active'): Prom
     .from('campaigns')
     .select('*')
     .eq('status', status)
+    .order('display_order', { ascending: true })
     .order('created_at', { ascending: true });
   if (error) throw asError(error);
   return (data ?? []) as Campaign[];

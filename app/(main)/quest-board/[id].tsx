@@ -63,6 +63,7 @@ import {
   abandonQuest,
   completeQuest,
   getQuest,
+  setQuestPinned,
   updateQuest,
   updateQuestObjectives,
 } from '../../../lib/quests';
@@ -803,7 +804,30 @@ export default function QuestDetail() {
       <Pressable onPress={goBack} className="mb-3 self-start active:opacity-60">
         <Text className="font-body text-xl text-amber-800">← Quest Board</Text>
       </Pressable>
-      <Text className="mb-1 font-display text-4xl text-stone-900">{quest.title}</Text>
+      <View className="mb-1 flex-row items-start justify-between gap-3">
+        <Text className="flex-1 font-display text-4xl text-stone-900">{quest.title}</Text>
+        <Pressable
+          onPress={async () => {
+            if (!quest) return;
+            try {
+              await setQuestPinned(quest.id, !quest.pinned_at);
+              const fresh = await getQuest(quest.id);
+              if (fresh) setQuest(fresh);
+            } catch (e) {
+              setActionError(e instanceof Error ? e.message : String(e));
+            }
+          }}
+          accessibilityRole="button"
+          accessibilityLabel={quest.pinned_at ? 'Unpin from board' : 'Pin to top of board'}
+          className="mt-2 active:opacity-60"
+        >
+          <MaterialCommunityIcons
+            name={quest.pinned_at ? 'pin' : 'pin-outline'}
+            size={28}
+            color={quest.pinned_at ? '#b45309' : '#78716c'}
+          />
+        </Pressable>
+      </View>
       <View className="mb-6 flex-row gap-3">
         <Text className="font-display text-lg uppercase tracking-widest text-amber-800">
           {quest.tier}

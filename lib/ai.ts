@@ -24,7 +24,10 @@ export type ClaudeProxyEndpoint =
   | 'character_creation'
   | 'quest_generation'
   | 'level_up_narration'
-  | 'reputation_retitle';
+  | 'reputation_retitle'
+  | 'regenerate_title'
+  | 'regenerate_faction_name'
+  | 'regenerate_campaign_name';
 
 export class ClaudeProxyError extends Error {
   constructor(

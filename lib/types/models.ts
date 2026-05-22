@@ -55,6 +55,10 @@ export interface Quest {
   last_completed_at: string | null;
   /** Set when the quest was abandoned. */
   abandoned_at: string | null;
+  /** Non-null timestamp = quest is pinned to the top of the board. Most-
+   *  recently-pinned sorts first within the pinned section. Set to null to
+   *  unpin. Pinning is independent of all other sort/group settings. */
+  pinned_at: string | null;
   /** How many percentage points completing this quest advances its linked
    *  campaign. 1-100; null iff campaign_id is null. The DB enforces the
    *  pairing invariant via CHECK constraint. */
@@ -114,6 +118,10 @@ export interface Faction {
   /** Total quests completed for this faction. Auto-incremented by a
    *  trigger on quest completion; never edited by the client. */
   reputation_count: number;
+  /** Chronicler's preferred sort position. Lower = higher on the list.
+   *  Persists across sessions; reorder via drag-and-drop on the character
+   *  sheet writes a fresh ordering. */
+  display_order: number;
   created_at: string;
 }
 
@@ -125,5 +133,7 @@ export interface Campaign {
   real_world_goal: string;
   progress_pct: number;
   status: 'active' | 'completed' | 'abandoned';
+  /** Chronicler's preferred sort position. Lower = higher on the list. */
+  display_order: number;
   created_at: string;
 }

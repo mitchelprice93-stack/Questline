@@ -26,11 +26,14 @@ import {
   createFaction,
   deleteCampaign,
   deleteFaction,
+  reorderCampaigns,
+  reorderFactions,
   updateCampaign,
   updateDifficulty,
   updateFaction,
   updateIdentity,
 } from '../../lib/character-sheet';
+import { ReorderableRow } from '../../components/reorderable-row';
 import {
   listActiveBuffs,
   listActiveDebuffs,
@@ -240,6 +243,35 @@ export default function CharacterSheet() {
       setActionError(errorMessage(e));
     } finally {
       setIdentityBusy(null);
+    }
+  };
+
+  const onReorderFactions = async (from: number, to: number) => {
+    if (!data?.factions || from === to) return;
+    // Optimistic local reorder, then persist. The next refresh confirms.
+    const arr = [...data.factions];
+    const [moved] = arr.splice(from, 1);
+    arr.splice(to, 0, moved);
+    setData({ ...data, factions: arr });
+    try {
+      await reorderFactions(arr.map((f) => f.id));
+    } catch (e) {
+      setActionError(errorMessage(e));
+      void refresh();
+    }
+  };
+
+  const onReorderCampaigns = async (from: number, to: number) => {
+    if (!data?.campaigns || from === to) return;
+    const arr = [...data.campaigns];
+    const [moved] = arr.splice(from, 1);
+    arr.splice(to, 0, moved);
+    setData({ ...data, campaigns: arr });
+    try {
+      await reorderCampaigns(arr.map((c) => c.id));
+    } catch (e) {
+      setActionError(errorMessage(e));
+      void refresh();
     }
   };
 
@@ -576,7 +608,7 @@ export default function CharacterSheet() {
             The Archivist will inscribe these during character creation.
           </Text>
         ) : null}
-        {factions.map((f) =>
+        {factions.map((f, idx) =>
           editingFactionId === f.id ? (
             <FactionEditor
               key={f.id}
@@ -618,28 +650,37 @@ export default function CharacterSheet() {
               regenerating={regenFactionId === f.id}
             />
           ) : (
-            <Pressable
+            <ReorderableRow
               key={f.id}
-              onPress={() => setEditingFactionId(f.id)}
+              listKey="factions"
+              idx={idx}
+              count={factions.length}
+              rowHeight={100}
               disabled={editingFactionId !== null}
-              className="rounded-md border border-stone-800 bg-amber-50/40 px-4 py-3 active:bg-amber-100/60"
+              onReorder={(from, to) => void onReorderFactions(from, to)}
             >
-              <View className="flex-row items-baseline justify-between">
-                <Text
-                  numberOfLines={1}
-                  className="flex-1 pr-3 font-body-medium text-2xl text-stone-900"
-                >
-                  {f.name}
+              <Pressable
+                onPress={() => setEditingFactionId(f.id)}
+                disabled={editingFactionId !== null}
+                className="rounded-md border border-stone-800 bg-amber-50/40 px-4 py-3 active:bg-amber-100/60"
+              >
+                <View className="flex-row items-baseline justify-between">
+                  <Text
+                    numberOfLines={1}
+                    className="flex-1 pr-3 font-body-medium text-2xl text-stone-900"
+                  >
+                    {f.name}
+                  </Text>
+                  <Text className="font-display text-base uppercase tracking-widest text-amber-800">
+                    {f.reputation_title}
+                  </Text>
+                </View>
+                <Text className="font-body text-lg text-stone-500">{f.real_world_domain}</Text>
+                <Text className="mt-1 font-body text-sm text-stone-600">
+                  {f.reputation_count} {f.reputation_count === 1 ? 'deed' : 'deeds'} inscribed
                 </Text>
-                <Text className="font-display text-base uppercase tracking-widest text-amber-800">
-                  {f.reputation_title}
-                </Text>
-              </View>
-              <Text className="font-body text-lg text-stone-500">{f.real_world_domain}</Text>
-              <Text className="mt-1 font-body text-sm text-stone-600">
-                {f.reputation_count} {f.reputation_count === 1 ? 'deed' : 'deeds'} inscribed
-              </Text>
-            </Pressable>
+              </Pressable>
+            </ReorderableRow>
           ),
         )}
         {showFactionDraft ? (
@@ -685,7 +726,7 @@ export default function CharacterSheet() {
             No active arcs. Forge new ones as your chronicle unfolds.
           </Text>
         ) : null}
-        {campaigns.map((c) =>
+        {campaigns.map((c, idx) =>
           editingCampaignId === c.id ? (
             <CampaignEditor
               key={c.id}
@@ -727,8 +768,16 @@ export default function CharacterSheet() {
               regenerating={regenCampaignId === c.id}
             />
           ) : (
-            <Pressable
+            <ReorderableRow
               key={c.id}
+              listKey="campaigns"
+              idx={idx}
+              count={campaigns.length}
+              rowHeight={120}
+              disabled={editingCampaignId !== null}
+              onReorder={(from, to) => void onReorderCampaigns(from, to)}
+            >
+            <Pressable
               onPress={() => setEditingCampaignId(c.id)}
               disabled={editingCampaignId !== null}
               className="rounded-md border border-stone-800 bg-amber-50/40 px-4 py-3 active:bg-amber-100/60"
@@ -752,6 +801,7 @@ export default function CharacterSheet() {
                 />
               </View>
             </Pressable>
+            </ReorderableRow>
           ),
         )}
         {showCampaignDraft ? (

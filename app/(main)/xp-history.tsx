@@ -3,6 +3,7 @@ import { useCallback, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, Text, View } from 'react-native';
 
 import { errorMessage } from '../../lib/errors';
+import { formatXp } from '../../lib/numbers';
 import { ParchmentScreen } from '../../lib/parchment';
 import { describeXpLogReason, listXpLog, type XpLogEntry } from '../../lib/xp-log';
 
@@ -49,7 +50,7 @@ export default function XpHistory() {
       </View>
       <Text className="mb-6 font-body text-lg text-stone-500">
         Every line of XP the Tome has inscribed for you, newest first.
-        {rows ? ` ${rows.length} entries · +${total.toLocaleString()} XP shown.` : ''}
+        {rows ? ` ${rows.length} entries · +${formatXp(total)} XP shown.` : ''}
       </Text>
 
       {error ? (
@@ -87,7 +88,7 @@ function XpRow({ row }: { row: XpLogEntry }) {
         </Text>
         <Text className={`ml-3 font-body-medium text-xl ${xpColor}`}>
           {sign}
-          {row.xp_change.toLocaleString()} XP
+          {formatXp(row.xp_change)} XP
         </Text>
       </View>
       <Text className="mt-0.5 font-body text-lg text-stone-500">{formatRowDate(row.created_at)}</Text>

@@ -8,6 +8,8 @@
 
 import { useEffect } from 'react';
 import { Modal, Pressable, Text, View } from 'react-native';
+
+import { formatXp } from '../lib/numbers';
 import Animated, {
   Easing,
   runOnJS,
@@ -104,7 +106,7 @@ export function QuestCompleteScroll({ data, onDismiss }: Props) {
             {/* XP centerpiece */}
             <View className="mb-3 items-center">
               <Text className="font-display-bold text-4xl text-amber-700">
-                +{xpChange.toLocaleString()} XP
+                +{formatXp(xpChange)} XP
               </Text>
             </View>
 

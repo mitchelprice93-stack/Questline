@@ -141,3 +141,65 @@ export async function updateDifficulty(difficulty: Difficulty): Promise<void> {
   const { error } = await supabase.from('profiles').update({ difficulty }).eq('id', user.id);
   if (error) throw asError(error);
 }
+
+// -- reorder ----------------------------------------------------------------
+
+/** Write a fresh display_order for each id in the given array. Index 0 in
+ *  the array becomes display_order = 0, index 1 becomes 1, etc. N updates
+ *  (one per row); the list is small (typically 3-10) so the round-trip
+ *  cost is acceptable, and a single transactional RPC isn't worth a
+ *  migration just for ergonomics. */
+export async function reorderFactions(orderedIds: string[]): Promise<void> {
+  await Promise.all(
+    orderedIds.map((id, idx) =>
+      supabase
+        .from('factions')
+        .update({ display_order: idx })
+        .eq('id', id)
+        .then(({ error }) => {
+          if (error) throw asError(error);
+        }),
+    ),
+  );
+}
+
+/** Same shape as reorderFactions, applied to the campaigns table. */
+export async function reorderCampaigns(orderedIds: string[]): Promise<void> {
+  await Promise.all(
+    orderedIds.map((id, idx) =>
+      supabase
+        .from('campaigns')
+        .update({ display_order: idx })
+        .eq('id', id)
+        .then(({ error }) => {
+          if (error) throw asError(error);
+        }),
+    ),
+  );
+}
+
+// -- identity (name + title) ------------------------------------------------
+
+/** Update the chronicler's name and/or title. Either field can be omitted
+ *  to leave it unchanged. Empty-string title clears the title. */
+export async function updateIdentity(patch: {
+  character_name?: string;
+  character_title?: string | null;
+}): Promise<void> {
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
+  if (userError) throw asError(userError);
+  if (!user) throw new Error('Not signed in.');
+
+  const update: Record<string, string | null> = {};
+  if (patch.character_name !== undefined) update.character_name = patch.character_name.trim();
+  if (patch.character_title !== undefined) {
+    update.character_title = patch.character_title?.trim() || null;
+  }
+  if (Object.keys(update).length === 0) return;
+
+  const { error } = await supabase.from('profiles').update(update).eq('id', user.id);
+  if (error) throw asError(error);
+}

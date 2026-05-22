@@ -420,6 +420,19 @@ export async function abandonQuest(questId: string): Promise<void> {
   }
 }
 
+/**
+ * Pin or unpin a quest. Pinned quests sort to the top of the board
+ * regardless of the chronicler's sort/group preferences. Pass true to
+ * pin (writes pinned_at=now), false to unpin (writes pinned_at=null).
+ */
+export async function setQuestPinned(questId: string, pinned: boolean): Promise<void> {
+  const { error } = await supabase
+    .from('quests')
+    .update({ pinned_at: pinned ? new Date().toISOString() : null })
+    .eq('id', questId);
+  if (error) throw asError(error);
+}
+
 export async function updateQuestObjectives(
   questId: string,
   objectives: QuestObjective[],

@@ -25,7 +25,6 @@ export default function CharacterCreation() {
 
   const [step, setStep] = useState(0);
   const [name, setName] = useState('');
-  const [title, setTitle] = useState('');
   const [background, setBackground] = useState('');
   const [factionsRaw, setFactionsRaw] = useState('');
   const [proficiencies, setProficiencies] = useState('');
@@ -43,7 +42,9 @@ export default function CharacterCreation() {
     try {
       const sheet = await generateCharacterSheet({
         name: name.trim(),
-        title: title.trim() ? title.trim() : null,
+        // The Archivist now always names the chronicler, the user can change
+        // their title later from the Character menu (with a "regenerate" option).
+        title: null,
         background: background.trim(),
         factions: parseList(factionsRaw),
         proficiencies: proficiencies.trim(),
@@ -139,15 +140,9 @@ export default function CharacterCreation() {
       {step === 0 && (
         <Step
           title="Your name"
-          flavor="What shall the Tome call you? A title is optional, the Archivist may bestow one regardless."
+          flavor="What shall the Tome call you? The Archivist will bestow your title after reading your story."
         >
           <Field label="Name" value={name} onChange={setName} autoFocus />
-          <Field
-            label="Title (optional)"
-            value={title}
-            onChange={setTitle}
-            placeholder="e.g., the Restless"
-          />
         </Step>
       )}
       {step === 1 && (

@@ -208,6 +208,13 @@ function ObjectiveRow({
         placeholderTextColor="#57534e"
         editable={!disabled}
         multiline
+        // scrollEnabled=false is the Android fix for "I can't scroll the
+        // page when my finger lands on this input". A multiline TextInput
+        // on Android otherwise claims vertical drag gestures for its own
+        // internal scroll, blocking the parent ScrollView. Objective rows
+        // are too short for internal scrolling to matter, so disabling it
+        // releases the gesture back to the page.
+        scrollEnabled={false}
         className="flex-1 rounded-md border border-stone-700 bg-amber-50/40 px-3 py-2 font-body text-stone-900"
       />
       <Pressable
