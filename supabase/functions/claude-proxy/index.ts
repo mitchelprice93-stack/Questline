@@ -52,7 +52,8 @@ interface ProxyRequest {
     | 'reputation_retitle'
     | 'regenerate_title'
     | 'regenerate_faction_name'
-    | 'regenerate_campaign_name';
+    | 'regenerate_campaign_name'
+    | 'generate_campaign_achievement';
   payload: unknown;
 }
 
@@ -303,6 +304,38 @@ const REGENERATE_CAMPAIGN_NAME_SCHEMA = {
   required: ['new_arc_name'],
 };
 
+// Returned when a campaign is completed. The client passes the arc_name and
+// real_world_goal of the campaign. Title is the "achievement name" that
+// shows in the gallery; description is a single witty/evocative sentence
+// celebrating the accomplishment.
+const CAMPAIGN_ACHIEVEMENT_SCHEMA = {
+  type: 'object',
+  additionalProperties: false,
+  properties: {
+    title: {
+      type: 'string',
+      description:
+        "An Xbox-style achievement title for finishing the campaign. " +
+        "Clever, sometimes funny, lore-flavored. 2 to 5 words. " +
+        "Examples: campaign 'Run a marathon' → 'Iron Soles, Iron Soul'; " +
+        "campaign 'Read 12 books in a year' → 'Bibliophile's Ascension'; " +
+        "campaign 'Learn Spanish' → 'Tongue of Conquerors'; " +
+        "campaign 'Finish the renovation' → 'Hammer Falls Silent'. " +
+        "Title-case. No emoji. No quotation marks around the title itself.",
+    },
+    description: {
+      type: 'string',
+      description:
+        "A single sentence (under 25 words) celebrating what the chronicler accomplished. " +
+        "In-voice (Archivist), warm but not flattering, references the actual real_world_goal lightly. " +
+        "Examples: 'You crossed 26.2 miles of legend. Even the road remembers your name.' " +
+        "'Twelve tomes devoured. The library trembles in your wake.' " +
+        "End with a period.",
+    },
+  },
+  required: ['title', 'description'],
+};
+
 function corsHeaders(): Record<string, string> {
   return {
     'Access-Control-Allow-Origin': '*',
@@ -486,6 +519,17 @@ function buildUserMessage(req: ProxyRequest): { content: string; schema: unknown
           `Return JSON with a single 'new_arc_name' field.`,
         schema: REGENERATE_CAMPAIGN_NAME_SCHEMA,
       };
+    case 'generate_campaign_achievement':
+      return {
+        content:
+          `The chronicler has just completed a campaign. Inscribe an Xbox-style achievement marking the moment. Payload:\n\n${JSON.stringify(req.payload, null, 2)}\n\n` +
+          `Return JSON with two fields, 'title' and 'description'. ` +
+          `The title is a short (2-5 word) clever/lore-flavored achievement name in Title Case, drawing imagery from the real_world_goal. ` +
+          `The description is ONE sentence under 25 words, in-voice, warm but not sycophantic, lightly referencing what they actually accomplished. ` +
+          `End the description with a period. No em dashes, use commas or semicolons. ` +
+          `Tone may be witty or playfully irreverent when the goal lends itself to it; sincere and weighty for goals that deserve gravity (e.g. recovery, grief, long endurance).`,
+        schema: CAMPAIGN_ACHIEVEMENT_SCHEMA,
+      };
   }
 }
 
@@ -504,6 +548,7 @@ function pickModel(endpoint: ProxyRequest['endpoint']): keyof typeof PRICING {
     case 'regenerate_title':
     case 'regenerate_faction_name':
     case 'regenerate_campaign_name':
+    case 'generate_campaign_achievement':
       return 'claude-haiku-4-5-20251001';
   }
 }
@@ -534,6 +579,10 @@ const ENDPOINT_INFERENCE: Record<ProxyRequest['endpoint'], EndpointInferenceConf
   regenerate_title: { thinking: { type: 'disabled' }, max_tokens: 256 },
   regenerate_faction_name: { thinking: { type: 'disabled' }, max_tokens: 256 },
   regenerate_campaign_name: { thinking: { type: 'disabled' }, max_tokens: 256 },
+  // Two short strings (title + description, ~30-40 tokens combined). Fires
+  // once per campaign completion, instant feel matters since it gates the
+  // reveal modal animation. Thinking off, tokens tight.
+  generate_campaign_achievement: { thinking: { type: 'disabled' }, max_tokens: 384 },
 };
 
 function calculateCostUsd(
@@ -584,6 +633,7 @@ Deno.serve(async (req) => {
       'regenerate_title',
       'regenerate_faction_name',
       'regenerate_campaign_name',
+      'generate_campaign_achievement',
     ].includes(body.endpoint)
   ) {
     return jsonResponse({ error: 'Invalid or missing endpoint' }, 400);

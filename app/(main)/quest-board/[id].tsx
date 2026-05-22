@@ -5,6 +5,12 @@ import {
   QuestCompleteScroll,
   type QuestCompleteData,
 } from '../../../components/quest-complete-scroll';
+import {
+  CampaignAchievementScroll,
+  type CampaignAchievementData,
+} from '../../../components/campaign-achievement-scroll';
+import { earnAchievementForCampaign } from '../../../lib/campaign-achievements';
+import { supabase } from '../../../lib/supabase';
 import { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
@@ -183,6 +189,12 @@ export default function QuestDetail() {
     newTitle: string;
     previousTitle: string;
   } | null> | null>(null);
+  // Stash the campaign-achievement gen promise when the completion that
+  // finished a campaign also triggers a level-up takeover. Drained by the
+  // takeover's onContinue so the user sees the trophy AFTER the takeover.
+  const pendingCampaignAchievementRef = useRef<Promise<CampaignAchievementData | null> | null>(
+    null,
+  );
   // Toggle the gold-shimmer overlay briefly on a successful completion.
   const [showShimmer, setShowShimmer] = useState(false);
 
@@ -208,6 +220,24 @@ export default function QuestDetail() {
     const resolve = completeBannerResolverRef.current;
     completeBannerResolverRef.current = null;
     setCompleteBanner(null);
+    if (resolve) resolve();
+  };
+
+  // Campaign-achievement reveal. Mirrors the completeBanner pattern: a
+  // null-or-data state plus a promise resolver so the onComplete flow can
+  // await the user's dismissal before unwinding.
+  const [campaignAchievementData, setCampaignAchievementData] =
+    useState<CampaignAchievementData | null>(null);
+  const campaignAchievementResolverRef = useRef<(() => void) | null>(null);
+  const showCampaignAchievement = (data: CampaignAchievementData): Promise<void> =>
+    new Promise((resolve) => {
+      campaignAchievementResolverRef.current = resolve;
+      setCampaignAchievementData(data);
+    });
+  const onCampaignAchievementDismiss = () => {
+    const resolve = campaignAchievementResolverRef.current;
+    campaignAchievementResolverRef.current = null;
+    setCampaignAchievementData(null);
     if (resolve) resolve();
   };
   const [editTitle, setEditTitle] = useState('');
@@ -267,6 +297,55 @@ export default function QuestDetail() {
     );
   };
 
+  // Check whether THIS completion is the one that flips the linked campaign
+  // to 100%, and if so, ask the Archivist to inscribe a Personal achievement
+  // for the arc. Returns the resulting CampaignAchievementData ready to feed
+  // into the scroll modal, or null when nothing was earned (no campaign,
+  // campaign not yet completed, or row already existed).
+  //
+  // Fires in parallel with the QuestCompleteScroll so the AI latency hides
+  // under the user's read time. By the time they dismiss the Quest Complete
+  // popup the achievement is usually ready to show.
+  const maybeEarnCampaignAchievement = async (
+    campaignId: string,
+  ): Promise<CampaignAchievementData | null> => {
+    try {
+      const { data: campaign } = await supabase
+        .from('campaigns')
+        .select('id, arc_name, real_world_goal, status')
+        .eq('id', campaignId)
+        .maybeSingle();
+      if (!campaign || campaign.status !== 'completed') return null;
+      // earnAchievementForCampaign is idempotent on the unique constraint;
+      // if the user has already seen this trophy (e.g. via backfill), the
+      // function returns the existing row without re-prompting the AI.
+      // We don't surface the scroll in that case.
+      const existed = await supabase
+        .from('campaign_achievements')
+        .select('id')
+        .eq('campaign_id', campaignId)
+        .maybeSingle();
+      if (existed.data) return null;
+      const row = await earnAchievementForCampaign({
+        campaignId: campaign.id,
+        arcName: campaign.arc_name,
+        realWorldGoal: campaign.real_world_goal,
+      });
+      return {
+        title: row.title,
+        description: row.description,
+        earnedAt: row.earned_at,
+        campaignName: campaign.arc_name,
+      };
+    } catch (e) {
+      // Non-fatal. Log it and let the completion flow continue without the
+      // reveal; the row will get created next time (backfill on Achievements
+      // screen mount) or by the offline-queue replay handler.
+      console.warn('[campaign-achievement] live earn failed', e);
+      return null;
+    }
+  };
+
   const onComplete = async () => {
     if (!quest) return;
     setBusy('complete');
@@ -278,6 +357,13 @@ export default function QuestDetail() {
       // crosses any threshold past their starting level.
       const oldLevel = calculateLevel(profile?.total_xp ?? 0).level;
       const result = await completeQuest(quest.id);
+      // Kick off the campaign-achievement check in parallel with the rest
+      // of the completion UI. We await it later (after the Quest Complete
+      // popup dismisses) so its latency overlaps the user's read time.
+      const campaignAchievementPromise: Promise<CampaignAchievementData | null> =
+        quest.campaign_id
+          ? maybeEarnCampaignAchievement(quest.campaign_id)
+          : Promise.resolve(null);
       const { level: newLevel } = calculateLevel(result.newTotalXp);
       // Major / legendary quests tied to a faction earn a fresh reputation
       // title from the Archivist. Fire this in parallel with the rest of
@@ -338,6 +424,10 @@ export default function QuestDetail() {
           modifierPct: result.netModifierPct,
           buffGranted: result.buffGranted,
         });
+        // If this completion finished the linked campaign, surface the
+        // Personal achievement after the quest banner dismisses.
+        const ach = await campaignAchievementPromise;
+        if (ach) await showCampaignAchievement(ach);
         await announceRetitle(retitlePromise);
         const fresh = await getQuest(quest.id);
         if (fresh) setQuest(fresh);
@@ -350,16 +440,20 @@ export default function QuestDetail() {
           modifierPct: result.netModifierPct,
           buffGranted: result.buffGranted,
         });
+        const ach = await campaignAchievementPromise;
+        if (ach) await showCampaignAchievement(ach);
         await announceRetitle(retitlePromise);
         goBack();
       }
       // For the level-up branch, the takeover owns the immediate moment -
       // we stash the retitle promise so the takeover's onContinue can
-      // announce it after the user dismisses, rather than silently. The
-      // DB write happens whenever the promise resolves; the announcement
-      // waits for the user.
+      // announce it after the user dismisses, rather than silently. Same
+      // treatment for the campaign-achievement reveal: deferred until the
+      // takeover dismisses so the user isn't hit with three stacked
+      // modals.
       if (newLevel > oldLevel) {
         pendingRetitleRef.current = retitlePromise;
+        pendingCampaignAchievementRef.current = campaignAchievementPromise;
       }
     } catch (e) {
       playSfx('error');
@@ -513,8 +607,16 @@ export default function QuestDetail() {
 
   if (levelUp) {
     const onTakeoverContinue = async () => {
-      // Drain the retitle promise stashed during onComplete (if any)
-      // so the user sees their new faction standing AFTER the takeover.
+      // Drain stashed promises in a deliberate order so the user sees
+      // moments stacked logically: campaign achievement first (it was the
+      // ostensible cause of the level-up burst), then any retitle, then
+      // unwind back to the board.
+      const pendingAch = pendingCampaignAchievementRef.current;
+      pendingCampaignAchievementRef.current = null;
+      if (pendingAch) {
+        const ach = await pendingAch;
+        if (ach) await showCampaignAchievement(ach);
+      }
       const pending = pendingRetitleRef.current;
       pendingRetitleRef.current = null;
       if (pending) await announceRetitle(pending);
@@ -829,6 +931,10 @@ export default function QuestDetail() {
     <ParchmentScreen>
       {showShimmer ? <CompletionShimmer /> : null}
       <QuestCompleteScroll data={completeBanner} onDismiss={onCompleteBannerDismiss} />
+      <CampaignAchievementScroll
+        data={campaignAchievementData}
+        onDismiss={onCampaignAchievementDismiss}
+      />
       <ScrollView className="flex-1" contentContainerClassName="px-6 pt-20 pb-12">
       <Pressable onPress={goBack} className="mb-3 self-start active:opacity-60">
         <Text className="font-body text-xl text-amber-800">← Quest Board</Text>

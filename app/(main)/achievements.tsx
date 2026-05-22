@@ -1,9 +1,13 @@
-// Achievements screen, All / Earned / In Progress / Locked tabs.
+// Achievements screen, All / Earned / Personal / Locked tabs.
 //
-// Reads the user's snapshot via loadAchievementSnapshot, joins it against
-// the static registry, and groups by status. Templates (faction_devotee,
-// forge_master, arc_completed) collapse into an expanding ledger so a
-// chronicler with many earned instances doesn't see 30+ duplicate cards.
+// "Earned" and "Locked" come from the predefined ACHIEVEMENTS registry
+// joined against the user's snapshot. "Personal" lists campaign
+// achievements (AI-generated per arc the chronicler has finished). "All"
+// interleaves both, newest earned-or-locked-with-progress first for the
+// predefined ones plus all Personal trophies.
+//
+// In Progress was removed as a separate tab; locked cards still show their
+// progress meter inline, which covers the same surface without a tab.
 //
 // Hidden achievements stay locked behind "???" until earned, with a short
 // in-voice hint surfacing once progress crosses 50% of targetValue.
@@ -13,6 +17,10 @@ import { useCallback, useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';
 
 import { useAuth } from '../../lib/auth';
+import {
+  listCampaignAchievements,
+  earnAchievementForCampaign,
+} from '../../lib/campaign-achievements';
 import {
   ACHIEVEMENTS,
   renderFlavor,
@@ -25,13 +33,16 @@ import {
 } from '../../lib/engine/achievementTriggers';
 import { errorMessage } from '../../lib/errors';
 import { ParchmentScreen } from '../../lib/parchment';
+import { listCampaigns } from '../../lib/profile';
+import { supabase } from '../../lib/supabase';
+import type { CampaignAchievement } from '../../lib/types/models';
 
-type Tab = 'all' | 'earned' | 'progress' | 'locked';
+type Tab = 'all' | 'earned' | 'personal' | 'locked';
 
 const TABS: { key: Tab; label: string }[] = [
   { key: 'all', label: 'All' },
   { key: 'earned', label: 'Earned' },
-  { key: 'progress', label: 'In Progress' },
+  { key: 'personal', label: 'Personal' },
   { key: 'locked', label: 'Locked' },
 ];
 
@@ -105,6 +116,7 @@ export default function AchievementsScreen() {
   const { session } = useAuth();
   const router = useRouter();
   const [snapshot, setSnapshot] = useState<AchievementSnapshot | null>(null);
+  const [personal, setPersonal] = useState<CampaignAchievement[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<Tab>('all');
 
@@ -121,6 +133,25 @@ export default function AchievementsScreen() {
         .catch((e: unknown) => {
           if (!cancelled) setError(errorMessage(e));
         });
+
+      // Personal achievements (campaign-derived). Load the list, then run
+      // a one-shot backfill for any completed campaign that doesn't yet
+      // have a trophy row. The backfill is sequential with a short delay
+      // so it doesn't hammer the AI proxy; failures are non-fatal (next
+      // mount tries again).
+      void (async () => {
+        try {
+          const initial = await listCampaignAchievements();
+          if (!cancelled) setPersonal(initial);
+          await backfillMissingCampaignAchievements(initial);
+          if (cancelled) return;
+          // Re-fetch after backfill so newly inserted rows show up.
+          const after = await listCampaignAchievements();
+          if (!cancelled) setPersonal(after);
+        } catch (e) {
+          if (!cancelled) setError(errorMessage(e));
+        }
+      })();
       return () => {
         cancelled = true;
       };
@@ -128,15 +159,31 @@ export default function AchievementsScreen() {
   );
 
   const views = useMemo(() => (snapshot ? buildViews(snapshot) : []), [snapshot]);
+  // For the predefined achievement cards: All shows everything; Earned and
+  // Locked filter to their respective statuses; Personal shows none of the
+  // predefined cards (Personal is its own list rendered below).
   const filtered = useMemo(() => {
-    if (activeTab === 'all') return views;
-    return views.filter((v) => statusFor(v) === activeTab);
+    if (activeTab === 'all' || activeTab === 'earned' || activeTab === 'locked') {
+      if (activeTab === 'all') return views;
+      return views.filter((v) => statusFor(v) === activeTab);
+    }
+    return []; // Personal tab hides predefined cards.
   }, [views, activeTab]);
+
+  // Personal achievement cards. All + Personal show them; Earned/Locked do not
+  // (a Personal trophy is by definition earned, never locked, so it'd just
+  // double-count under Earned).
+  const personalToShow = useMemo<CampaignAchievement[]>(() => {
+    if (!personal) return [];
+    if (activeTab === 'all' || activeTab === 'personal') return personal;
+    return [];
+  }, [personal, activeTab]);
 
   const earnedCount = views.filter((v) => v.earned.length > 0 && !v.achievement.isTemplate).length;
   const earnedTitles = 0; // No Title template in v1.1; Rank Ascended dropped.
   const earnedArcs = views.find((v) => v.achievement.code === 'arc_completed')?.earned.length ?? 0;
   const totalNonTemplate = ACHIEVEMENTS.filter((a) => !a.isTemplate).length;
+  const personalCount = personal?.length ?? 0;
 
   return (
     <ParchmentScreen>
@@ -157,6 +204,9 @@ export default function AchievementsScreen() {
           {earnedCount} / {totalNonTemplate} inscribed
           {earnedTitles > 0 ? ` · ${earnedTitles} titles` : ''}
           {earnedArcs > 0 ? ` · ${earnedArcs} arcs` : ''}
+          {personalCount > 0
+            ? ` · ${personalCount} personal ${personalCount === 1 ? 'trophy' : 'trophies'}`
+            : ''}
         </Text>
 
         {/* Tab strip */}
@@ -189,12 +239,17 @@ export default function AchievementsScreen() {
           <Text className="font-body text-xl text-red-700">{error}</Text>
         ) : !snapshot ? (
           <ActivityIndicator className="mt-8" color="#92400e" />
-        ) : filtered.length === 0 ? (
+        ) : filtered.length === 0 && personalToShow.length === 0 ? (
           <Text className="mt-8 font-body italic text-stone-500">
-            No achievements in this category yet.
+            {activeTab === 'personal'
+              ? 'No campaign trophies yet. Finish a campaign to inscribe your first.'
+              : 'No achievements in this category yet.'}
           </Text>
         ) : (
           <View className="gap-3">
+            {personalToShow.map((row) => (
+              <CampaignAchievementCard key={row.id} row={row} />
+            ))}
             {filtered.map((view) => (
               <AchievementCard key={view.achievement.code} view={view} />
             ))}
@@ -301,4 +356,79 @@ function shortDate(iso: string): string {
   const d = new Date(iso);
   if (isNaN(d.getTime())) return iso;
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
+function CampaignAchievementCard({ row }: { row: CampaignAchievement }) {
+  // Personal trophies render in the same visual family as predefined
+  // achievement cards (parchment box, amber accents) but with the
+  // AI-generated title front-and-center.
+  return (
+    <View className="rounded-md border-2 border-amber-600 bg-amber-100/50 px-4 py-3">
+      <View className="mb-1 flex-row items-baseline justify-between">
+        <Text className="flex-1 pr-3 font-display-bold text-xl text-stone-900">{row.title}</Text>
+        <Text className="font-display text-xs uppercase tracking-widest text-amber-800">
+          Personal
+        </Text>
+      </View>
+      <Text className="font-body text-base text-stone-700">{row.description}</Text>
+      <Text className="mt-1 font-body text-sm text-amber-800">Inscribed {shortDate(row.earned_at)}</Text>
+    </View>
+  );
+}
+
+/** For each campaign with status='completed' that doesn't yet have a
+ *  campaign_achievements row, generate one. Sequential with a short delay
+ *  between calls so we don't burst the AI proxy. Backdates earned_at to
+ *  the campaign's most-recent quest-completion timestamp when available
+ *  so the gallery date matches when the work actually finished. */
+async function backfillMissingCampaignAchievements(
+  existing: CampaignAchievement[],
+): Promise<void> {
+  try {
+    // Both 'completed' and any active campaign at progress_pct=100 should
+    // be backfilled; the live trigger should have already caught most of
+    // these but a user who completed a campaign before this feature shipped
+    // will have status='completed' with no row.
+    const completedCampaigns = await listCampaigns('completed');
+    const haveRows = new Set(existing.map((r) => r.campaign_id));
+    const missing = completedCampaigns.filter((c) => !haveRows.has(c.id));
+    if (missing.length === 0) return;
+
+    for (const c of missing) {
+      // Find the campaign's most-recent quest completion timestamp; use it
+      // as earned_at so the trophy date lines up with the finish. If no
+      // completions are found, fall back to the campaign's created_at.
+      let earnedAtIso: string | undefined;
+      try {
+        const { data: lastCompletion } = await supabase
+          .from('quests')
+          .select('completed_at, last_completed_at')
+          .eq('campaign_id', c.id)
+          .order('completed_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        const candidate =
+          (lastCompletion?.completed_at as string | null | undefined) ??
+          (lastCompletion?.last_completed_at as string | null | undefined);
+        if (candidate) earnedAtIso = candidate;
+      } catch {
+        // Non-fatal; fall through with undefined earnedAtIso (server uses now()).
+      }
+      try {
+        await earnAchievementForCampaign({
+          campaignId: c.id,
+          arcName: c.arc_name,
+          realWorldGoal: c.real_world_goal,
+          earnedAtIso,
+        });
+      } catch (e) {
+        console.warn('[backfill] campaign achievement failed', c.id, e);
+      }
+      // Brief pause so the daily-cost cap doesn't trip and the AI proxy
+      // isn't slammed when a user has a backlog of completed campaigns.
+      await new Promise((resolve) => setTimeout(resolve, 400));
+    }
+  } catch (e) {
+    console.warn('[backfill] failed to enumerate completed campaigns', e);
+  }
 }
