@@ -94,23 +94,49 @@ export function CampaignAchievementScroll({ data, onDismiss }: Props) {
               Achievement Unlocked
             </Text>
 
-            {/* Achievement centerpiece */}
+            {/* Achievement centerpiece. The Archivist's title varies from 2
+                words ("The Founding") up to 5 words; on narrow phones (mom's
+                phone, ~360dp) a long title at text-3xl can overflow the
+                bubble. numberOfLines + adjustsFontSizeToFit lets the title
+                use up to two lines and shrink down to ~60% of the base size
+                before truncating, so it always fits cleanly without ellipsis. */}
             <View className="mb-3 items-center">
-              <Text className="text-center font-display-bold text-3xl text-amber-700">
+              <Text
+                className="text-center font-display-bold text-3xl text-amber-700"
+                numberOfLines={2}
+                adjustsFontSizeToFit
+                minimumFontScale={0.6}
+              >
                 {data.title}
               </Text>
-              <Text className="mt-1 text-center font-body italic text-base text-stone-600">
+              <Text
+                className="mt-1 text-center font-body italic text-base text-stone-600"
+                numberOfLines={2}
+                adjustsFontSizeToFit
+                minimumFontScale={0.7}
+              >
                 for {data.campaignName}
               </Text>
             </View>
 
-            {/* Description */}
-            <Text className="mb-3 text-center font-body text-lg leading-6 text-stone-800">
+            {/* Description. The Archivist is told to stay under 25 words so
+                it wraps gracefully. Capped at 6 lines as belt-and-suspenders;
+                ellipsis only triggers if a future prompt drift produces an
+                outlier-long paragraph. */}
+            <Text
+              className="mb-3 text-center font-body text-lg leading-6 text-stone-800"
+              numberOfLines={6}
+            >
               {data.description}
             </Text>
 
             {/* Earned date */}
-            <Text className="mb-1 text-center font-body text-sm uppercase tracking-widest text-amber-800">
+            <Text
+              className="mb-1 text-center font-body text-sm uppercase tracking-widest text-amber-800"
+              numberOfLines={1}
+              adjustsFontSizeToFit
+              minimumFontScale={0.7}
+            >
               Inscribed {formatEarnedDate(data.earnedAt)}
             </Text>
 

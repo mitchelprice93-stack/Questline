@@ -276,8 +276,13 @@ function AchievementCard({ view }: { view: AchievementView }) {
 
   return (
     <View className={`rounded-md border-2 ${border} ${bg} px-4 py-3`}>
-      <View className="mb-1 flex-row items-baseline justify-between">
-        <Text className="flex-1 pr-3 font-display-bold text-xl text-stone-900">
+      <View className="mb-1 flex-row items-start justify-between">
+        <Text
+          className="flex-1 pr-3 font-display-bold text-xl text-stone-900"
+          numberOfLines={2}
+          adjustsFontSizeToFit
+          minimumFontScale={0.7}
+        >
           {hidden ? '???' : achievement.name}
         </Text>
         <Text className="font-display text-xs uppercase tracking-widest text-amber-800">
@@ -362,16 +367,32 @@ function CampaignAchievementCard({ row }: { row: CampaignAchievement }) {
   // Personal trophies render in the same visual family as predefined
   // achievement cards (parchment box, amber accents) but with the
   // AI-generated title front-and-center.
+  //
+  // Title: flex-1 + up to 2 lines + auto-shrink. The "Personal" badge to the
+  // right takes a fixed width, so on a narrow phone with a long AI title the
+  // remaining space can be tight; allowing two lines plus fontSize shrink
+  // keeps the title fully visible without truncation.
   return (
     <View className="rounded-md border-2 border-amber-600 bg-amber-100/50 px-4 py-3">
-      <View className="mb-1 flex-row items-baseline justify-between">
-        <Text className="flex-1 pr-3 font-display-bold text-xl text-stone-900">{row.title}</Text>
+      <View className="mb-1 flex-row items-start justify-between">
+        <Text
+          className="flex-1 pr-3 font-display-bold text-xl text-stone-900"
+          numberOfLines={2}
+          adjustsFontSizeToFit
+          minimumFontScale={0.7}
+        >
+          {row.title}
+        </Text>
         <Text className="font-display text-xs uppercase tracking-widest text-amber-800">
           Personal
         </Text>
       </View>
-      <Text className="font-body text-base text-stone-700">{row.description}</Text>
-      <Text className="mt-1 font-body text-sm text-amber-800">Inscribed {shortDate(row.earned_at)}</Text>
+      <Text className="font-body text-base text-stone-700" numberOfLines={6}>
+        {row.description}
+      </Text>
+      <Text className="mt-1 font-body text-sm text-amber-800" numberOfLines={1}>
+        Inscribed {shortDate(row.earned_at)}
+      </Text>
     </View>
   );
 }
