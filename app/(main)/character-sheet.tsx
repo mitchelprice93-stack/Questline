@@ -483,7 +483,7 @@ export default function CharacterSheet() {
       <CollapsibleSection
         id="char-attributes"
         title="Attributes"
-        className="mb-4"
+        className="mb-8"
         headerRight={
           <View className="rounded-full border border-amber-700 bg-amber-100/60 px-2.5 py-0.5">
             <Text className="font-display text-xs uppercase tracking-widest text-amber-800">
@@ -606,7 +606,7 @@ export default function CharacterSheet() {
           the collapsed header, so the header stays clean. The action row
           renders above the list of factions because that's where the eye
           lands when the user opens the section. */}
-      <CollapsibleSection id="char-factions" title="Factions" className="mb-0">
+      <CollapsibleSection id="char-factions" title="Factions" className="mb-8">
         <View className="mb-2 flex-row items-center justify-end gap-3">
           {factions.length > 1 && editingFactionId === null ? (
             // GHPressable: flipping reorder mode mounts new GestureDetectors
@@ -630,7 +630,7 @@ export default function CharacterSheet() {
             </Pressable>
           ) : null}
         </View>
-      <View className="mb-8 gap-2">
+      <View className="gap-2">
         {factions.length === 0 && !showFactionDraft ? (
           <Text className="font-body italic text-stone-500">
             The Archivist will inscribe these during character creation.
@@ -760,7 +760,7 @@ export default function CharacterSheet() {
       {/* Campaigns. Same in-menu action row pattern as Factions, the Reorder
           and Add buttons live inside the expanded content so the collapsed
           header is just the title + chevron. */}
-      <CollapsibleSection id="char-campaigns" title="Campaigns" className="mb-0">
+      <CollapsibleSection id="char-campaigns" title="Campaigns" className="mb-8">
         <View className="mb-2 flex-row items-center justify-end gap-3">
           {campaigns.length > 1 && editingCampaignId === null ? (
             // Same GHPressable rationale as the Factions Reorder button above.
@@ -781,7 +781,7 @@ export default function CharacterSheet() {
             </Pressable>
           ) : null}
         </View>
-        <View className="mb-8 gap-2">
+        <View className="gap-2">
         {campaigns.length === 0 && !showCampaignDraft ? (
           <Text className="font-body italic text-stone-500">
             No active arcs. Forge new ones as your chronicle unfolds.
@@ -914,7 +914,7 @@ export default function CharacterSheet() {
           Used to be a 4-button segmented control but the labels (especially
           LEGENDARY) crowded the row on narrow phones, so it's now a single
           trigger + Modal-based option list. */}
-      <CollapsibleSection id="char-difficulty" title="Difficulty" className="mb-6">
+      <CollapsibleSection id="char-difficulty" title="Difficulty" className="mb-8">
         <Pressable
           onPress={() => setDifficultyOpen(true)}
           disabled={busy}
