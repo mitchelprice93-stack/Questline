@@ -755,6 +755,10 @@ export default function CharacterSheet() {
                 await createFaction({
                   name: patch.name,
                   real_world_domain: patch.real_world_domain,
+                  // Pass the rank the chronicler typed; createFaction trims
+                  // and falls back to the DB default ('Initiate') only when
+                  // empty.
+                  reputation_title: patch.reputation_title,
                 });
                 await refresh();
                 setEditingFactionId(null);
@@ -765,6 +769,25 @@ export default function CharacterSheet() {
               }
             }}
             onCancel={() => setEditingFactionId(null)}
+            // New-faction Regenerate: hit the AI with whatever the chronicler
+            // has typed so far, return the new name. The editor sets it
+            // locally without persisting; nothing is in the DB yet.
+            onRegenerate={async ({ name, real_world_domain }) => {
+              if (!real_world_domain.trim()) return;
+              setRegenFactionId(DRAFT_ID);
+              setActionError(null);
+              try {
+                return await regenerateFactionName({
+                  real_world_domain: real_world_domain,
+                  current_name: name,
+                });
+              } catch (e) {
+                setActionError(errorMessage(e));
+              } finally {
+                setRegenFactionId(null);
+              }
+            }}
+            regenerating={regenFactionId === DRAFT_ID}
           />
         ) : null}
         </View>
@@ -917,6 +940,25 @@ export default function CharacterSheet() {
               }
             }}
             onCancel={() => setEditingCampaignId(null)}
+            // New-campaign Regenerate: AI proposes an arc name from the
+            // current goal. Nothing in the DB yet, so the editor takes the
+            // returned string and updates its local arc_name state.
+            onRegenerate={async ({ arc_name, real_world_goal }) => {
+              if (!real_world_goal.trim()) return;
+              setRegenCampaignId(DRAFT_ID);
+              setActionError(null);
+              try {
+                return await regenerateCampaignArcName({
+                  real_world_goal: real_world_goal,
+                  current_arc_name: arc_name,
+                });
+              } catch (e) {
+                setActionError(errorMessage(e));
+              } finally {
+                setRegenCampaignId(null);
+              }
+            }}
+            regenerating={regenCampaignId === DRAFT_ID}
           />
         ) : null}
         </View>
@@ -1117,10 +1159,19 @@ interface FactionEditorProps {
   }) => void | Promise<void>;
   onCancel: () => void;
   onDelete?: () => void | Promise<void>;
-  /** Optional: called when the chronicler taps "Regenerate name". Parent
-   *  owns the AI call. Omit for the draft (new) editor since there's
-   *  nothing to regenerate yet. */
-  onRegenerate?: () => void | Promise<void>;
+  /** Optional. Called when the chronicler taps "Regenerate name". Parent
+   *  owns the AI call. The editor passes its CURRENT edit-field values
+   *  so the new-faction draft can regenerate from what's been typed
+   *  rather than from an empty `initial`. If the callback returns a
+   *  string, the editor will set that as the new name locally
+   *  (useful for the new-draft path where the parent isn't persisting
+   *  yet). For existing factions the parent already refreshes and the
+   *  initial.name useEffect handles the update; returning void there
+   *  is fine. */
+  onRegenerate?: (current: {
+    name: string;
+    real_world_domain: string;
+  }) => Promise<string | void> | string | void;
   regenerating?: boolean;
 }
 
@@ -1143,6 +1194,18 @@ function FactionEditor({
     if (initial?.name) setName(initial.name);
   }, [initial?.name]);
 
+  const handleRegenerate = async () => {
+    if (!onRegenerate) return;
+    const result = await onRegenerate({ name, real_world_domain: domain });
+    // For new-faction drafts (parent doesn't persist), update the local
+    // input directly with the AI's suggestion. For existing factions the
+    // parent persists then refresh()→initial.name change pushes via the
+    // useEffect above, so the returned-void case is also fine.
+    if (typeof result === 'string' && result.trim().length > 0) {
+      setName(result.trim());
+    }
+  };
+
   return (
     <View className="rounded-md border border-amber-900/50 bg-amber-50/40 p-3">
       <Text className="mb-1 font-display text-base uppercase tracking-widest text-stone-500">
@@ -1158,10 +1221,15 @@ function FactionEditor({
       />
       {onRegenerate ? (
         <Pressable
-          onPress={() => void onRegenerate()}
-          disabled={busy || regenerating}
+          onPress={() => void handleRegenerate()}
+          // Disabled until a domain is typed: the AI uses real_world_domain
+          // as its primary signal, so generating with an empty domain
+          // produces generic/wandering output.
+          disabled={busy || regenerating || domain.trim().length === 0}
           className={`mb-3 self-start rounded-md border border-amber-700 px-3 py-2 ${
-            regenerating ? 'bg-amber-100/40' : 'active:bg-amber-100'
+            regenerating || domain.trim().length === 0
+              ? 'bg-amber-100/40'
+              : 'active:bg-amber-100'
           }`}
           accessibilityRole="button"
           accessibilityLabel="Regenerate faction name"
@@ -1244,8 +1312,17 @@ interface CampaignEditorProps {
   }) => void | Promise<void>;
   onCancel: () => void;
   onDelete?: () => void | Promise<void>;
-  /** Optional: regenerate the in-voice arc name from the real-world goal. */
-  onRegenerate?: () => void | Promise<void>;
+  /** Optional. Called when the chronicler taps "Regenerate name". Receives
+   *  the editor's CURRENT edit-field values so a new-draft campaign can
+   *  regenerate from what's been typed rather than from an empty `initial`.
+   *  If the callback returns a string, the editor sets it as the new
+   *  arc_name locally; the existing-campaign path (which persists +
+   *  refresh()es) can return void and rely on the initial.arc_name
+   *  useEffect to update. */
+  onRegenerate?: (current: {
+    arc_name: string;
+    real_world_goal: string;
+  }) => Promise<string | void> | string | void;
   regenerating?: boolean;
 }
 
@@ -1268,6 +1345,16 @@ function CampaignEditor({
   useEffect(() => {
     if (initial?.arc_name) setArcName(initial.arc_name);
   }, [initial?.arc_name]);
+
+  const handleRegenerate = async () => {
+    if (!onRegenerate) return;
+    const result = await onRegenerate({ arc_name: arcName, real_world_goal: goal });
+    // For new-draft campaigns (parent doesn't persist), the AI suggestion
+    // comes back as a string and we update the local input directly.
+    if (typeof result === 'string' && result.trim().length > 0) {
+      setArcName(result.trim());
+    }
+  };
 
   // Constrain to 0-100 on input rather than at submit so the user gets
   // immediate feedback if they typo a wild number.
@@ -1296,10 +1383,15 @@ function CampaignEditor({
       />
       {onRegenerate ? (
         <Pressable
-          onPress={() => void onRegenerate()}
-          disabled={busy || regenerating}
+          onPress={() => void handleRegenerate()}
+          // Disabled until a goal is typed: the AI uses real_world_goal as
+          // its primary signal, so regenerating with an empty goal produces
+          // wandering output (same rationale as the faction Regenerate).
+          disabled={busy || regenerating || goal.trim().length === 0}
           className={`mb-3 self-start rounded-md border border-amber-700 px-3 py-2 ${
-            regenerating ? 'bg-amber-100/40' : 'active:bg-amber-100'
+            regenerating || goal.trim().length === 0
+              ? 'bg-amber-100/40'
+              : 'active:bg-amber-100'
           }`}
           accessibilityRole="button"
           accessibilityLabel="Regenerate arc name"

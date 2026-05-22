@@ -13,6 +13,11 @@ import type { Campaign, Faction } from './types/models';
 export async function createFaction(input: {
   name: string;
   real_world_domain: string;
+  /** Optional starting rank within the faction. When omitted (or empty
+   *  after trim), the DB default ('Initiate') applies. Pass whatever the
+   *  chronicler typed in the new-faction editor so their custom rank
+   *  isn't silently reset to Initiate after Save. */
+  reputation_title?: string;
 }): Promise<Faction> {
   const {
     data: { user },
@@ -21,15 +26,22 @@ export async function createFaction(input: {
   if (userError) throw asError(userError);
   if (!user) throw new Error('Not signed in.');
 
-  const { data, error } = await supabase
-    .from('factions')
-    .insert({
-      user_id: user.id,
-      name: input.name.trim(),
-      real_world_domain: input.real_world_domain.trim(),
-    })
-    .select()
-    .single();
+  const row: {
+    user_id: string;
+    name: string;
+    real_world_domain: string;
+    reputation_title?: string;
+  } = {
+    user_id: user.id,
+    name: input.name.trim(),
+    real_world_domain: input.real_world_domain.trim(),
+  };
+  if (input.reputation_title !== undefined) {
+    const trimmed = input.reputation_title.trim();
+    if (trimmed.length > 0) row.reputation_title = trimmed;
+  }
+
+  const { data, error } = await supabase.from('factions').insert(row).select().single();
   if (error) throw asError(error);
   return data as Faction;
 }
