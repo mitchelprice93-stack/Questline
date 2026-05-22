@@ -567,16 +567,23 @@ export default function CharacterSheet() {
       </CollapsibleSection>
 
       {/* Debuffs, visible whenever any are active. Rest button always
-          renders but disables on cooldown. */}
-      <CollapsibleSection
-        id="char-debuffs"
-        title="Debuffs"
-        className="mb-8"
-        headerRight={
+          renders inside the section but disables on cooldown. Living inside
+          the section (rather than the header) keeps the collapsed header
+          tidy and aligns with the chronicler's "actions appear when you
+          open the menu" pattern. */}
+      <CollapsibleSection id="char-debuffs" title="Debuffs" className="mb-8">
+        <View className="gap-2">
+          {debuffs.length === 0 ? (
+            <Text className="font-body italic text-stone-500">
+              No debuffs. Keep tending the Tome.
+            </Text>
+          ) : (
+            debuffs.map((d) => <ModifierCard key={d.id} modifier={d} />)
+          )}
           <Pressable
             onPress={onRest}
             disabled={busy || restOnCooldown}
-            className={`rounded-md border px-3 py-1.5 ${
+            className={`mt-1 self-start rounded-md border px-3 py-1.5 ${
               busy || restOnCooldown
                 ? 'border-stone-800 bg-amber-50/40'
                 : 'border-amber-700 bg-amber-900/40 active:bg-amber-900/60'
@@ -592,51 +599,37 @@ export default function CharacterSheet() {
                 : '+rest'}
             </Text>
           </Pressable>
-        }
-      >
-        <View className="gap-2">
-          {debuffs.length === 0 ? (
-            <Text className="font-body italic text-stone-500">
-              No debuffs. Keep tending the Tome.
-            </Text>
-          ) : (
-            debuffs.map((d) => <ModifierCard key={d.id} modifier={d} />)
-          )}
         </View>
       </CollapsibleSection>
 
-      {/* Factions */}
-      <CollapsibleSection
-        id="char-factions"
-        title="Factions"
-        className="mb-0"
-        headerRight={
-          <View className="flex-row items-center gap-3">
-            {factions.length > 1 && editingFactionId === null ? (
-              // GHPressable: flipping reorder mode mounts new GestureDetectors
-              // beneath, and RN's stock Pressable leaves the responder stuck
-              // after the tap (other buttons go dead until you scroll). GH's
-              // Pressable releases cleanly. className is dropped by
-              // GHPressable, so styling moves to a wrapping View.
-              <GHPressable onPress={() => setReorderingFactions((v) => !v)}>
-                <View className="rounded-md border border-stone-700 bg-amber-50/40 px-3 py-1">
-                  <Text className="font-body text-base text-stone-700">
-                    {reorderingFactions ? 'Done' : 'Reorder'}
-                  </Text>
-                </View>
-              </GHPressable>
-            ) : null}
-            {!showFactionDraft && editingFactionId === null ? (
-              <Pressable
-                onPress={() => setEditingFactionId(DRAFT_ID)}
-                className="active:opacity-60"
-              >
-                <Text className="font-body text-lg text-amber-800">+ Add</Text>
-              </Pressable>
-            ) : null}
-          </View>
-        }
-      >
+      {/* Factions. Reorder + Add buttons live inside the open menu, not on
+          the collapsed header, so the header stays clean. The action row
+          renders above the list of factions because that's where the eye
+          lands when the user opens the section. */}
+      <CollapsibleSection id="char-factions" title="Factions" className="mb-0">
+        <View className="mb-2 flex-row items-center justify-end gap-3">
+          {factions.length > 1 && editingFactionId === null ? (
+            // GHPressable: flipping reorder mode mounts new GestureDetectors
+            // beneath, and RN's stock Pressable leaves the responder stuck
+            // after the tap. className dropped by GHPressable, styling
+            // moves to a wrapping View.
+            <GHPressable onPress={() => setReorderingFactions((v) => !v)}>
+              <View className="rounded-md border border-stone-700 bg-amber-50/40 px-3 py-1">
+                <Text className="font-body text-base text-stone-700">
+                  {reorderingFactions ? 'Done' : 'Reorder'}
+                </Text>
+              </View>
+            </GHPressable>
+          ) : null}
+          {!showFactionDraft && editingFactionId === null ? (
+            <Pressable
+              onPress={() => setEditingFactionId(DRAFT_ID)}
+              className="active:opacity-60"
+            >
+              <Text className="font-body text-lg text-amber-800">+ Add</Text>
+            </Pressable>
+          ) : null}
+        </View>
       <View className="mb-8 gap-2">
         {factions.length === 0 && !showFactionDraft ? (
           <Text className="font-body italic text-stone-500">
@@ -764,34 +757,30 @@ export default function CharacterSheet() {
         </View>
       </CollapsibleSection>
 
-      {/* Campaigns */}
-      <CollapsibleSection
-        id="char-campaigns"
-        title="Campaigns"
-        className="mb-0"
-        headerRight={
-          <View className="flex-row items-center gap-3">
-            {campaigns.length > 1 && editingCampaignId === null ? (
-              // Same GHPressable rationale as the Factions Reorder button above.
-              <GHPressable onPress={() => setReorderingCampaigns((v) => !v)}>
-                <View className="rounded-md border border-stone-700 bg-amber-50/40 px-3 py-1">
-                  <Text className="font-body text-base text-stone-700">
-                    {reorderingCampaigns ? 'Done' : 'Reorder'}
-                  </Text>
-                </View>
-              </GHPressable>
-            ) : null}
-            {!showCampaignDraft && editingCampaignId === null ? (
-              <Pressable
-                onPress={() => setEditingCampaignId(DRAFT_ID)}
-                className="active:opacity-60"
-              >
-                <Text className="font-body text-lg text-amber-800">+ Add</Text>
-              </Pressable>
-            ) : null}
-          </View>
-        }
-      >
+      {/* Campaigns. Same in-menu action row pattern as Factions, the Reorder
+          and Add buttons live inside the expanded content so the collapsed
+          header is just the title + chevron. */}
+      <CollapsibleSection id="char-campaigns" title="Campaigns" className="mb-0">
+        <View className="mb-2 flex-row items-center justify-end gap-3">
+          {campaigns.length > 1 && editingCampaignId === null ? (
+            // Same GHPressable rationale as the Factions Reorder button above.
+            <GHPressable onPress={() => setReorderingCampaigns((v) => !v)}>
+              <View className="rounded-md border border-stone-700 bg-amber-50/40 px-3 py-1">
+                <Text className="font-body text-base text-stone-700">
+                  {reorderingCampaigns ? 'Done' : 'Reorder'}
+                </Text>
+              </View>
+            </GHPressable>
+          ) : null}
+          {!showCampaignDraft && editingCampaignId === null ? (
+            <Pressable
+              onPress={() => setEditingCampaignId(DRAFT_ID)}
+              className="active:opacity-60"
+            >
+              <Text className="font-body text-lg text-amber-800">+ Add</Text>
+            </Pressable>
+          ) : null}
+        </View>
         <View className="mb-8 gap-2">
         {campaigns.length === 0 && !showCampaignDraft ? (
           <Text className="font-body italic text-stone-500">
