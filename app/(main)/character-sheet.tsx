@@ -95,6 +95,13 @@ export default function CharacterSheet() {
   // Inline-edit state. Only one row of each type can be in edit mode at once.
   const [editingFactionId, setEditingFactionId] = useState<string | null>(null);
   const [editingCampaignId, setEditingCampaignId] = useState<string | null>(null);
+  // Drag-to-reorder is opt-in per section. The drag handles only render
+  // when these are true (toggled by Reorder/Done buttons next to the
+  // section titles), so the cards aren't shifted left by the handle bar
+  // by default. Reorder commits on drag release; toggling Done back off
+  // doesn't undo anything, it just hides the handles.
+  const [reorderingFactions, setReorderingFactions] = useState(false);
+  const [reorderingCampaigns, setReorderingCampaigns] = useState(false);
   const [busy, setBusy] = useState(false);
   // Dropdown state for the Difficulty selector. Modal opens on trigger
   // press; tapping an option closes it and applies the change.
@@ -592,15 +599,27 @@ export default function CharacterSheet() {
       </View>
 
       {/* Factions */}
-      <View className="mb-2 flex-row items-baseline justify-between">
+      <View className="mb-2 flex-row items-center justify-between">
         <Text className="font-display text-lg uppercase tracking-widest text-stone-700">
           Factions
         </Text>
-        {!showFactionDraft && editingFactionId === null ? (
-          <Pressable onPress={() => setEditingFactionId(DRAFT_ID)} className="active:opacity-60">
-            <Text className="font-body text-lg text-amber-800">+ Add</Text>
-          </Pressable>
-        ) : null}
+        <View className="flex-row items-center gap-3">
+          {factions.length > 1 && editingFactionId === null ? (
+            <Pressable
+              onPress={() => setReorderingFactions((v) => !v)}
+              className="rounded-md border border-stone-700 bg-amber-50/40 px-3 py-1 active:bg-amber-100/60"
+            >
+              <Text className="font-body text-base text-stone-700">
+                {reorderingFactions ? 'Done' : 'Reorder'}
+              </Text>
+            </Pressable>
+          ) : null}
+          {!showFactionDraft && editingFactionId === null ? (
+            <Pressable onPress={() => setEditingFactionId(DRAFT_ID)} className="active:opacity-60">
+              <Text className="font-body text-lg text-amber-800">+ Add</Text>
+            </Pressable>
+          ) : null}
+        </View>
       </View>
       <View className="mb-8 gap-2">
         {factions.length === 0 && !showFactionDraft ? (
@@ -650,37 +669,50 @@ export default function CharacterSheet() {
               regenerating={regenFactionId === f.id}
             />
           ) : (
-            <ReorderableRow
-              key={f.id}
-              listKey="factions"
-              idx={idx}
-              count={factions.length}
-              rowHeight={100}
-              disabled={editingFactionId !== null}
-              onReorder={(from, to) => void onReorderFactions(from, to)}
-            >
-              <Pressable
-                onPress={() => setEditingFactionId(f.id)}
-                disabled={editingFactionId !== null}
-                className="rounded-md border border-stone-800 bg-amber-50/40 px-4 py-3 active:bg-amber-100/60"
-              >
-                <View className="flex-row items-baseline justify-between">
-                  <Text
-                    numberOfLines={1}
-                    className="flex-1 pr-3 font-body-medium text-2xl text-stone-900"
-                  >
-                    {f.name}
+            (() => {
+              // Card body is rendered once and reused whether or not we're
+              // in reorder mode. In reorder mode the press still triggers
+              // edit on tap, but the long-press route on the drag handle
+              // owns the gesture for repositioning.
+              const card = (
+                <Pressable
+                  onPress={() => setEditingFactionId(f.id)}
+                  disabled={editingFactionId !== null || reorderingFactions}
+                  className="rounded-md border border-stone-800 bg-amber-50/40 px-4 py-3 active:bg-amber-100/60"
+                >
+                  <View className="flex-row items-baseline justify-between">
+                    <Text
+                      numberOfLines={1}
+                      className="flex-1 pr-3 font-body-medium text-2xl text-stone-900"
+                    >
+                      {f.name}
+                    </Text>
+                    <Text className="font-display text-base uppercase tracking-widest text-amber-800">
+                      {f.reputation_title}
+                    </Text>
+                  </View>
+                  <Text className="font-body text-lg text-stone-500">{f.real_world_domain}</Text>
+                  <Text className="mt-1 font-body text-sm text-stone-600">
+                    {f.reputation_count} {f.reputation_count === 1 ? 'deed' : 'deeds'} inscribed
                   </Text>
-                  <Text className="font-display text-base uppercase tracking-widest text-amber-800">
-                    {f.reputation_title}
-                  </Text>
-                </View>
-                <Text className="font-body text-lg text-stone-500">{f.real_world_domain}</Text>
-                <Text className="mt-1 font-body text-sm text-stone-600">
-                  {f.reputation_count} {f.reputation_count === 1 ? 'deed' : 'deeds'} inscribed
-                </Text>
-              </Pressable>
-            </ReorderableRow>
+                </Pressable>
+              );
+              return reorderingFactions ? (
+                <ReorderableRow
+                  key={f.id}
+                  listKey="factions"
+                  idx={idx}
+                  count={factions.length}
+                  rowHeight={100}
+                  disabled={editingFactionId !== null}
+                  onReorder={(from, to) => void onReorderFactions(from, to)}
+                >
+                  {card}
+                </ReorderableRow>
+              ) : (
+                <View key={f.id}>{card}</View>
+              );
+            })()
           ),
         )}
         {showFactionDraft ? (
@@ -710,15 +742,27 @@ export default function CharacterSheet() {
       </View>
 
       {/* Campaigns */}
-      <View className="mb-2 flex-row items-baseline justify-between">
+      <View className="mb-2 flex-row items-center justify-between">
         <Text className="font-display text-lg uppercase tracking-widest text-stone-700">
           Campaigns
         </Text>
-        {!showCampaignDraft && editingCampaignId === null ? (
-          <Pressable onPress={() => setEditingCampaignId(DRAFT_ID)} className="active:opacity-60">
-            <Text className="font-body text-lg text-amber-800">+ Add</Text>
-          </Pressable>
-        ) : null}
+        <View className="flex-row items-center gap-3">
+          {campaigns.length > 1 && editingCampaignId === null ? (
+            <Pressable
+              onPress={() => setReorderingCampaigns((v) => !v)}
+              className="rounded-md border border-stone-700 bg-amber-50/40 px-3 py-1 active:bg-amber-100/60"
+            >
+              <Text className="font-body text-base text-stone-700">
+                {reorderingCampaigns ? 'Done' : 'Reorder'}
+              </Text>
+            </Pressable>
+          ) : null}
+          {!showCampaignDraft && editingCampaignId === null ? (
+            <Pressable onPress={() => setEditingCampaignId(DRAFT_ID)} className="active:opacity-60">
+              <Text className="font-body text-lg text-amber-800">+ Add</Text>
+            </Pressable>
+          ) : null}
+        </View>
       </View>
       <View className="mb-8 gap-2">
         {campaigns.length === 0 && !showCampaignDraft ? (
@@ -768,40 +812,49 @@ export default function CharacterSheet() {
               regenerating={regenCampaignId === c.id}
             />
           ) : (
-            <ReorderableRow
-              key={c.id}
-              listKey="campaigns"
-              idx={idx}
-              count={campaigns.length}
-              rowHeight={120}
-              disabled={editingCampaignId !== null}
-              onReorder={(from, to) => void onReorderCampaigns(from, to)}
-            >
-            <Pressable
-              onPress={() => setEditingCampaignId(c.id)}
-              disabled={editingCampaignId !== null}
-              className="rounded-md border border-stone-800 bg-amber-50/40 px-4 py-3 active:bg-amber-100/60"
-            >
-              <View className="flex-row items-baseline justify-between">
-                <Text className="flex-1 pr-3 font-body-medium text-2xl text-stone-900">
-                  {c.arc_name}
-                </Text>
-                <Text className="font-display text-2xl text-amber-800">
-                  {c.progress_pct}%
-                </Text>
-              </View>
-              <Text className="font-body text-lg text-stone-500">{c.real_world_goal}</Text>
-              {/* Always-visible progress bar so a fresh 0% campaign still shows
-                  the rail it'll fill into. Thicker than before so the visual
-                  is more rewarding as quests rack up. */}
-              <View className="mt-3 h-2 overflow-hidden rounded-full bg-amber-100/60">
-                <View
-                  className="h-2 rounded-full bg-amber-600"
-                  style={{ width: `${Math.max(c.progress_pct, 1)}%` }}
-                />
-              </View>
-            </Pressable>
-            </ReorderableRow>
+            (() => {
+              const card = (
+                <Pressable
+                  onPress={() => setEditingCampaignId(c.id)}
+                  disabled={editingCampaignId !== null || reorderingCampaigns}
+                  className="rounded-md border border-stone-800 bg-amber-50/40 px-4 py-3 active:bg-amber-100/60"
+                >
+                  <View className="flex-row items-baseline justify-between">
+                    <Text className="flex-1 pr-3 font-body-medium text-2xl text-stone-900">
+                      {c.arc_name}
+                    </Text>
+                    <Text className="font-display text-2xl text-amber-800">
+                      {c.progress_pct}%
+                    </Text>
+                  </View>
+                  <Text className="font-body text-lg text-stone-500">{c.real_world_goal}</Text>
+                  {/* Always-visible progress bar so a fresh 0% campaign still
+                      shows the rail it'll fill into. Thicker than before so
+                      the visual is more rewarding as quests rack up. */}
+                  <View className="mt-3 h-2 overflow-hidden rounded-full bg-amber-100/60">
+                    <View
+                      className="h-2 rounded-full bg-amber-600"
+                      style={{ width: `${Math.max(c.progress_pct, 1)}%` }}
+                    />
+                  </View>
+                </Pressable>
+              );
+              return reorderingCampaigns ? (
+                <ReorderableRow
+                  key={c.id}
+                  listKey="campaigns"
+                  idx={idx}
+                  count={campaigns.length}
+                  rowHeight={120}
+                  disabled={editingCampaignId !== null}
+                  onReorder={(from, to) => void onReorderCampaigns(from, to)}
+                >
+                  {card}
+                </ReorderableRow>
+              ) : (
+                <View key={c.id}>{card}</View>
+              );
+            })()
           ),
         )}
         {showCampaignDraft ? (

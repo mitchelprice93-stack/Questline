@@ -27,6 +27,11 @@ interface Props {
   objectives: QuestObjective[];
   onChange: (next: QuestObjective[]) => void;
   disabled?: boolean;
+  /** When true, each row shows a 6-dot drag handle and can be dragged to
+   *  reorder. When false (default) the handles are hidden entirely so the
+   *  rows don't waste horizontal real estate. Parent toggles this via a
+   *  Reorder/Done button by the section header. */
+  reorderMode?: boolean;
 }
 
 // Used for both the row's fixed height and the swap-threshold math. Keep in
@@ -34,7 +39,7 @@ interface Props {
 // a single-line measurement to give multiline objectives breathing room.
 const ROW_HEIGHT = 56;
 
-export function ObjectivesEditor({ objectives, onChange, disabled }: Props) {
+export function ObjectivesEditor({ objectives, onChange, disabled, reorderMode }: Props) {
   const update = (idx: number, partial: Partial<QuestObjective>) => {
     onChange(objectives.map((o, i) => (i === idx ? { ...o, ...partial } : o)));
   };
@@ -61,6 +66,7 @@ export function ObjectivesEditor({ objectives, onChange, disabled }: Props) {
           idx={idx}
           count={objectives.length}
           disabled={disabled}
+          reorderMode={!!reorderMode}
           onToggleComplete={() => update(idx, { completed: !obj.completed })}
           onChangeText={(text) => update(idx, { text })}
           onRemove={() => remove(idx)}
@@ -83,6 +89,7 @@ interface RowProps {
   idx: number;
   count: number;
   disabled?: boolean;
+  reorderMode: boolean;
   onToggleComplete: () => void;
   onChangeText: (text: string) => void;
   onRemove: () => void;
@@ -94,6 +101,7 @@ function ObjectiveRow({
   idx,
   count,
   disabled,
+  reorderMode,
   onToggleComplete,
   onChangeText,
   onRemove,
@@ -133,7 +141,7 @@ function ObjectiveRow({
   );
 
   const pan = Gesture.Pan()
-    .enabled(!disabled && count > 1)
+    .enabled(!disabled && count > 1 && reorderMode)
     .activateAfterLongPress(150)
     .onStart(() => {
       dragging.value = 1;
@@ -182,18 +190,20 @@ function ObjectiveRow({
       style={animatedStyle}
       className="mb-2 flex-row items-center gap-2"
     >
-      <GestureDetector gesture={pan}>
-        <View
-          className={`items-center justify-center rounded-md border border-stone-700 bg-amber-50/40 px-2 py-2 ${
-            count > 1 ? 'active:bg-amber-100/60' : 'opacity-40'
-          }`}
-          accessibilityLabel="Drag handle. Hold and drag to reorder."
-          accessibilityRole="adjustable"
-        >
-          {/* 6-dot handle, the classic Material drag idiom. */}
-          <MaterialCommunityIcons name="drag-vertical" size={22} color="#78716c" />
-        </View>
-      </GestureDetector>
+      {reorderMode ? (
+        <GestureDetector gesture={pan}>
+          <View
+            className={`items-center justify-center rounded-md border border-stone-700 bg-amber-50/40 px-2 py-2 ${
+              count > 1 ? 'active:bg-amber-100/60' : 'opacity-40'
+            }`}
+            accessibilityLabel="Drag handle. Hold and drag to reorder."
+            accessibilityRole="adjustable"
+          >
+            {/* 6-dot handle, the classic Material drag idiom. */}
+            <MaterialCommunityIcons name="drag-vertical" size={22} color="#78716c" />
+          </View>
+        </GestureDetector>
+      ) : null}
       <Pressable
         onPress={onToggleComplete}
         disabled={disabled}

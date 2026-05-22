@@ -215,6 +215,11 @@ export default function QuestDetail() {
   const [editTier, setEditTier] = useState<QuestTier>('standard');
   const [editClassification, setEditClassification] = useState<QuestClassification>('side');
   const [editObjectives, setEditObjectives] = useState<QuestObjective[]>([]);
+  // Drag handles for objective rows are hidden by default and only appear
+  // when this is true; the Reorder/Done button by the Objectives label
+  // flips it. Reorder is committed automatically on drag release, so
+  // there's no Save Order step.
+  const [reorderingObjectives, setReorderingObjectives] = useState(false);
   // Stored as an ISO timestamp (or null for no deadline). The DeadlinePicker
   // component owns its own calendar / time UI; we don't need any of the
   // ref / blur / IME flush gymnastics the old text-input form required.
@@ -654,12 +659,26 @@ export default function QuestDetail() {
           />
         ) : null}
 
-        <Text className="mb-2 font-body text-xl text-stone-700">Objectives</Text>
+        <View className="mb-2 flex-row items-center justify-between">
+          <Text className="font-body text-xl text-stone-700">Objectives</Text>
+          {editObjectives.length > 1 ? (
+            <Pressable
+              onPress={() => setReorderingObjectives((v) => !v)}
+              disabled={busy === 'save-edits'}
+              className="rounded-md border border-stone-700 bg-amber-50/40 px-3 py-1 active:bg-amber-100/60"
+            >
+              <Text className="font-body text-base text-stone-700">
+                {reorderingObjectives ? 'Done' : 'Reorder'}
+              </Text>
+            </Pressable>
+          ) : null}
+        </View>
         <View className="mb-6">
           <ObjectivesEditor
             objectives={editObjectives}
             onChange={setEditObjectives}
             disabled={busy === 'save-edits'}
+            reorderMode={reorderingObjectives}
           />
         </View>
 

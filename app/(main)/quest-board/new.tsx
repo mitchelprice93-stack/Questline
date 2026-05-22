@@ -129,6 +129,10 @@ export default function NewQuest() {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [objectives, setObjectives] = useState<QuestObjective[]>([]);
+  // Drag handles for objective rows are hidden until the user taps the
+  // Reorder button next to the Objectives label. See [id].tsx for the
+  // matching pattern on the edit screen.
+  const [reorderingObjectives, setReorderingObjectives] = useState(false);
   // Deadline as an ISO timestamp (or null for none). On forge we run chrono
   // against the user's original prompt to seed it with any date they
   // mentioned ("by next Friday", "due April 15", etc). The DeadlinePicker
@@ -520,8 +524,26 @@ export default function NewQuest() {
       ) : null}
 
       <View className="mb-6">
-        <Text className="mb-2 font-body text-xl text-stone-700">Objectives</Text>
-        <ObjectivesEditor objectives={objectives} onChange={setObjectives} disabled={submitting} />
+        <View className="mb-2 flex-row items-center justify-between">
+          <Text className="font-body text-xl text-stone-700">Objectives</Text>
+          {objectives.length > 1 ? (
+            <Pressable
+              onPress={() => setReorderingObjectives((v) => !v)}
+              disabled={submitting}
+              className="rounded-md border border-stone-700 bg-amber-50/40 px-3 py-1 active:bg-amber-100/60"
+            >
+              <Text className="font-body text-base text-stone-700">
+                {reorderingObjectives ? 'Done' : 'Reorder'}
+              </Text>
+            </Pressable>
+          ) : null}
+        </View>
+        <ObjectivesEditor
+          objectives={objectives}
+          onChange={setObjectives}
+          disabled={submitting}
+          reorderMode={reorderingObjectives}
+        />
       </View>
 
       <Text className="mb-2 font-body text-xl text-stone-700">Granted buff (optional)</Text>
