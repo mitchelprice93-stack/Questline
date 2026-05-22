@@ -5,7 +5,7 @@ import { ActivityIndicator, Modal, Pressable, Text, TextInput, View } from 'reac
 // its responder stuck after a Modal dismiss on Android, eating the next
 // tap as a potential scroll. See app/(main)/quest-board/[id].tsx for the
 // full note.
-import { ScrollView } from 'react-native-gesture-handler';
+import { ScrollView, Pressable as GHPressable } from 'react-native-gesture-handler';
 import Animated, {
   Easing,
   useAnimatedStyle,
@@ -605,14 +605,18 @@ export default function CharacterSheet() {
         </Text>
         <View className="flex-row items-center gap-3">
           {factions.length > 1 && editingFactionId === null ? (
-            <Pressable
-              onPress={() => setReorderingFactions((v) => !v)}
-              className="rounded-md border border-stone-700 bg-amber-50/40 px-3 py-1 active:bg-amber-100/60"
-            >
-              <Text className="font-body text-base text-stone-700">
-                {reorderingFactions ? 'Done' : 'Reorder'}
-              </Text>
-            </Pressable>
+            // GHPressable: flipping reorder mode mounts new GestureDetectors
+            // beneath, and RN's stock Pressable leaves the responder stuck
+            // after the tap (other buttons go dead until you scroll). GH's
+            // Pressable releases cleanly. className is dropped by
+            // GHPressable, so styling moves to a wrapping View.
+            <GHPressable onPress={() => setReorderingFactions((v) => !v)}>
+              <View className="rounded-md border border-stone-700 bg-amber-50/40 px-3 py-1">
+                <Text className="font-body text-base text-stone-700">
+                  {reorderingFactions ? 'Done' : 'Reorder'}
+                </Text>
+              </View>
+            </GHPressable>
           ) : null}
           {!showFactionDraft && editingFactionId === null ? (
             <Pressable onPress={() => setEditingFactionId(DRAFT_ID)} className="active:opacity-60">
@@ -748,14 +752,14 @@ export default function CharacterSheet() {
         </Text>
         <View className="flex-row items-center gap-3">
           {campaigns.length > 1 && editingCampaignId === null ? (
-            <Pressable
-              onPress={() => setReorderingCampaigns((v) => !v)}
-              className="rounded-md border border-stone-700 bg-amber-50/40 px-3 py-1 active:bg-amber-100/60"
-            >
-              <Text className="font-body text-base text-stone-700">
-                {reorderingCampaigns ? 'Done' : 'Reorder'}
-              </Text>
-            </Pressable>
+            // Same GHPressable rationale as the Factions Reorder button above.
+            <GHPressable onPress={() => setReorderingCampaigns((v) => !v)}>
+              <View className="rounded-md border border-stone-700 bg-amber-50/40 px-3 py-1">
+                <Text className="font-body text-base text-stone-700">
+                  {reorderingCampaigns ? 'Done' : 'Reorder'}
+                </Text>
+              </View>
+            </GHPressable>
           ) : null}
           {!showCampaignDraft && editingCampaignId === null ? (
             <Pressable onPress={() => setEditingCampaignId(DRAFT_ID)} className="active:opacity-60">

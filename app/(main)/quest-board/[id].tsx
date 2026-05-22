@@ -662,15 +662,25 @@ export default function QuestDetail() {
         <View className="mb-2 flex-row items-center justify-between">
           <Text className="font-body text-xl text-stone-700">Objectives</Text>
           {editObjectives.length > 1 ? (
-            <Pressable
+            // GHPressable (gesture-handler's Pressable) instead of RN's:
+            // flipping reorderMode mounts a fresh set of GestureDetectors
+            // inside the children, which leaves RN's responder thinking
+            // it might still own the press from the Reorder tap. Other
+            // buttons go dead until the user scrolls and resets the
+            // responder. GH's Pressable releases cleanly. See
+            // feedback-rn-modal-dead-tap memory for the broader pattern.
+            // NativeWind className is dropped by GHPressable, so styling
+            // moves to a wrapping View.
+            <GHPressable
               onPress={() => setReorderingObjectives((v) => !v)}
               disabled={busy === 'save-edits'}
-              className="rounded-md border border-stone-700 bg-amber-50/40 px-3 py-1 active:bg-amber-100/60"
             >
-              <Text className="font-body text-base text-stone-700">
-                {reorderingObjectives ? 'Done' : 'Reorder'}
-              </Text>
-            </Pressable>
+              <View className="rounded-md border border-stone-700 bg-amber-50/40 px-3 py-1">
+                <Text className="font-body text-base text-stone-700">
+                  {reorderingObjectives ? 'Done' : 'Reorder'}
+                </Text>
+              </View>
+            </GHPressable>
           ) : null}
         </View>
         <View className="mb-6">

@@ -5,7 +5,7 @@ import { ActivityIndicator, Pressable, Text, TextInput, View } from 'react-nativ
 // its responder stuck after a Modal dismiss on Android, eating the next
 // tap as a potential scroll. See app/(main)/quest-board/[id].tsx for the
 // full note.
-import { ScrollView } from 'react-native-gesture-handler';
+import { ScrollView, Pressable as GHPressable } from 'react-native-gesture-handler';
 import Animated, { Easing, withTiming } from 'react-native-reanimated';
 
 import { DeadlinePicker } from '../../../components/deadline-picker';
@@ -527,15 +527,21 @@ export default function NewQuest() {
         <View className="mb-2 flex-row items-center justify-between">
           <Text className="font-body text-xl text-stone-700">Objectives</Text>
           {objectives.length > 1 ? (
-            <Pressable
+            // GHPressable: flipping reorderMode mounts a fresh set of
+            // GestureDetectors in the children below, and RN's stock
+            // Pressable would leave the responder stuck after the tap.
+            // GH's Pressable releases cleanly. NativeWind className is
+            // dropped by GHPressable, so styling moves to a wrapping View.
+            <GHPressable
               onPress={() => setReorderingObjectives((v) => !v)}
               disabled={submitting}
-              className="rounded-md border border-stone-700 bg-amber-50/40 px-3 py-1 active:bg-amber-100/60"
             >
-              <Text className="font-body text-base text-stone-700">
-                {reorderingObjectives ? 'Done' : 'Reorder'}
-              </Text>
-            </Pressable>
+              <View className="rounded-md border border-stone-700 bg-amber-50/40 px-3 py-1">
+                <Text className="font-body text-base text-stone-700">
+                  {reorderingObjectives ? 'Done' : 'Reorder'}
+                </Text>
+              </View>
+            </GHPressable>
           ) : null}
         </View>
         <ObjectivesEditor
