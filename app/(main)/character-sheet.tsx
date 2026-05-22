@@ -684,14 +684,20 @@ export default function CharacterSheet() {
                   disabled={editingFactionId !== null || reorderingFactions}
                   className="rounded-md border border-stone-800 bg-amber-50/40 px-4 py-3 active:bg-amber-100/60"
                 >
-                  <View className="flex-row items-baseline justify-between">
-                    <Text
-                      numberOfLines={1}
-                      className="flex-1 pr-3 font-body-medium text-2xl text-stone-900"
-                    >
+                  {/* items-start so a multi-line faction name keeps the
+                      reputation_title pinned to the top, not floating against
+                      the last wrapped line. flex-1 on the title lets it wrap
+                      to as many lines as needed. shrink-0 + numberOfLines={1}
+                      on the rep title keeps it whole on the right, the title
+                      yields space, not the rep title. */}
+                  <View className="flex-row items-start justify-between">
+                    <Text className="flex-1 pr-3 font-body-medium text-2xl text-stone-900">
                       {f.name}
                     </Text>
-                    <Text className="font-display text-base uppercase tracking-widest text-amber-800">
+                    <Text
+                      className="shrink-0 font-display text-base uppercase tracking-wider text-amber-800"
+                      numberOfLines={1}
+                    >
                       {f.reputation_title}
                     </Text>
                   </View>
@@ -823,11 +829,19 @@ export default function CharacterSheet() {
                   disabled={editingCampaignId !== null || reorderingCampaigns}
                   className="rounded-md border border-stone-800 bg-amber-50/40 px-4 py-3 active:bg-amber-100/60"
                 >
-                  <View className="flex-row items-baseline justify-between">
+                  {/* items-start so a multi-line arc_name keeps the % pinned
+                      to the top, not floating against the last wrapped line.
+                      flex-1 + no numberOfLines on the title lets it wrap
+                      freely. shrink-0 + numberOfLines={1} on the % keeps it
+                      whole on the right ("100%" is the widest case). */}
+                  <View className="flex-row items-start justify-between">
                     <Text className="flex-1 pr-3 font-body-medium text-2xl text-stone-900">
                       {c.arc_name}
                     </Text>
-                    <Text className="font-display text-2xl text-amber-800">
+                    <Text
+                      className="shrink-0 font-display text-2xl text-amber-800"
+                      numberOfLines={1}
+                    >
                       {c.progress_pct}%
                     </Text>
                   </View>
