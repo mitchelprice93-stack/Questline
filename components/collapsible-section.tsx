@@ -116,9 +116,14 @@ export function CollapsibleSection({
       {/* Header row: tap anywhere on the row to toggle. GHPressable so
           the tap negotiates through gesture-handler and doesn't get the
           dead-tap responder issue when a sibling modal closes (same
-          rationale as the Reorder buttons). */}
+          rationale as the Reorder buttons).
+          NOTE: spacing between title and content lives on the children
+          wrapper below (mt-2), NOT on this header row. Putting it here
+          would leave 8px of dead space below the title when the section
+          is collapsed, making collapsed sections visibly taller than
+          expanded ones (the bug the chronicler hit). */}
       <GHPressable onPress={toggle}>
-        <View className="mb-2 flex-row items-center justify-between">
+        <View className="flex-row items-center justify-between">
           <View className="flex-1 flex-row items-center">
             <Text className="font-display text-lg uppercase tracking-widest text-stone-700">
               {title}
@@ -134,8 +139,10 @@ export function CollapsibleSection({
       </GHPressable>
       {/* Children only mount when expanded. Skipping render (rather than
           hiding via opacity/height) keeps the screen short and the layout
-          clean, with no offscreen text reading by the screen reader. */}
-      {expanded ? children : null}
+          clean, with no offscreen text reading by the screen reader.
+          mt-2 here (not mb-2 on the header) so the title-to-content gap
+          only exists when there IS content. */}
+      {expanded ? <View className="mt-2">{children}</View> : null}
     </View>
   );
 }
