@@ -179,11 +179,22 @@ export default function AchievementsScreen() {
     return [];
   }, [personal, activeTab]);
 
-  const earnedCount = views.filter((v) => v.earned.length > 0 && !v.achievement.isTemplate).length;
+  const earnedPredefined = views.filter(
+    (v) => v.earned.length > 0 && !v.achievement.isTemplate,
+  ).length;
   const earnedTitles = 0; // No Title template in v1.1; Rank Ascended dropped.
   const earnedArcs = views.find((v) => v.achievement.code === 'arc_completed')?.earned.length ?? 0;
-  const totalNonTemplate = ACHIEVEMENTS.filter((a) => !a.isTemplate).length;
+  const totalPredefined = ACHIEVEMENTS.filter((a) => !a.isTemplate).length;
   const personalCount = personal?.length ?? 0;
+  // Roll Personal trophies into both sides of the headline ratio so each
+  // earned Personal bumps both the numerator and the denominator. Since
+  // every Personal trophy is by definition earned (they only exist after
+  // a campaign completes), they grow both numbers in lockstep — the
+  // chronicler's "X of Y inscribed" line keeps the visible gap the same
+  // while reflecting their full ledger, rather than hiding Personals in
+  // a separate suffix.
+  const earnedCount = earnedPredefined + personalCount;
+  const totalNonTemplate = totalPredefined + personalCount;
 
   return (
     <ParchmentScreen>

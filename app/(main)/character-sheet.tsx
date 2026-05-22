@@ -35,6 +35,7 @@ import {
 } from '../../lib/character-sheet';
 import { ReorderableRow } from '../../components/reorderable-row';
 import { CollapsibleSection } from '../../components/collapsible-section';
+import { listCampaignAchievements } from '../../lib/campaign-achievements';
 import {
   listActiveBuffs,
   listActiveDebuffs,
@@ -162,17 +163,29 @@ export default function CharacterSheet() {
       ]);
       // Achievement counts shown on the sheet are best-effort, render the
       // sheet even if this fails so the user still sees their character.
+      // Personal trophies (campaign_achievements) roll into both sides of
+      // the ratio: each one bumps numerator and denominator together, so
+      // the "X / Y inscribed" line reflects the full ledger rather than
+      // hiding Personals behind a separate count.
       let achievements: SheetData['achievements'] = null;
       if (profile) {
         try {
-          const snap = await loadAchievementSnapshot(profile.id);
+          const [snap, personalRows] = await Promise.all([
+            loadAchievementSnapshot(profile.id),
+            listCampaignAchievements().catch(() => []),
+          ]);
           const earnedCodes = new Set(snap.earned.map((r) => r.code));
-          const totalCount = ACHIEVEMENTS.filter((a) => !a.isTemplate).length;
-          const earnedCount = ACHIEVEMENTS.filter(
+          const totalPredefined = ACHIEVEMENTS.filter((a) => !a.isTemplate).length;
+          const earnedPredefined = ACHIEVEMENTS.filter(
             (a) => !a.isTemplate && earnedCodes.has(a.code),
           ).length;
           const arcCount = snap.earned.filter((r) => r.code === 'arc_completed').length;
-          achievements = { earnedCount, totalCount, arcCount };
+          const personalCount = personalRows.length;
+          achievements = {
+            earnedCount: earnedPredefined + personalCount,
+            totalCount: totalPredefined + personalCount,
+            arcCount,
+          };
         } catch (e) {
           console.warn('achievement snapshot failed', e);
         }
